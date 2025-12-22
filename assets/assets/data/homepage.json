@@ -1,0 +1,153 @@
+{
+  "user": {
+    "greeting": "Good Morning 👋",
+    "name": "Fadi"
+  },
+  "searchCard": {
+    "title": "Where do you want to go?",
+    "subtitle": "Search your next electric ride"
+  },
+  "brands": [
+    { "label": "All", "icon": "apps", "isSelected": true },
+    { "label": "Tesla", "asset": "assets/images/teslaone.png" },
+    {
+      "label": "BMW",
+      "icon": "directions_car_filled_outlined",
+      "asset": "assets/images/BMW.png"
+    },
+    {
+      "label": "Ferrari",
+      "icon": "flash_on_outlined",
+      "asset": "assets/images/ferrari.png"
+    },
+    {
+      "label": "Mercedes",
+      "icon": "shield_moon_outlined",
+      "asset": "assets/images/mercides.png"
+    }
+  ],
+  "sections": {
+    "topRated": {
+      "title": "Top Rated Cars",
+      "cars": [
+        {
+          "name": "Tesla Model X",
+          "rating": 5.0,
+          "availability": "Available from 2 Aug",
+          "seats": "4 Seats",
+          "price": "$28.32/hour",
+          "image": "assets/images/teslathree.png",
+          "favorite": true,
+          "details": {
+            "description": "Premium electric SUV with Falcon Wing doors and a refined minimalist cabin designed for long-distance comfort.",
+            "range": "333 mi",
+            "acceleration": "0-60 mph in 2.6s",
+            "power": "1,020 hp",
+            "features": [
+              "Autopilot",
+              "All-wheel drive",
+              "Premium interior",
+              "Smart Air suspension"
+            ],
+            "gallery": [
+              "assets/images/teslathree.png",
+              "assets/images/teslatwo.png",
+              "assets/images/teslaone.png"
+            ]
+          }
+        },
+        {
+          "name": "Tesla Model 3",
+          "rating": 4.9,
+          "availability": "Available now",
+          "seats": "4 Seats",
+          "price": "$25.10/hour",
+          "image": "assets/images/teslatwo.png",
+          "favorite": false,
+          "details": {
+            "description": "Efficient everyday EV with instant torque and minimalist tech-focused cockpit.",
+            "range": "315 mi",
+            "acceleration": "0-60 mph in 3.1s",
+            "power": "450 hp",
+            "features": [
+              "Panoramic roof",
+              "Heated seats",
+              "12\" Center screen",
+              "Driver assist"
+            ],
+            "gallery": [
+              "assets/images/teslatwo.png",
+              "assets/images/teslathree.png",
+              "assets/images/teslaone.png"
+            ]
+          }
+        }
+      ]
+    },
+    "mostPopular": {
+      "title": "Most Popular Cars",
+      "cars": [
+        {
+          "name": "Model S Plaid",
+          "rating": 4.8,
+          "availability": "2 seats left",
+          "seats": "4 Seats",
+          "price": "$32.00/hour",
+          "image": "assets/images/teslaone.png",
+          "favorite": false,
+          "details": {
+            "description": "Supercar performance in a luxury sedan with tri-motor powertrain and yoke steering.",
+            "range": "396 mi",
+            "acceleration": "0-60 mph in 1.99s",
+            "power": "1,020 hp",
+            "features": [
+              "Tri-motor",
+              "Autopark",
+              "Ventilated seats",
+              "Premium audio"
+            ],
+            "gallery": [
+              "assets/images/teslaone.png",
+              "assets/images/teslathree.png",
+              "assets/images/teslatwo.png"
+            ]
+          }
+        },
+        {
+          "name": "Cybertruck",
+          "rating": 4.7,
+          "availability": "Available weekend",
+          "seats": "6 Seats",
+          "price": "$40.50/hour",
+          "image": "assets/images/teslatwo.png",
+          "favorite": false,
+          "details": {
+            "description": "Futuristic stainless-steel pickup with adaptive air suspension and bulletproof exoskeleton.",
+            "range": "340 mi",
+            "acceleration": "0-60 mph in 2.9s",
+            "power": "800 hp",
+            "features": [
+              "Adaptive air suspension",
+              "Vault bed cover",
+              "Armor glass",
+              "18.5\" infotainment"
+            ],
+            "gallery": [
+              "assets/images/teslatwo.png",
+              "assets/images/teslathree.png",
+              "assets/images/teslaone.png"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "navItems": [
+    { "icon": "message_outlined", "label": "Message" },
+    { "icon": "card_travel", "label": "Trips" },
+    { "icon": "eco", "label": "Explore", "isActive": true },
+    { "icon": "favorite_border", "label": "Favorite" },
+    { "icon": "person_outline", "label": "Host" }
+  ]
+}
+
