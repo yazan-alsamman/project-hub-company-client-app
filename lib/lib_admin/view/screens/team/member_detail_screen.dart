@@ -131,19 +131,6 @@ class MemberDetailScreen extends StatelessWidget {
                       _buildContactRow(Icons.code, "GitHub", member.github!),
                   ]),
                   const SizedBox(height: 24),
-                  _buildInfoSection("Project Statistics", Icons.analytics, [
-                    if (member.activeProjects != null)
-                      _buildInfoRow(
-                        "Active Projects",
-                        "${member.activeProjects}",
-                      ),
-                    if (member.completedProjects != null)
-                      _buildInfoRow(
-                        "Completed Projects",
-                        "${member.completedProjects}",
-                      ),
-                  ]),
-                  const SizedBox(height: 24),
                   if (member.bio != null)
                     _buildInfoSection("About", Icons.person_outline, [
                       Container(
