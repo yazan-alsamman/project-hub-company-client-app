@@ -83,10 +83,6 @@ class Login extends StatelessWidget {
                       SizedBox(
                         height: MediaQuery.of(context).size.height * 0.03,
                       ),
-                      _buildSignUpLink(context),
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.02,
-                      ),
                     ],
                   ),
                 ),
@@ -138,32 +134,6 @@ class Login extends StatelessWidget {
           text: controller.isLoading ? "Signing in..." : "Sign in",
         ),
       ),
-    );
-  }
-
-  Widget _buildSignUpLink(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          "Don't have an account? ",
-          style: TextStyle(
-            color: AppColor.textSecondaryColor,
-            fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14,
-          ),
-        ),
-        GestureDetector(
-          onTap: () {},
-          child: Text(
-            'Sign Up',
-            style: TextStyle(
-              color: AppColor.primaryColor,
-              fontWeight: FontWeight.w600,
-              fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
