@@ -152,7 +152,7 @@ class ProjectCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      '${(progress * 100).round()}%',
+                      '${progress > 1.0 ? progress.round() : (progress * 100).round()}%',
                       style: TextStyle(
                         fontSize: Responsive.fontSize(context, mobile: 14),
                         color: const Color(0xFF333333),
@@ -170,9 +170,10 @@ class ProjectCard extends StatelessWidget {
                     ),
                     color: const Color(0xFFE0E0E0),
                   ),
+                  clipBehavior: Clip.hardEdge,
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
-                    widthFactor: progress,
+                    widthFactor: (progress > 1.0 ? progress / 100 : progress).clamp(0.0, 1.0),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(
