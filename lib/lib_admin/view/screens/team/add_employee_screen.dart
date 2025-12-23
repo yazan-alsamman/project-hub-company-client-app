@@ -7,11 +7,13 @@ import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/header.dart';
 import '../../widgets/common/input_fields.dart';
 import '../../widgets/common/main_button.dart';
+
 class AddEmployeeScreen extends StatefulWidget {
   const AddEmployeeScreen({super.key});
   @override
   State<AddEmployeeScreen> createState() => _AddEmployeeScreenState();
 }
+
 class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _previousErrorMessage;
@@ -20,6 +22,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     _scrollController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     Get.put(AddEmployeeControllerImp());
@@ -27,202 +30,204 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       appBar: const CustomAppBar(title: 'Add Employee', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<AddEmployeeControllerImp>(
-        builder: (controller) {
-          if (controller.errorMessage != null &&
-              controller.errorMessage != _previousErrorMessage) {
-            _previousErrorMessage = controller.errorMessage;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_scrollController.hasClients) {
-                _scrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                );
-              }
-            });
-          } else if (controller.errorMessage == null) {
-            _previousErrorMessage = null;
-          }
-          return SingleChildScrollView(
-            controller: _scrollController,
-            child: Padding(
-              padding: Responsive.padding(context),
-              child: Form(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Header(
-                      title: "Add New Employee",
-                      subtitle: "Fill in the details to add a new team member",
-                      haveButton: false,
-                    ),
-                    if (controller.errorMessage != null)
-                      _buildErrorMessage(
-                        context,
-                        controller,
-                        controller.errorMessage!,
+          builder: (controller) {
+            if (controller.errorMessage != null &&
+                controller.errorMessage != _previousErrorMessage) {
+              _previousErrorMessage = controller.errorMessage;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_scrollController.hasClients) {
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  );
+                }
+              });
+            } else if (controller.errorMessage == null) {
+              _previousErrorMessage = null;
+            }
+            return SingleChildScrollView(
+              controller: _scrollController,
+              child: Padding(
+                padding: Responsive.padding(context),
+                child: Form(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Header(
+                        title: "Add New Employee",
+                        subtitle:
+                            "Fill in the details to add a new team member",
+                        haveButton: false,
                       ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "User Information",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 18),
-                        fontWeight: FontWeight.bold,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildFormField(
-                      context,
-                      label: "Username",
-                      hint: "e.g., johndoe",
-                      controller: controller.usernameController,
-                      icon: Icons.person_outline,
-                      keyboardType: TextInputType.text,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildFormField(
-                      context,
-                      label: "Email",
-                      hint: "e.g., john.doe@example.com",
-                      controller: controller.emailController,
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildFormField(
-                      context,
-                      label: "Password",
-                      hint: "Enter password",
-                      controller: controller.passwordController,
-                      icon: Icons.lock_outline,
-                      keyboardType: TextInputType.visiblePassword,
-                      obscureText: true,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "Role",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
-                    _buildRoleDropdown(context, controller),
-                    SizedBox(height: Responsive.spacing(context, mobile: 30)),
-                    Text(
-                      "Employee Information",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 18),
-                        fontWeight: FontWeight.bold,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildFormField(
-                      context,
-                      label: "Employee Code",
-                      hint: "e.g., EMP001",
-                      controller: controller.employeeCodeController,
-                      icon: Icons.badge_outlined,
-                      keyboardType: TextInputType.text,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "Position",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
-                    _buildPositionDropdown(context, controller),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "Department",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
-                    _buildDepartmentDropdown(context, controller),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "Hire Date",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
-                    GestureDetector(
-                      onTap: () => _selectDate(context, controller),
-                      child: AbsorbPointer(
-                        child: InputFields(
-                          controller: controller.hireDateController,
-                          hintText: "Select hire date (YYYY-MM-DD)",
-                          keyboardType: TextInputType.text,
-                          valid: (value) => null,
+                      if (controller.errorMessage != null)
+                        _buildErrorMessage(
+                          context,
+                          controller,
+                          controller.errorMessage!,
+                        ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "User Information",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 18),
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.textColor,
                         ),
                       ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildFormField(
-                      context,
-                      label: "Salary",
-                      hint: "e.g., 75000",
-                      controller: controller.salaryController,
-                      icon: Icons.attach_money,
-                      keyboardType: TextInputType.number,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "Status",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textColor,
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildFormField(
+                        context,
+                        label: "Username",
+                        hint: "e.g., johndoe",
+                        controller: controller.usernameController,
+                        icon: Icons.person_outline,
+                        keyboardType: TextInputType.text,
                       ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
-                    _buildStatusDropdown(context, controller),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildFormField(
-                      context,
-                      label: "Sub Role (Optional)",
-                      hint: "e.g., frontend, backend, admin",
-                      controller: controller.subRoleController,
-                      icon: Icons.settings_outlined,
-                      keyboardType: TextInputType.text,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 30)),
-                    MainButton(
-                      onPressed: controller.isLoading
-                          ? null
-                          : controller.createEmployee,
-                      text: controller.isLoading
-                          ? 'Creating...'
-                          : 'Create Employee',
-                      icon: Icons.person_add,
-                      width: double.infinity,
-                      height: Responsive.size(context, mobile: 50),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 20)),
-                  ],
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildFormField(
+                        context,
+                        label: "Email",
+                        hint: "e.g., john.doe@example.com",
+                        controller: controller.emailController,
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildFormField(
+                        context,
+                        label: "Password",
+                        hint: "Enter password",
+                        controller: controller.passwordController,
+                        icon: Icons.lock_outline,
+                        keyboardType: TextInputType.visiblePassword,
+                        obscureText: true,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Role",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      _buildRoleDropdown(context, controller),
+                      SizedBox(height: Responsive.spacing(context, mobile: 30)),
+                      Text(
+                        "Employee Information",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 18),
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildFormField(
+                        context,
+                        label: "Employee Code",
+                        hint: "e.g., EMP001",
+                        controller: controller.employeeCodeController,
+                        icon: Icons.badge_outlined,
+                        keyboardType: TextInputType.text,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Position",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      _buildPositionDropdown(context, controller),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Department",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      _buildDepartmentDropdown(context, controller),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Hire Date",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      GestureDetector(
+                        onTap: () => _selectDate(context, controller),
+                        child: AbsorbPointer(
+                          child: InputFields(
+                            controller: controller.hireDateController,
+                            hintText: "Select hire date (YYYY-MM-DD)",
+                            keyboardType: TextInputType.text,
+                            valid: (value) => null,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildFormField(
+                        context,
+                        label: "Salary",
+                        hint: "e.g., 75000",
+                        controller: controller.salaryController,
+                        icon: Icons.attach_money,
+                        keyboardType: TextInputType.number,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Status",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      _buildStatusDropdown(context, controller),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildFormField(
+                        context,
+                        label: "Sub Role",
+                        hint: "e.g., frontend, backend,",
+                        controller: controller.subRoleController,
+                        icon: Icons.settings_outlined,
+                        keyboardType: TextInputType.text,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 30)),
+                      MainButton(
+                        onPressed: controller.isLoading
+                            ? null
+                            : controller.createEmployee,
+                        text: controller.isLoading
+                            ? 'Creating...'
+                            : 'Create Employee',
+                        icon: Icons.person_add,
+                        width: double.infinity,
+                        height: Responsive.size(context, mobile: 50),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 20)),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        ),
       ),
     );
   }
+
   Widget _buildFormField(
     BuildContext context, {
     required String label,
@@ -254,6 +259,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       ],
     );
   }
+
   Widget _buildRoleDropdown(
     BuildContext context,
     AddEmployeeControllerImp controller,
@@ -326,6 +332,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       ),
     );
   }
+
   Widget _buildStatusDropdown(
     BuildContext context,
     AddEmployeeControllerImp controller,
@@ -361,6 +368,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       ),
     );
   }
+
   Widget _buildPositionDropdown(
     BuildContext context,
     AddEmployeeControllerImp controller,
@@ -433,6 +441,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       ),
     );
   }
+
   Widget _buildDepartmentDropdown(
     BuildContext context,
     AddEmployeeControllerImp controller,
@@ -505,6 +514,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       ),
     );
   }
+
   Widget _buildErrorMessage(
     BuildContext context,
     AddEmployeeControllerImp controller,
@@ -564,6 +574,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       ),
     );
   }
+
   Future<void> _selectDate(
     BuildContext context,
     AddEmployeeControllerImp controller,
