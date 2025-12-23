@@ -476,7 +476,7 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                                               ),
                                             ),
                                             Text(
-                                              '${(widget.project.progress * 100).round()}%',
+                                              '${widget.project.progress > 1.0 ? widget.project.progress.round() : (widget.project.progress * 100).round()}%',
                                               style: const TextStyle(
                                                 fontSize: 16,
                                                 color: Color(0xFF333333),
@@ -492,9 +492,10 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                                             borderRadius: BorderRadius.circular(4),
                                             color: const Color(0xFFE0E0E0),
                                           ),
+                                          clipBehavior: Clip.hardEdge,
                                           child: FractionallySizedBox(
                                             alignment: Alignment.centerLeft,
-                                            widthFactor: widget.project.progress,
+                                            widthFactor: (widget.project.progress > 1.0 ? widget.project.progress / 100 : widget.project.progress).clamp(0.0, 1.0),
                                             child: Container(
                                               decoration: BoxDecoration(
                                                 borderRadius: BorderRadius.circular(4),

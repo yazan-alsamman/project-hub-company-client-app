@@ -95,7 +95,7 @@ class ProjectDashboardInformationCard extends StatelessWidget {
                       style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
                     ),
                     Text(
-                      "${(project.progress * 100).round()}%",
+                      "${project.progress > 1.0 ? project.progress.round() : (project.progress * 100).round()}%",
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -111,9 +111,10 @@ class ProjectDashboardInformationCard extends StatelessWidget {
                     color: const Color(0xFFF0F0F0),
                     borderRadius: BorderRadius.circular(3),
                   ),
+                  clipBehavior: Clip.hardEdge,
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
-                    widthFactor: project.progress,
+                    widthFactor: (project.progress > 1.0 ? project.progress / 100 : project.progress).clamp(0.0, 1.0),
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(

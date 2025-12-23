@@ -261,7 +261,8 @@ class PDFService {
     );
   }
   static pw.Widget _buildProgressSection(ProjectModel project) {
-    final progress = (project.progress * 100).round();
+    final progressPercent = project.progress > 1.0 ? project.progress.round() : (project.progress * 100).round();
+    final progressFactor = project.progress > 1.0 ? project.progress / 100 : project.progress;
     return pw.Container(
       padding: const pw.EdgeInsets.all(20),
       decoration: pw.BoxDecoration(
@@ -293,7 +294,7 @@ class PDFService {
                   borderRadius: pw.BorderRadius.circular(15),
                 ),
                 child: pw.Text(
-                  '$progress%',
+                  '$progressPercent%',
                   style: pw.TextStyle(
                     fontSize: 16,
                     fontWeight: pw.FontWeight.bold,
@@ -313,7 +314,7 @@ class PDFService {
             child: pw.Stack(
               children: [
                 pw.Container(
-                  width: (progress / 100) * 400, // عرض نسبي
+                  width: (progressFactor.clamp(0.0, 1.0)) * 400, // عرض نسبي
                   height: 12,
                   decoration: pw.BoxDecoration(
                     gradient: const pw.LinearGradient(
