@@ -12,10 +12,11 @@ import 'package:project_hub/lib_client/controller/common/settings_controller.dar
 import 'package:project_hub/lib_client/controller/common/custom_drawer_controller.dart';
 import 'package:project_hub/lib_client/controller/project/projects_controller.dart';
 import 'package:project_hub/lib_client/controller/common/filter_button_controller.dart';
+
 abstract class LoginController extends GetxController {
   login();
-  
 }
+
 class LoginControllerImpl extends LoginController {
   final AuthRepository _authRepository = AuthRepository();
   bool isPasswordVisible = false;
@@ -30,12 +31,14 @@ class LoginControllerImpl extends LoginController {
     usernameController = TextEditingController();
     passwordController = TextEditingController();
   }
+
   @override
   void onClose() {
     usernameController.dispose();
     passwordController.dispose();
     super.onClose();
   }
+
   @override
   login() async {
     print('🔵 ====== LOGIN FUNCTION CALLED ======');
@@ -46,8 +49,8 @@ class LoginControllerImpl extends LoginController {
         'Error',
         'Please fill in all fields',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColor.primaryColor,
-        colorText: AppColor.white,
+        backgroundColor: AppColor.inactiveCardColor,
+        colorText: AppColor.darkBackground,
         borderRadius: 12,
         margin: const EdgeInsets.all(16),
       );
@@ -102,12 +105,14 @@ class LoginControllerImpl extends LoginController {
         debugPrint('Response: $response');
         statusRequest = StatusRequest.success;
         update();
-        
+
         // Get user role from auth service
         final authService = Get.find<Myservices>();
-        final userRole = await authService.sharedPreferences.getString('user_role');
+        final userRole = await authService.sharedPreferences.getString(
+          'user_role',
+        );
         debugPrint('🔵 User role: $userRole');
-        
+
         // Route based on user role
         if (userRole?.toLowerCase() == 'client') {
           // Route to client app
@@ -144,12 +149,13 @@ class LoginControllerImpl extends LoginController {
       },
     );
   }
-  @override
 
+  @override
   void toggleRememberMe() {
     rememberMe = !rememberMe;
     update();
   }
+
   void togglePasswordVisibility() {
     isPasswordVisible = !isPasswordVisible;
     update();
