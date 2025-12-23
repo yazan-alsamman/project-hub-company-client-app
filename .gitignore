@@ -77,6 +77,5 @@ coverage/
 !default.pbxuser
 !default.perspectivev3
 
-# Exclude markdown files
-*.md
-!README.md
+# Include markdown documentation files
+# *.md files are now tracked for project documentation
