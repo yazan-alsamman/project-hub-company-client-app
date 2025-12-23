@@ -14,7 +14,7 @@ import 'package:project_hub/lib_client/controller/project/projects_controller.da
 import 'package:project_hub/lib_client/controller/common/filter_button_controller.dart';
 abstract class LoginController extends GetxController {
   login();
-  goToForgetPassword();
+  
 }
 class LoginControllerImpl extends LoginController {
   final AuthRepository _authRepository = AuthRepository();
@@ -145,9 +145,7 @@ class LoginControllerImpl extends LoginController {
     );
   }
   @override
-  goToForgetPassword() {
-    Get.toNamed(AppRoute.forgetPassword);
-  }
+
   void toggleRememberMe() {
     rememberMe = !rememberMe;
     update();

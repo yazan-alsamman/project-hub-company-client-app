@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/constant/routes.dart';
 import '../../../controller/auth/login_controller.dart';
+
 class Options extends StatelessWidget {
   const Options({super.key});
   @override
@@ -34,28 +35,6 @@ class Options extends StatelessWidget {
             ],
           ),
           SizedBox(height: isTablet ? 16 : 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                Get.toNamed(AppRoute.forgetPassword);
-              },
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 12 : 8,
-                  vertical: isTablet ? 8 : 6,
-                ),
-              ),
-              child: Text(
-                'Forgot password?',
-                style: TextStyle(
-                  color: AppColor.secondaryColor,
-                  fontSize: isTablet ? 16 : 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
