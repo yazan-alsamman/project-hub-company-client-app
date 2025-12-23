@@ -292,18 +292,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(
-                Icons.settings,
-                color: AppColor.secondaryColor,
-              ),
-              title: const Text('Settings'),
-              onTap: () {
-                Get.back();
-                Get.toNamed(AppRoute.settings);
-              },
-            ),
-            const Divider(height: 1),
-            ListTile(
               leading: const Icon(Icons.logout, color: AppColor.errorColor),
               title: const Text(
                 'Logout',

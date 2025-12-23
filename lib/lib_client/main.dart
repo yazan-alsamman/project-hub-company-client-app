@@ -8,12 +8,10 @@ import 'package:project_hub/lib_client/controller/auth_controller.dart';
 import 'package:project_hub/lib_client/view/screens/tasks_page.dart';
 import 'package:project_hub/lib_client/view/screens/comments_page.dart';
 import 'package:project_hub/lib_client/view/screens/analytics/analytics_screen.dart';
-import 'package:project_hub/lib_client/view/screens/settings/settings.dart';
 import 'package:project_hub/lib_client/view/screens/profile/profile_screen.dart';
 import 'package:project_hub/lib_client/view/screens/projects/projects_screen.dart';
 import 'package:project_hub/lib_client/view/screens/projects/project_details_screen.dart';
 import 'package:project_hub/lib_client/controller/common/analytics_controller.dart';
-import 'package:project_hub/lib_client/controller/common/settings_controller.dart';
 import 'package:project_hub/lib_client/controller/common/custom_drawer_controller.dart';
 import 'package:project_hub/lib_client/controller/project/projects_controller.dart';
 import 'package:project_hub/lib_client/controller/common/filter_button_controller.dart';
@@ -25,7 +23,6 @@ void main() async {
 
   Get.put(AuthController());
   Get.put(AnalyticsControllerImp(), );
-  Get.put(SettingsControllerImp());
   Get.put(CustomDrawerControllerImp());
   Get.put(ProjectsControllerImp(),permanent: true);
   Get.put(FilterButtonController());
@@ -86,10 +83,6 @@ class MyApp extends StatelessWidget {
             GetPage(
               name: AppRoute.analytics,
               page: () => const AnalyticsScreen(),
-            ),
-            GetPage(
-              name: AppRoute.settings,
-              page: () => const SettingsScreen(),
             ),
             GetPage(name: AppRoute.profile, page: () => const ProfileScreen()),
             GetPage(

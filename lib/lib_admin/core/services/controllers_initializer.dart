@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import '../../controller/auth/onBoarding_controller.dart';
 import '../../controller/employee/team_controller.dart';
 import '../../controller/task/tasks_controller.dart';
-import '../../controller/common/settings_controller.dart';
 import '../../controller/common/filter_button_controller.dart';
 import '../../controller/common/customAppBar_controller.dart';
 import '../../controller/common/customDrawer_controller.dart';
@@ -25,9 +24,6 @@ class ControllersInitializer {
     }
     if (!Get.isRegistered<TasksControllerImp>()) {
       Get.put(TasksControllerImp(), permanent: true);
-    }
-    if (!Get.isRegistered<SettingsControllerImp>()) {
-      Get.put(SettingsControllerImp(), permanent: true);
     }
     if (!Get.isRegistered<FilterButtonController>()) {
       Get.put(FilterButtonController(), permanent: true);

@@ -18,7 +18,6 @@ class AppRoute {
   static const String tasks = "/tasks";
   static const String addTask = "/add-task";
   static const String editTask = "/edit-task";
-  static const String settings = "/settings";
   static const String projects = "/projects";
   static const String projectDetails = "/project-details";
   static const String addProject = "/add-project";

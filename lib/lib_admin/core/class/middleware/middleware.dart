@@ -17,7 +17,6 @@ class MyMiddleWare extends GetMiddleware {
         route == AppRoute.projects ||
         route == AppRoute.team ||
         route == AppRoute.tasks ||
-        route == AppRoute.settings ||
         route == AppRoute.addEmployee ||
         route == AppRoute.addTask ||
         route == AppRoute.addProject ||

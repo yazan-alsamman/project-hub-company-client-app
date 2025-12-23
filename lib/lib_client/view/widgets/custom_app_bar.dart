@@ -266,17 +266,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         PopupMenuItem<String>(
-          value: 'settings',
-          child: Row(
-            children: [
-              Icon(Icons.settings, color: AppColor.secondaryColor, size: 20),
-              SizedBox(width: Responsive.spacing(context, mobile: 12)),
-              const Text('Settings'),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<String>(
           value: 'logout',
           child: Row(
             children: [
@@ -290,8 +279,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       onSelected: (String value) async {
         if (value == 'profile') {
           Get.toNamed(AppRoute.profile);
-        } else if (value == 'settings') {
-          Get.toNamed(AppRoute.settings);
         } else if (value == 'logout') {
           // Show confirmation dialog
           final shouldLogout = await Get.dialog<bool>(

@@ -154,17 +154,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     },
                   ),
                   buildMenuItem(
-                    icon: Icons.settings,
-                    title: 'Settings',
-                    onTap: () {
-                      if (widget.onItemTap != null) {
-                        widget.onItemTap!('Settings');
-                      }
-                      Get.back();
-                      Get.offAllNamed(AppRoute.settings);
-                    },
-                  ),
-                  buildMenuItem(
                     icon: Icons.folder,
                     title: 'Projects',
                     onTap: () {

@@ -8,7 +8,6 @@ import 'package:project_hub/lib_admin/controller/auth/onBoarding_controller.dart
 import 'package:project_hub/lib_client/view/screens/tasks_page.dart';
 import 'package:project_hub/lib_client/view/screens/comments_page.dart';
 import 'package:project_hub/lib_client/view/screens/analytics/analytics_screen.dart';
-import 'package:project_hub/lib_client/view/screens/settings/settings.dart';
 import 'package:project_hub/lib_client/view/screens/profile/profile_screen.dart';
 import 'package:project_hub/lib_client/view/screens/projects/projects_screen.dart';
 import 'package:project_hub/lib_client/view/screens/projects/project_details_screen.dart';
@@ -80,10 +79,6 @@ class MyApp extends StatelessWidget {
             GetPage(
               name: '/client/analytics',
               page: () => const AnalyticsScreen(),
-            ),
-            GetPage(
-              name: '/client/settings',
-              page: () => const SettingsScreen(),
             ),
             GetPage(name: '/client/profile', page: () => const ProfileScreen()),
             GetPage(

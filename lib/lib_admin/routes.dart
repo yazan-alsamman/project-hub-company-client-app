@@ -8,7 +8,6 @@ import 'view/screens/onBoarding.dart';
 import 'view/screens/splash/splash_screen.dart';
 import 'view/screens/projects/project_Screen.dart';
 import 'view/screens/projects/project_details_screen.dart';
-import 'view/screens/settings/settings.dart';
 import 'view/screens/team/team_screen.dart';
 import 'view/screens/team/member_detail_screen.dart';
 import 'view/screens/team/add_employee_screen.dart';
@@ -37,7 +36,6 @@ List<GetPage<dynamic>>? routes = [
   GetPage(name: AppRoute.login, page: () => const Login()),
   GetPage(name: AppRoute.team, page: () => const TeamScreen()),
   GetPage(name: AppRoute.tasks, page: () => const TasksScreen()),
-  GetPage(name: AppRoute.settings, page: () => const SettingsScreen()),
   GetPage(name: AppRoute.projects, page: () => const ProjectScreen()),
   GetPage(name: AppRoute.analytics, page: () => const AnalyticsScreen()),
   GetPage(

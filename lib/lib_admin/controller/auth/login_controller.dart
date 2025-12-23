@@ -8,7 +8,6 @@ import 'package:project_hub/core/services/services.dart';
 import 'package:project_hub/lib_admin/data/repository/auth_repository.dart';
 import 'package:project_hub/lib_client/controller/auth_controller.dart';
 import 'package:project_hub/lib_client/controller/common/analytics_controller.dart';
-import 'package:project_hub/lib_client/controller/common/settings_controller.dart';
 import 'package:project_hub/lib_client/controller/common/custom_drawer_controller.dart';
 import 'package:project_hub/lib_client/controller/project/projects_controller.dart';
 import 'package:project_hub/lib_client/controller/common/filter_button_controller.dart';
@@ -123,9 +122,6 @@ class LoginControllerImpl extends LoginController {
           }
           if (!Get.isRegistered<AnalyticsControllerImp>()) {
             Get.put(AnalyticsControllerImp());
-          }
-          if (!Get.isRegistered<SettingsControllerImp>()) {
-            Get.put(SettingsControllerImp());
           }
           if (!Get.isRegistered<CustomDrawerControllerImp>()) {
             Get.put(CustomDrawerControllerImp());
