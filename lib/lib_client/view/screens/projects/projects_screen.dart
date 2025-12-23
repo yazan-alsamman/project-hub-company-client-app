@@ -34,6 +34,7 @@ class _ErrorBannerState extends State<_ErrorBanner> {
       }
     });
   }
+
   @override
   Widget build(BuildContext context) {
     if (!_isVisible) return const SizedBox.shrink();
@@ -105,7 +106,6 @@ class ProjectsScreen extends StatelessWidget {
       appBar: const CustomAppBar(),
       body: SafeArea(
         child: GetBuilder<ProjectsControllerImp>(
-          init: Get.find<ProjectsControllerImp>(),
           builder: (controller) {
             if (controller.statusRequest == StatusRequest.loading &&
                 controller.projects.isEmpty) {

@@ -1,31 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:project_hub/lib_client/controller/common/custom_drawer_controller.dart';
 import 'package:get/get.dart';
 import 'package:project_hub/lib_client/core/constant/color.dart';
 import 'package:project_hub/lib_client/core/constant/responsive.dart';
-import 'package:project_hub/lib_client/controller/common/analytics_controller.dart';
+import 'package:project_hub/lib_client/controller/project/project_analytics_controller.dart';
+import 'package:project_hub/lib_client/data/Models/project_model.dart';
 import 'package:project_hub/lib_client/view/widgets/custom_app_bar.dart';
 import 'package:project_hub/lib_client/view/widgets/common/custom_drawer.dart';
-import 'package:project_hub/lib_client/view/widgets/common/header.dart';
-import 'package:project_hub/lib_client/view/widgets/common/analytics_card.dart';
-import 'package:project_hub/lib_client/view/widgets/common/project_status_card.dart';
-import 'package:project_hub/lib_client/view/widgets/common/productivity_card.dart';
-import 'package:project_hub/lib_client/view/widgets/common/upcoming_card.dart';
 
-class AnalyticsScreen extends StatelessWidget {
-  const AnalyticsScreen({super.key});
+class ProjectAnalyticsScreen extends StatelessWidget {
+  final ProjectModel project;
+
+  const ProjectAnalyticsScreen({super.key, required this.project});
 
   @override
   Widget build(BuildContext context) {
-    // Only register if not already registered from lib_client
-    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
-      Get.put(CustomDrawerControllerImp());
+    if (!Get.isRegistered<ProjectAnalyticsController>()) {
+      Get.put(ProjectAnalyticsController());
     }
-    // Force update the analytics controller to use lib_client version
-    if (Get.isRegistered<AnalyticsControllerImp>()) {
-      Get.delete<AnalyticsControllerImp>();
-    }
-    Get.put(AnalyticsControllerImp());
+    final controller = Get.find<ProjectAnalyticsController>();
+    controller.setProject(project);
 
     return Scaffold(
       backgroundColor: AppColor.backgroundColor,
@@ -35,305 +28,90 @@ class AnalyticsScreen extends StatelessWidget {
         children: [
           if (!Responsive.isMobile(context)) const CustomDrawer(),
           Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: Responsive.spacing(context, mobile: 16),
-                vertical: Responsive.spacing(context, mobile: 24),
-              ),
-              child: GetBuilder<AnalyticsControllerImp>(
-                builder: (controller) => Column(
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColor.primaryColor,
+                  ),
+                );
+              }
+
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: Responsive.spacing(context, mobile: 16),
+                  vertical: Responsive.spacing(context, mobile: 24),
+                ),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Header(
-                      title: "Analytics",
-                      subtitle: "Track your project metrics and performance",
-                      haveButton: false,
-                    ),
+                    // Header
+                    _buildHeader(context, controller),
                     SizedBox(height: Responsive.spacing(context, mobile: 24)),
 
-                    // Project Selector
-                    _buildProjectSelector(context, controller),
+                    // Overview Card
+                    _buildOverviewCard(context, controller),
                     SizedBox(height: Responsive.spacing(context, mobile: 24)),
 
-                    Obx(() {
-                      if (controller.selectedProjectId.value.isEmpty ||
-                          controller.selectedProjectId.value == 'all') {
-                        // Show dashboard overview
-                        return _buildDashboardOverview(context, controller);
-                      } else {
-                        // Show project-specific analytics
-                        return _buildProjectAnalytics(context, controller);
-                      }
-                    }),
+                    // Task Status Chart
+                    _buildTaskStatusChart(context, controller),
+                    SizedBox(height: Responsive.spacing(context, mobile: 24)),
+
+                    // Priority Distribution
+                    _buildPriorityDistribution(context, controller),
+                    SizedBox(height: Responsive.spacing(context, mobile: 24)),
+
+                    // Role Distribution
+                    _buildRoleDistribution(context, controller),
+                    SizedBox(height: Responsive.spacing(context, mobile: 24)),
+
+                    // Timeline Info
+                    _buildTimelineInfo(context, controller),
+                    SizedBox(height: Responsive.spacing(context, mobile: 24)),
+
+                    // Top Assignees
+                    _buildTopAssignees(context, controller),
+                    SizedBox(height: Responsive.spacing(context, mobile: 32)),
                   ],
                 ),
-              ),
-            ),
+              );
+            }),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProjectSelector(
+  Widget _buildHeader(
     BuildContext context,
-    AnalyticsControllerImp controller,
-  ) {
-    return Obx(() {
-      if (controller.projects.isEmpty) {
-        return const SizedBox.shrink();
-      }
-
-      return Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: Responsive.spacing(context, mobile: 16),
-          vertical: Responsive.spacing(context, mobile: 12),
-        ),
-        decoration: BoxDecoration(
-          color: AppColor.cardBackgroundColor,
-          borderRadius: BorderRadius.circular(
-            Responsive.borderRadius(context, mobile: 12),
-          ),
-          border: Border.all(color: AppColor.borderColor, width: 1),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.folder_outlined,
-              color: AppColor.textSecondaryColor,
-              size: Responsive.iconSize(context, mobile: 20),
-            ),
-            SizedBox(width: Responsive.spacing(context, mobile: 12)),
-            Expanded(
-              child: DropdownButton<String>(
-                value: controller.selectedProjectId.value,
-                isExpanded: true,
-                underline: const SizedBox(),
-                hint: Text(
-                  'All Projects',
-                  style: TextStyle(
-                    fontSize: Responsive.fontSize(context, mobile: 14),
-                    color: AppColor.textColor,
-                  ),
-                ),
-                items: [
-                  const DropdownMenuItem<String>(
-                    value: 'all',
-                    child: Text('Dashboard Overview'),
-                  ),
-                  ...controller.projects.map((project) {
-                    return DropdownMenuItem<String>(
-                      value: project.id,
-                      child: Text(
-                        project.title,
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, mobile: 14),
-                          color: AppColor.textColor,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }),
-                ],
-                onChanged: (String? projectId) {
-                  if (projectId != null) {
-                    controller.selectProject(projectId);
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget _buildDashboardOverview(
-    BuildContext context,
-    AnalyticsControllerImp controller,
+    ProjectAnalyticsController controller,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AnalyticsCard(
-          title: "Overall Project Completion",
-          value:
-              "${(controller.averageProjectCompletion.value * 100).round()}%",
-          subtitle: "Average across all projects",
-          icon: Icons.trending_up,
-          gradientColors: [const Color(0xFF2196F3), const Color(0xFF1565C0)],
-          iconBackgroundColor: const Color(0xFF42A5F5),
-        ),
-        SizedBox(height: Responsive.spacing(context, mobile: 16)),
-        AnalyticsCard(
-          title: "Overall Task Completion",
-          value: "${(controller.overallCompletion.value * 100).round()}%",
-          subtitle: "Completed tasks / total tasks",
-          icon: Icons.check_circle_outline,
-          gradientColors: [const Color(0xFF4CAF50), const Color(0xFF2E7D32)],
-          iconBackgroundColor: const Color(0xFF66BB6A),
-        ),
-        SizedBox(height: Responsive.spacing(context, mobile: 16)),
-        AnalyticsCard(
-          title: "Total Projects",
-          value: "${controller.totalProjects.value}",
-          subtitle: "Active and completed",
-          icon: Icons.folder,
-          gradientColors: [const Color(0xFF9C27B0), const Color(0xFF6A1B9A)],
-          iconBackgroundColor: const Color(0xFFBA68C8),
-        ),
-        SizedBox(height: Responsive.spacing(context, mobile: 24)),
-        Container(
-          margin: EdgeInsets.only(
-            bottom: Responsive.spacing(context, mobile: 20),
-          ),
-          child: Obx(() {
-            return ProjectStatusCard(
-              title: "Projects by Status",
-              statuses: controller.projectStatuses
-                  .map(
-                    (s) => ProjectStatus(
-                      label: s.label,
-                      count: s.count,
-                      percentage: s.percentage,
-                      color: s.color,
-                    ),
-                  )
-                  .toList(),
-            );
-          }),
-        ),
-        SizedBox(height: Responsive.spacing(context, mobile: 24)),
-        Container(
-          margin: EdgeInsets.only(
-            bottom: Responsive.spacing(context, mobile: 20),
-          ),
-          child: ProductivityCard(
-            title: "Team Productivity",
-            teamMembers: [
-              TeamMember(name: "John Dev", score: "18/24", percentage: 75.0),
-              TeamMember(
-                name: "Sarah Design",
-                score: "14/16",
-                percentage: 87.5,
-              ),
-              TeamMember(
-                name: "Alex Backend",
-                score: "22/28",
-                percentage: 78.5,
-              ),
-              TeamMember(name: "Lisa QA", score: "15/20", percentage: 75.0),
-            ],
+        Text(
+          project.title,
+          style: TextStyle(
+            fontSize: Responsive.fontSize(context, mobile: 32),
+            fontWeight: FontWeight.bold,
+            color: AppColor.textColor,
           ),
         ),
-        SizedBox(height: Responsive.spacing(context, mobile: 24)),
-        Container(
-          margin: EdgeInsets.only(
-            bottom: Responsive.spacing(context, mobile: 20),
-          ),
-          child: UpcomingCard(
-            title: "Upcoming Milestones",
-            milestones: [
-              Milestone(
-                name: "E-Commerce Platform Launch",
-                date: "Dec 15, 2024",
-                status: "critical",
-                icon: Icons.warning,
-                iconColor: const Color(0xFFE53E3E),
-                statusColor: const Color(0xFFFED7D7),
-                statusTextColor: const Color(0xFFC53030),
-              ),
-              Milestone(
-                name: "API Integration Completion",
-                date: "Dec 31, 2024",
-                status: "on-track",
-                icon: Icons.check,
-                iconColor: const Color(0xFF38A169),
-                statusColor: const Color(0xFFC6F6D5),
-                statusTextColor: const Color(0xFF2F855A),
-              ),
-              Milestone(
-                name: "Dashboard System Release",
-                date: "Jan 20, 2025",
-                status: "on-track",
-                icon: Icons.check,
-                iconColor: const Color(0xFF38A169),
-                statusColor: const Color(0xFFC6F6D5),
-                statusTextColor: const Color(0xFF2F855A),
-              ),
-              Milestone(
-                name: "Blockchain Integration Launch",
-                date: "Feb 28, 2025",
-                status: "planning",
-                icon: Icons.check,
-                iconColor: const Color(0xFF38A169),
-                statusColor: const Color(0xFFBEE3F8),
-                statusTextColor: const Color(0xFF2B6CB0),
-              ),
-            ],
+        SizedBox(height: Responsive.spacing(context, mobile: 8)),
+        Text(
+          'Detailed project analytics and insights',
+          style: TextStyle(
+            fontSize: Responsive.fontSize(context, mobile: 16),
+            color: AppColor.textSecondaryColor,
           ),
         ),
-        SizedBox(height: Responsive.spacing(context, mobile: 32)),
       ],
     );
   }
 
-  Widget _buildProjectAnalytics(
+  Widget _buildOverviewCard(
     BuildContext context,
-    AnalyticsControllerImp controller,
-  ) {
-    return Obx(() {
-      if (controller.projectAnalytics.value == null) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
-      final analytics = controller.projectAnalytics.value!;
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Project title
-          Text(
-            'Project Analytics',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, mobile: 24),
-              fontWeight: FontWeight.bold,
-              color: AppColor.textColor,
-            ),
-          ),
-          SizedBox(height: Responsive.spacing(context, mobile: 20)),
-
-          // Overview Card
-          _buildProjectOverviewCard(context, analytics),
-          SizedBox(height: Responsive.spacing(context, mobile: 24)),
-
-          // Task Status Chart
-          _buildTaskStatusChart(context, analytics),
-          SizedBox(height: Responsive.spacing(context, mobile: 24)),
-
-          // Priority Distribution
-          _buildPriorityDistribution(context, analytics),
-          SizedBox(height: Responsive.spacing(context, mobile: 24)),
-
-          // Role Distribution
-          _buildRoleDistribution(context, analytics),
-          SizedBox(height: Responsive.spacing(context, mobile: 24)),
-
-          // Timeline Info
-          _buildTimelineInfo(context, analytics),
-          SizedBox(height: Responsive.spacing(context, mobile: 24)),
-
-          // Top Assignees
-          _buildTopAssignees(context, analytics),
-          SizedBox(height: Responsive.spacing(context, mobile: 32)),
-        ],
-      );
-    });
-  }
-
-  Widget _buildProjectOverviewCard(
-    BuildContext context,
-    Map<String, dynamic> analytics,
+    ProjectAnalyticsController controller,
   ) {
     return Container(
       padding: EdgeInsets.all(Responsive.spacing(context, mobile: 20)),
@@ -368,22 +146,22 @@ class AnalyticsScreen extends StatelessWidget {
               _buildMetricBox(
                 context,
                 'Progress',
-                '${((analytics['progress'] as double? ?? 0.0) * 100).toStringAsFixed(0)}%',
+                '${(controller.overallProgress.value * 100).round()}%',
                 AppColor.primaryColor,
                 Icons.trending_up,
               ),
               _buildMetricBox(
                 context,
                 'Days Left',
-                '${analytics['daysRemaining'] as int? ?? 0}',
+                '${controller.daysRemaining.value}',
                 AppColor.inProgressColor,
                 Icons.calendar_today,
               ),
               _buildMetricBox(
                 context,
                 'Status',
-                ((analytics['status'] as String?) ?? 'planned').toUpperCase(),
-                _getStatusColor((analytics['status'] as String?) ?? 'planned'),
+                controller.projectStatus.value.toUpperCase(),
+                _getStatusColor(controller.projectStatus.value),
                 Icons.info_outline,
               ),
             ],
@@ -424,22 +202,18 @@ class AnalyticsScreen extends StatelessWidget {
             Text(
               value,
               style: TextStyle(
-                fontSize: Responsive.fontSize(context, mobile: 14),
+                fontSize: Responsive.fontSize(context, mobile: 18),
                 fontWeight: FontWeight.bold,
                 color: AppColor.textColor,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: Responsive.spacing(context, mobile: 4)),
             Text(
               label,
               style: TextStyle(
-                fontSize: Responsive.fontSize(context, mobile: 10),
+                fontSize: Responsive.fontSize(context, mobile: 12),
                 color: AppColor.textSecondaryColor,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -449,12 +223,8 @@ class AnalyticsScreen extends StatelessWidget {
 
   Widget _buildTaskStatusChart(
     BuildContext context,
-    Map<String, dynamic> analytics,
+    ProjectAnalyticsController controller,
   ) {
-    final completed = analytics['completed'] as double? ?? 0.0;
-    final inProgress = analytics['inProgress'] as double? ?? 0.0;
-    final pending = analytics['pending'] as double? ?? 0.0;
-
     return Container(
       padding: EdgeInsets.all(Responsive.spacing(context, mobile: 20)),
       decoration: BoxDecoration(
@@ -482,49 +252,46 @@ class AnalyticsScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: Responsive.spacing(context, mobile: 20)),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: Responsive.size(context, mobile: 160),
-                  height: Responsive.size(context, mobile: 160),
-                  child: CustomPaint(
-                    painter: TaskStatusDonutPainter(
-                      completed: completed,
-                      inProgress: inProgress,
-                      pending: pending,
-                    ),
+          Row(
+            children: [
+              SizedBox(
+                width: Responsive.size(context, mobile: 160),
+                height: Responsive.size(context, mobile: 160),
+                child: CustomPaint(
+                  painter: TaskStatusDonutPainter(
+                    completed: controller.completedPercent.value,
+                    inProgress: controller.inProgressPercent.value,
+                    pending: controller.pendingPercent.value,
                   ),
                 ),
-                SizedBox(width: Responsive.spacing(context, mobile: 32)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildStatusLegend(
-                      context,
-                      AppColor.completedColor,
-                      'Completed',
-                      '${(completed * 100).round()}%',
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 12)),
-                    _buildStatusLegend(
-                      context,
-                      AppColor.inProgressColor,
-                      'In Progress',
-                      '${(inProgress * 100).round()}%',
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 12)),
-                    _buildStatusLegend(
-                      context,
-                      AppColor.pendingColor,
-                      'Pending',
-                      '${(pending * 100).round()}%',
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 32)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatusLegend(
+                    context,
+                    AppColor.completedColor,
+                    'Completed',
+                    '${(controller.completedPercent.value * 100).round()}%',
+                  ),
+                  SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                  _buildStatusLegend(
+                    context,
+                    AppColor.inProgressColor,
+                    'In Progress',
+                    '${(controller.inProgressPercent.value * 100).round()}%',
+                  ),
+                  SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                  _buildStatusLegend(
+                    context,
+                    AppColor.pendingColor,
+                    'Pending',
+                    '${(controller.pendingPercent.value * 100).round()}%',
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
@@ -559,11 +326,8 @@ class AnalyticsScreen extends StatelessWidget {
 
   Widget _buildPriorityDistribution(
     BuildContext context,
-    Map<String, dynamic> analytics,
+    ProjectAnalyticsController controller,
   ) {
-    final priorityMap =
-        analytics['priorityDistribution'] as Map<String, int>? ?? {};
-
     return Container(
       padding: EdgeInsets.all(Responsive.spacing(context, mobile: 20)),
       decoration: BoxDecoration(
@@ -591,20 +355,21 @@ class AnalyticsScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: Responsive.spacing(context, mobile: 20)),
-          if (priorityMap.isEmpty)
-            Center(
-              child: Text(
-                'No tasks',
-                style: TextStyle(color: AppColor.textSecondaryColor),
-              ),
-            )
-          else
-            Column(
-              children: priorityMap.entries.map((entry) {
+          Obx(() {
+            if (controller.priorityDistribution.isEmpty) {
+              return Center(
+                child: Text(
+                  'No tasks',
+                  style: TextStyle(color: AppColor.textSecondaryColor),
+                ),
+              );
+            }
+
+            return Column(
+              children: controller.priorityDistribution.entries.map((entry) {
                 final priority = entry.key;
                 final count = entry.value;
-                final total = analytics['totalTasks'] as int? ?? 1;
-                final percentage = (count / total) * 100;
+                final percentage = (count / controller.totalTasks.value) * 100;
                 final color = _getPriorityColor(priority);
 
                 return Padding(
@@ -665,7 +430,8 @@ class AnalyticsScreen extends StatelessWidget {
                   ),
                 );
               }).toList(),
-            ),
+            );
+          }),
         ],
       ),
     );
@@ -673,11 +439,8 @@ class AnalyticsScreen extends StatelessWidget {
 
   Widget _buildRoleDistribution(
     BuildContext context,
-    Map<String, dynamic> analytics,
+    ProjectAnalyticsController controller,
   ) {
-    final backend = analytics['backendTasks'] as int? ?? 0;
-    final frontend = analytics['frontendTasks'] as int? ?? 0;
-
     return Container(
       padding: EdgeInsets.all(Responsive.spacing(context, mobile: 20)),
       decoration: BoxDecoration(
@@ -711,7 +474,7 @@ class AnalyticsScreen extends StatelessWidget {
                 child: _buildRoleCard(
                   context,
                   'Backend',
-                  backend,
+                  controller.backendTasks.value,
                   AppColor.primaryColor,
                   Icons.code,
                 ),
@@ -721,7 +484,7 @@ class AnalyticsScreen extends StatelessWidget {
                 child: _buildRoleCard(
                   context,
                   'Frontend',
-                  frontend,
+                  controller.frontendTasks.value,
                   AppColor.secondaryColor,
                   Icons.palette,
                 ),
@@ -781,7 +544,7 @@ class AnalyticsScreen extends StatelessWidget {
 
   Widget _buildTimelineInfo(
     BuildContext context,
-    Map<String, dynamic> analytics,
+    ProjectAnalyticsController controller,
   ) {
     return Container(
       padding: EdgeInsets.all(Responsive.spacing(context, mobile: 20)),
@@ -813,7 +576,7 @@ class AnalyticsScreen extends StatelessWidget {
           _buildTimelineItem(
             context,
             'Start Date',
-            analytics['startDate'] as String? ?? 'N/A',
+            controller.startDate.value,
             Icons.flag_outlined,
             AppColor.primaryColor,
           ),
@@ -821,10 +584,22 @@ class AnalyticsScreen extends StatelessWidget {
           _buildTimelineItem(
             context,
             'End Date',
-            analytics['endDate'] as String? ?? 'N/A',
+            controller.endDate.value,
             Icons.flag_outlined,
             AppColor.inProgressColor,
           ),
+          if (controller.safeDelay.value > 0) ...[
+            SizedBox(height: Responsive.spacing(context, mobile: 16)),
+            _buildTimelineItem(
+              context,
+              'Safe Delay',
+              '${controller.safeDelay.value} days',
+              Icons.info_outline,
+              controller.safeDelay.value > 0
+                  ? AppColor.warningColor
+                  : AppColor.completedColor,
+            ),
+          ],
         ],
       ),
     );
@@ -879,10 +654,8 @@ class AnalyticsScreen extends StatelessWidget {
 
   Widget _buildTopAssignees(
     BuildContext context,
-    Map<String, dynamic> analytics,
+    ProjectAnalyticsController controller,
   ) {
-    final assignees = analytics['assignees'] as List<dynamic>? ?? [];
-
     return Container(
       padding: EdgeInsets.all(Responsive.spacing(context, mobile: 20)),
       decoration: BoxDecoration(
@@ -910,21 +683,18 @@ class AnalyticsScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: Responsive.spacing(context, mobile: 20)),
-          if (assignees.isEmpty)
-            Center(
-              child: Text(
-                'No assignments yet',
-                style: TextStyle(color: AppColor.textSecondaryColor),
-              ),
-            )
-          else
-            Column(
-              children: assignees.take(5).map((item) {
-                final assignee = item as Map<String, dynamic>;
-                final name = assignee['name'] as String? ?? 'Unknown';
-                final taskCount = assignee['taskCount'] as int? ?? 0;
-                final percentage = assignee['percentage'] as double? ?? 0.0;
+          Obx(() {
+            if (controller.assignees.isEmpty) {
+              return Center(
+                child: Text(
+                  'No assignments yet',
+                  style: TextStyle(color: AppColor.textSecondaryColor),
+                ),
+              );
+            }
 
+            return Column(
+              children: controller.assignees.take(5).map((assignee) {
                 return Padding(
                   padding: EdgeInsets.only(
                     bottom: Responsive.spacing(context, mobile: 16),
@@ -936,7 +706,7 @@ class AnalyticsScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            name,
+                            assignee.name,
                             style: TextStyle(
                               fontSize: Responsive.fontSize(
                                 context,
@@ -947,7 +717,7 @@ class AnalyticsScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '$taskCount tasks',
+                            '${assignee.taskCount} tasks',
                             style: TextStyle(
                               fontSize: Responsive.fontSize(
                                 context,
@@ -969,7 +739,7 @@ class AnalyticsScreen extends StatelessWidget {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: FractionallySizedBox(
-                            widthFactor: percentage / 100,
+                            widthFactor: assignee.percentage / 100,
                             child: Container(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
@@ -990,7 +760,8 @@ class AnalyticsScreen extends StatelessWidget {
                   ),
                 );
               }).toList(),
-            ),
+            );
+          }),
         ],
       ),
     );

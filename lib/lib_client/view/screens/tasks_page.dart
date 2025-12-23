@@ -243,16 +243,8 @@ class TasksPage extends StatelessWidget {
     TasksPageController controller,
   ) {
     return Obx(() {
-      final backendPercent = (controller.backendProgress.value * 100).round();
-      final frontendPercent = (controller.frontendProgress.value * 100).round();
-
-      // Ensure minimum values for display
-      final backendProgress = controller.backendProgress.value > 0
-          ? controller.backendProgress.value
-          : 0.01;
-      final frontendProgress = controller.frontendProgress.value > 0
-          ? controller.frontendProgress.value
-          : 0.01;
+      final completionPercent = (controller.projectCompletionPercent.value * 100).round();
+      final incompletePercent = 100 - completionPercent;
 
       return Container(
         padding: EdgeInsets.all(Responsive.spacing(context, mobile: 16)),
@@ -270,92 +262,86 @@ class TasksPage extends StatelessWidget {
             ),
           ],
         ),
-        child: Container(
-          height: Responsive.size(context, mobile: 32),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(
-              Responsive.borderRadius(context, mobile: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Project Progress',
+              style: TextStyle(
+                fontSize: Responsive.fontSize(context, mobile: 14),
+                fontWeight: FontWeight.w600,
+                color: AppColor.textColor,
+              ),
             ),
-            color: AppColor.backgroundColor,
-          ),
-          child: Row(
-            children: [
-              Flexible(
-                flex: (backendProgress * 100).round(),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColor.primaryColor, // Blue
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(
-                        Responsive.borderRadius(context, mobile: 16),
-                      ),
-                      bottomLeft: Radius.circular(
-                        Responsive.borderRadius(context, mobile: 16),
-                      ),
-                      topRight: frontendPercent == 0
-                          ? Radius.circular(
-                              Responsive.borderRadius(context, mobile: 16),
-                            )
-                          : Radius.zero,
-                      bottomRight: frontendPercent == 0
-                          ? Radius.circular(
-                              Responsive.borderRadius(context, mobile: 16),
-                            )
-                          : Radius.zero,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Backend $backendPercent%',
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 12),
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+            SizedBox(height: Responsive.spacing(context, mobile: 12)),
+            Container(
+              height: Responsive.size(context, mobile: 32),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(
+                  Responsive.borderRadius(context, mobile: 16),
                 ),
+                color: AppColor.backgroundColor,
               ),
-              Flexible(
-                flex: (frontendProgress * 100).round(),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColor.secondaryColor, // Purple
-                    borderRadius: BorderRadius.only(
-                      topRight: Radius.circular(
-                        Responsive.borderRadius(context, mobile: 16),
+              child: Row(
+                children: [
+                  Flexible(
+                    flex: completionPercent > 0 ? completionPercent : 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColor.completedColor, // Green
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(
+                            Responsive.borderRadius(context, mobile: 16),
+                          ),
+                          bottomLeft: Radius.circular(
+                            Responsive.borderRadius(context, mobile: 16),
+                          ),
+                          topRight: incompletePercent == 0
+                              ? Radius.circular(
+                                  Responsive.borderRadius(context, mobile: 16),
+                                )
+                              : Radius.zero,
+                          bottomRight: incompletePercent == 0
+                              ? Radius.circular(
+                                  Responsive.borderRadius(context, mobile: 16),
+                                )
+                              : Radius.zero,
+                        ),
                       ),
-                      bottomRight: Radius.circular(
-                        Responsive.borderRadius(context, mobile: 16),
+                      child: Center(
+                        child: Text(
+                          '$completionPercent%',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, mobile: 12),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      topLeft: backendPercent == 0
-                          ? Radius.circular(
-                              Responsive.borderRadius(context, mobile: 16),
-                            )
-                          : Radius.zero,
-                      bottomLeft: backendPercent == 0
-                          ? Radius.circular(
-                              Responsive.borderRadius(context, mobile: 16),
-                            )
-                          : Radius.zero,
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      'Frontend $frontendPercent%',
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 12),
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                  if (incompletePercent > 0)
+                    Flexible(
+                      flex: incompletePercent,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColor.backgroundColor.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(
+                              Responsive.borderRadius(context, mobile: 16),
+                            ),
+                            bottomRight: Radius.circular(
+                              Responsive.borderRadius(context, mobile: 16),
+                            ),
+                          ),
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     });
@@ -394,8 +380,9 @@ class TasksPage extends StatelessWidget {
                   Responsive.size(context, mobile: 180),
                 ),
                 painter: DonutChartPainter(
-                  backendProgress: controller.backendProgress.value,
-                  frontendProgress: controller.frontendProgress.value,
+                  completed: controller.completedPercent.value,
+                  inProgress: controller.inProgressPercent.value,
+                  pending: controller.pendingPercent.value,
                 ),
               ),
             ),
@@ -404,9 +391,11 @@ class TasksPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem(context, AppColor.primaryColor, 'Backend'),
+                _buildLegendItem(context, AppColor.completedColor, 'Completed'),
                 SizedBox(height: Responsive.spacing(context, mobile: 12)),
-                _buildLegendItem(context, AppColor.secondaryColor, 'Frontend'),
+                _buildLegendItem(context, AppColor.inProgressColor, 'In Progress'),
+                SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                _buildLegendItem(context, AppColor.pendingColor, 'Pending'),
               ],
             ),
           ],
@@ -734,12 +723,14 @@ class TasksPage extends StatelessWidget {
 }
 
 class DonutChartPainter extends CustomPainter {
-  final double backendProgress;
-  final double frontendProgress;
+  final double completed;
+  final double inProgress;
+  final double pending;
 
   DonutChartPainter({
-    required this.backendProgress,
-    required this.frontendProgress,
+    required this.completed,
+    required this.inProgress,
+    required this.pending,
   });
 
   @override
@@ -748,43 +739,62 @@ class DonutChartPainter extends CustomPainter {
     final radius = size.width / 2 - 25;
     final strokeWidth = 30.0;
 
-    final backendPaint = Paint()
-      ..color = AppColor
-          .primaryColor // Blue
+    final completedPaint = Paint()
+      ..color = AppColor.completedColor // Green
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    final backendSweepAngle = 2 * 3.14159 * backendProgress;
+    final inProgressPaint = Paint()
+      ..color = AppColor.inProgressColor // Blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final pendingPaint = Paint()
+      ..color = AppColor.pendingColor // Orange
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    double startAngle = -3.14159 / 2; // Start from top
+
+    final completedSweep = 2 * 3.14159 * completed;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -3.14159 / 2, // Start from top
-      backendSweepAngle,
+      startAngle,
+      completedSweep,
       false,
-      backendPaint,
+      completedPaint,
     );
+    startAngle += completedSweep;
 
-    final frontendPaint = Paint()
-      ..color = AppColor
-          .secondaryColor // Purple
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final frontendSweepAngle = 2 * 3.14159 * frontendProgress;
+    final inProgressSweep = 2 * 3.14159 * inProgress;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -3.14159 / 2 + backendSweepAngle,
-      frontendSweepAngle,
+      startAngle,
+      inProgressSweep,
       false,
-      frontendPaint,
+      inProgressPaint,
+    );
+    startAngle += inProgressSweep;
+
+    final pendingSweep = 2 * 3.14159 * pending;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      pendingSweep,
+      false,
+      pendingPaint,
     );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return oldDelegate is DonutChartPainter &&
-        (oldDelegate.backendProgress != backendProgress ||
-            oldDelegate.frontendProgress != frontendProgress);
+        (oldDelegate.completed != completed ||
+            oldDelegate.inProgress != inProgress ||
+            oldDelegate.pending != pending);
   }
 }
+  

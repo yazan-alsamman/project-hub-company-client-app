@@ -11,6 +11,7 @@ import 'package:project_hub/lib_client/view/screens/analytics/analytics_screen.d
 import 'package:project_hub/lib_client/view/screens/profile/profile_screen.dart';
 import 'package:project_hub/lib_client/view/screens/projects/projects_screen.dart';
 import 'package:project_hub/lib_client/view/screens/projects/project_details_screen.dart';
+import 'package:project_hub/lib_client/view/screens/projects/project_analytics_screen.dart';
 import 'package:project_hub/lib_client/controller/theme_controller.dart';
 import 'package:project_hub/lib_client/core/constant/color.dart';
 
@@ -88,6 +89,16 @@ class MyApp extends StatelessWidget {
             GetPage(
               name: '/client/project-details',
               page: () => const ProjectDetailsScreen(),
+            ),
+            GetPage(
+              name: '/client/project-analytics',
+              page: () {
+                final project = Get.arguments;
+                if (project != null) {
+                  return ProjectAnalyticsScreen(project: project);
+                }
+                return const ProjectDetailsScreen();
+              },
             ),
           ],
         );

@@ -15,16 +15,23 @@ import 'package:project_hub/lib_client/controller/common/analytics_controller.da
 import 'package:project_hub/lib_client/controller/common/custom_drawer_controller.dart';
 import 'package:project_hub/lib_client/controller/project/projects_controller.dart';
 import 'package:project_hub/lib_client/controller/common/filter_button_controller.dart';
+import 'package:project_hub/lib_client/data/repository/project_repository.dart';
+import 'package:project_hub/lib_client/data/repository/task_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await initialServices();
 
+  // Register repositories first, before any controllers that depend on them
+  Get.put(ProjectRepository());
+  Get.put(TaskRepository());
+
+  // Then register controllers
   Get.put(AuthController());
-  Get.put(AnalyticsControllerImp(), );
+  Get.put(AnalyticsControllerImp());
   Get.put(CustomDrawerControllerImp());
-  Get.put(ProjectsControllerImp(),permanent: true);
+  Get.put(ProjectsControllerImp(), permanent: true);
   Get.put(FilterButtonController());
 
   final authController = Get.find<AuthController>();

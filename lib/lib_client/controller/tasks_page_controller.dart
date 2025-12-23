@@ -19,12 +19,18 @@ class TasksPageController extends GetxController {
   ].obs;
 
   final RxList<TaskModel> tasks = <TaskModel>[].obs;
-  final RxList<TaskModel> allTasks = <TaskModel>[].obs; // Store all tasks for progress/chart
+  final RxList<TaskModel> allTasks =
+      <TaskModel>[].obs; // Store all tasks for progress/chart
   final RxList<ProjectModel> projects = <ProjectModel>[].obs;
   final Rx<String?> selectedProjectId = Rx<String?>(null);
 
-  final RxDouble backendProgress = 0.50.obs;
-  final RxDouble frontendProgress = 0.50.obs;
+  // Progress metrics for selected project
+  final RxDouble projectCompletionPercent = 0.0.obs; // 0.0 - 1.0
+
+  // Chart metrics - status breakdown for selected project
+  final RxDouble completedPercent = 0.0.obs;
+  final RxDouble inProgressPercent = 0.0.obs;
+  final RxDouble pendingPercent = 0.0.obs;
 
   final RxString errorMessage = ''.obs;
 
@@ -62,6 +68,7 @@ class TasksPageController extends GetxController {
   void selectProject(String? projectId) {
     selectedProjectId.value = projectId;
     _applyFilters();
+    _calculateProgress();
   }
 
   Future<void> loadTasks() async {
@@ -96,7 +103,7 @@ class TasksPageController extends GetxController {
   Future<void> _loadAllTasks() async {
     // Load all tasks without status filter for progress/chart
     final allTasksResult = await _taskRepository.getAllTasks(status: null);
-    
+
     allTasksResult.fold(
       (error) {
         errorMessage.value = error;
@@ -337,8 +344,8 @@ class TasksPageController extends GetxController {
 
     // Apply project filter
     final currentProjectId = selectedProjectId.value;
-    if (currentProjectId != null && 
-        currentProjectId.isNotEmpty && 
+    if (currentProjectId != null &&
+        currentProjectId.isNotEmpty &&
         currentProjectId != 'All') {
       filtered = filtered.where((task) {
         // Check if task belongs to the selected project
@@ -351,10 +358,11 @@ class TasksPageController extends GetxController {
       filtered = filtered.where((task) {
         final taskStatus = task.status?.toLowerCase() ?? '';
         final filterStatus = selectedStatus.value.toLowerCase();
-        
+
         // Handle status matching (e.g., "In Progress" vs "in progress")
         if (filterStatus == 'in progress') {
-          return taskStatus.contains('progress') || taskStatus.contains('in progress');
+          return taskStatus.contains('progress') ||
+              taskStatus.contains('in progress');
         }
         return taskStatus == filterStatus;
       }).toList();
@@ -368,38 +376,53 @@ class TasksPageController extends GetxController {
   }
 
   void _calculateProgress() {
-    // Use allTasks for progress calculation, not filtered tasks
-    if (allTasks.isEmpty) {
-      backendProgress.value = 0.5;
-      frontendProgress.value = 0.5;
+    // Get relevant tasks based on project selection
+    final currentProjectId = selectedProjectId.value;
+    List<TaskModel> relevantTasks = List.from(allTasks);
+
+    if (currentProjectId != null &&
+        currentProjectId != 'All' &&
+        currentProjectId!.isNotEmpty) {
+      relevantTasks = allTasks
+          .where((task) => task.projectId == currentProjectId)
+          .toList();
+    }
+
+    if (relevantTasks.isEmpty) {
+      projectCompletionPercent.value = 0.0;
+      completedPercent.value = 0.0;
+      inProgressPercent.value = 0.0;
+      pendingPercent.value = 0.0;
       return;
     }
 
-    final backendTasks = allTasks
+    final total = relevantTasks.length;
+
+    // Calculate completion percentage (completed tasks / total tasks)
+    final completedCount = relevantTasks
         .where(
-          (task) =>
-              task.targetRole != null &&
-              task.targetRole!.toLowerCase().contains('backend'),
+          (t) =>
+              t.status != null && t.status!.toLowerCase().contains('completed'),
+        )
+        .length;
+    projectCompletionPercent.value = total > 0 ? completedCount / total : 0.0;
+
+    // Calculate status breakdown percentages
+    final inProgressCount = relevantTasks
+        .where(
+          (t) =>
+              t.status != null && t.status!.toLowerCase().contains('progress'),
+        )
+        .length;
+    final pendingCount = relevantTasks
+        .where(
+          (t) =>
+              t.status != null && t.status!.toLowerCase().contains('pending'),
         )
         .length;
 
-    final frontendTasks = allTasks
-        .where(
-          (task) =>
-              task.targetRole != null &&
-              task.targetRole!.toLowerCase().contains('frontend'),
-        )
-        .length;
-
-    final total = backendTasks + frontendTasks;
-
-    if (total > 0) {
-      backendProgress.value = backendTasks / total;
-      frontendProgress.value = frontendTasks / total;
-    } else {
-      backendProgress.value = 0.5;
-      frontendProgress.value = 0.5;
-    }
+    completedPercent.value = total > 0 ? completedCount / total : 0.0;
+    inProgressPercent.value = total > 0 ? inProgressCount / total : 0.0;
+    pendingPercent.value = total > 0 ? pendingCount / total : 0.0;
   }
 }
-

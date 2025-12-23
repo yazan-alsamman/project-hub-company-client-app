@@ -360,6 +360,7 @@ class CommentsPage extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: textController,
+              textInputAction: TextInputAction.done,
               style: TextStyle(
                 color: AppColor.textColor,
                 fontSize: Responsive.fontSize(context, mobile: 14),
@@ -373,19 +374,35 @@ class CommentsPage extends StatelessWidget {
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
-              onSubmitted: (value) {
+              onSubmitted: (value) async {
                 if (value.trim().isNotEmpty) {
-                  controller.addComment(value);
-                  textController.clear();
+                  final success = await controller.addComment(value);
+                  if (success) {
+                    textController.clear();
+                    // Hide keyboard
+                    FocusScope.of(context).unfocus();
+                  }
                 }
               },
             ),
           ),
           SizedBox(width: Responsive.spacing(context, mobile: 8)),
-          Icon(
-            Icons.attach_file,
-            color: AppColor.textSecondaryColor,
-            size: Responsive.iconSize(context, mobile: 24),
+          GestureDetector(
+            onTap: () async {
+              final value = textController.text;
+              if (value.trim().isNotEmpty) {
+                final success = await controller.addComment(value);
+                if (success) {
+                  textController.clear();
+                  FocusScope.of(context).unfocus();
+                }
+              }
+            },
+            child: Icon(
+              Icons.send,
+              color: AppColor.primaryColor,
+              size: Responsive.iconSize(context, mobile: 24),
+            ),
           ),
         ],
       ),

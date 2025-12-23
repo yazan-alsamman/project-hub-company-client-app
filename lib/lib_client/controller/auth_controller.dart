@@ -126,6 +126,53 @@ class AuthController extends GetxController {
       await prefs.remove('user_email');
       await prefs.remove('user_id');
       await prefs.remove('user_role');
+
+      // Clean up all GetX controllers to prevent type casting errors when switching contexts
+      _cleanupControllers();
+    }
+  }
+
+  void _cleanupControllers() {
+    // Clean up specific controllers that might cause type casting errors
+    // when switching between lib_client and lib_admin
+    try {
+      if (Get.isRegistered<dynamic>(tag: 'AnalyticsControllerImp')) {
+        Get.delete<dynamic>(tag: 'AnalyticsControllerImp');
+      }
+    } catch (e) {
+      debugPrint('Could not delete AnalyticsControllerImp: $e');
+    }
+
+    try {
+      if (Get.isRegistered<dynamic>(tag: 'ProjectsControllerImp')) {
+        Get.delete<dynamic>(tag: 'ProjectsControllerImp');
+      }
+    } catch (e) {
+      debugPrint('Could not delete ProjectsControllerImp: $e');
+    }
+
+    try {
+      if (Get.isRegistered<dynamic>(tag: 'ProjectAnalyticsController')) {
+        Get.delete<dynamic>(tag: 'ProjectAnalyticsController');
+      }
+    } catch (e) {
+      debugPrint('Could not delete ProjectAnalyticsController: $e');
+    }
+
+    try {
+      if (Get.isRegistered<dynamic>(tag: 'FilterButtonController')) {
+        Get.delete<dynamic>(tag: 'FilterButtonController');
+      }
+    } catch (e) {
+      debugPrint('Could not delete FilterButtonController: $e');
+    }
+
+    try {
+      if (Get.isRegistered<dynamic>(tag: 'CustomDrawerControllerImp')) {
+        Get.delete<dynamic>(tag: 'CustomDrawerControllerImp');
+      }
+    } catch (e) {
+      debugPrint('Could not delete CustomDrawerControllerImp: $e');
     }
   }
 
