@@ -197,6 +197,17 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       Get.offAllNamed(AppRoute.assignments);
                     },
                   ),
+                  buildMenuItem(
+                    icon: Icons.smart_toy,
+                    title: 'AI Assistance',
+                    onTap: () {
+                      if (widget.onItemTap != null) {
+                        widget.onItemTap!('AI Assistance');
+                      }
+                      Get.back();
+                      Get.offAllNamed(AppRoute.aiAssistance);
+                    },
+                  ),
                   if (_canAddClient())
                     buildMenuItem(
                       icon: Icons.person,

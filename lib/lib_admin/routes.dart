@@ -22,6 +22,7 @@ import 'view/screens/profile/profile_screen.dart';
 import 'view/screens/assignments/assignments_screen.dart';
 import 'view/screens/assignments/add_assignment_screen.dart';
 import 'view/screens/auth/add_client_screen.dart';
+import 'view/screens/ai_assistance/ai_assistance_screen.dart';
 import 'data/Models/project_model.dart';
 List<GetPage<dynamic>>? routes = [
   GetPage(
@@ -87,4 +88,5 @@ List<GetPage<dynamic>>? routes = [
     page: () => const AddAssignmentScreen(),
   ),
   GetPage(name: AppRoute.addClient, page: () => const AddClientScreen()),
+  GetPage(name: AppRoute.aiAssistance, page: () => const AiAssistanceScreen()),
 ];
