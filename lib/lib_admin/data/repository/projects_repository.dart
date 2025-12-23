@@ -546,4 +546,47 @@ class ProjectsRepository {
       return const Left(StatusRequest.serverException);
     }
   }
+  Future<Either<StatusRequest, Map<String, dynamic>>> getProjectStats({
+    String? companyId,
+  }) async {
+    debugPrint('🔵 ProjectsRepository: Getting project stats...');
+    try {
+      final queryParams = <String, String>{};
+      if (companyId != null && companyId.isNotEmpty) {
+        queryParams['companyId'] = companyId;
+      }
+      final result = await _apiService.get(
+        ApiConstant.projectStats,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+      return result.fold(
+        (error) {
+          debugPrint('🔴 ProjectsRepository error getting project stats: $error');
+          return Left(error);
+        },
+        (response) {
+          try {
+            debugPrint('🟢 ProjectsRepository get project stats response received');
+            if (response['success'] == true && response['data'] != null) {
+              final data = response['data'];
+              if (data is Map<String, dynamic>) {
+                return Right(data);
+              } else {
+                return const Left(StatusRequest.serverFailure);
+              }
+            } else {
+              return const Left(StatusRequest.serverFailure);
+            }
+          } catch (e) {
+            debugPrint('🔴 Project stats parsing error: $e');
+            return const Left(StatusRequest.serverException);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 ProjectsRepository exception getting project stats: $e');
+      return const Left(StatusRequest.serverException);
+    }
+  }
 }
