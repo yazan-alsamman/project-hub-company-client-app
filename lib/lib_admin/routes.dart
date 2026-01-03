@@ -24,11 +24,9 @@ import 'view/screens/assignments/add_assignment_screen.dart';
 import 'view/screens/auth/add_client_screen.dart';
 import 'view/screens/ai_assistance/ai_assistance_screen.dart';
 import 'data/Models/project_model.dart';
+
 List<GetPage<dynamic>>? routes = [
-  GetPage(
-    name: AppRoute.splash,
-    page: () => const SplashScreen(),
-  ),
+  GetPage(name: AppRoute.splash, page: () => const SplashScreen()),
   GetPage(
     name: AppRoute.onBoarding,
     page: () => const OnBoarding(),
