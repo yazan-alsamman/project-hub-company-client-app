@@ -1,7 +1,9 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
 import '../../core/services/auth_service.dart';
+import '../../data/Models/employee_model.dart';
 import '../../data/repository/projects_repository.dart';
 import '../../data/repository/team_repository.dart';
 import '../../data/static/team_members_data.dart';
@@ -104,11 +106,9 @@ class TeamControllerImp extends TeamController {
       update();
       return;
     }
-    final result = await _teamRepository.getEmployees(
-      page: _currentPage,
-      limit: _limit,
+    final result = await _loadAllTeamMembers(
       companyId: finalCompanyId,
-      status: status, // Don't filter by status - show all employees
+      status: status,
     );
     _isLoading = false;
     result.fold(
@@ -131,15 +131,7 @@ class TeamControllerImp extends TeamController {
           );
           return member;
         }).toList();
-        if (refresh) {
-          _teamMembers = newMembers;
-        } else {
-          _teamMembers.addAll(newMembers);
-        }
-        _hasMore = employees.length >= _limit;
-        if (_hasMore) {
-          _currentPage++;
-        }
+        _teamMembers = newMembers; // Replace all members (no pagination)
         _statusRequest = StatusRequest.success;
         update();
         debugPrint('✅ Total team members: ${_teamMembers.length}');
@@ -160,6 +152,56 @@ class TeamControllerImp extends TeamController {
     }
     await loadTeamMembers(companyId: companyId, status: status, refresh: false);
   }
+  // Load all team members by making multiple requests if needed
+  Future<Either<StatusRequest, List<EmployeeModel>>> _loadAllTeamMembers({
+    required String companyId,
+    String? status,
+  }) async {
+    List<EmployeeModel> allEmployees = [];
+    int currentPage = 1;
+    const int maxLimit = 100; // API maximum limit
+
+    while (true) {
+      final result = await _teamRepository.getEmployees(
+        page: currentPage,
+        limit: maxLimit,
+        companyId: companyId,
+        status: status,
+      );
+
+      final shouldContinue = result.fold(
+        (error) {
+          // If we have some employees already, return them; otherwise return error
+          if (allEmployees.isNotEmpty) {
+            return false; // Stop and return what we have
+          }
+          return false; // Stop on error
+        },
+        (employees) {
+          allEmployees.addAll(employees);
+          // If we got less than maxLimit, we've reached the end
+          return employees.length >= maxLimit; // Continue if we got full page
+        },
+      );
+
+      // Check if we should return early (error or partial success)
+      if (!shouldContinue) {
+        return result.fold(
+          (error) {
+            if (allEmployees.isNotEmpty) {
+              return Right<StatusRequest, List<EmployeeModel>>(allEmployees);
+            }
+            return Left<StatusRequest, List<EmployeeModel>>(error);
+          },
+          (employees) => Right<StatusRequest, List<EmployeeModel>>(allEmployees),
+        );
+      }
+
+      // Continue to next page
+      currentPage++;
+    }
+  }
+
   Map<String, int> getTeamStats() {
     final total = _teamMembers.length;
     final active = _teamMembers.where((m) => m.status == 'Active').length;

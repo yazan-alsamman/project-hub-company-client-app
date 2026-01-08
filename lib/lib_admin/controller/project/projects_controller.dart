@@ -1,3 +1,4 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import '../../core/class/statusrequest.dart';
@@ -21,9 +22,6 @@ class ProjectsControllerImp extends ProjectsController {
   String _selectedFilter = 'All';
   StatusRequest _statusRequest = StatusRequest.none;
   bool _isLoading = false;
-  int _currentPage = 1;
-  final int _limit = 10;
-  bool _hasMore = true;
   @override
   List<ProjectModel> get projects => _projects;
   @override
@@ -51,8 +49,6 @@ class ProjectsControllerImp extends ProjectsController {
     }
     _isLoading = true;
     if (refresh) {
-      _currentPage = 1;
-      _hasMore = true;
       _statusRequest = StatusRequest.loading;
       debugPrint('🔄 Refreshing projects with filter: $_selectedFilter...');
     } else if (_projects.isEmpty) {
@@ -70,7 +66,6 @@ class ProjectsControllerImp extends ProjectsController {
       return;
     }
     debugPrint('🔵 Loading projects...');
-    debugPrint('Page: $_currentPage, Limit: $_limit');
     debugPrint('CompanyId: $companyId, Filter: $_selectedFilter');
     String? apiStatus;
     if (_selectedFilter != 'All') {
@@ -98,9 +93,7 @@ class ProjectsControllerImp extends ProjectsController {
       debugPrint('🔵 Filter is "All", not sending status parameter');
     }
     debugPrint('🔵 Final API status value to send: $apiStatus');
-    final result = await _repository.getProjects(
-      page: _currentPage,
-      limit: _limit,
+    final result = await _loadAllProjects(
       companyId: companyId,
       status: apiStatus,
     );
@@ -127,15 +120,7 @@ class ProjectsControllerImp extends ProjectsController {
             '  - Project: ${project.title}, Status: ${project.status}',
           );
         }
-        if (refresh) {
-          _projects = projects;
-        } else {
-          _projects.addAll(projects);
-        }
-        _hasMore = projects.length >= _limit;
-        if (_hasMore) {
-          _currentPage++;
-        }
+        _projects = projects; // Replace all projects (no pagination)
         _statusRequest = StatusRequest.success;
         update();
         debugPrint('✅ Total projects: ${_projects.length}');
@@ -201,8 +186,6 @@ class ProjectsControllerImp extends ProjectsController {
       return;
     }
     _selectedFilter = filter;
-    _currentPage = 1;
-    _hasMore = true;
     loadProjects(refresh: true);
   }
   @override
@@ -235,6 +218,56 @@ class ProjectsControllerImp extends ProjectsController {
       '🔍 Applied local filter "$_selectedFilter": ${_projects.length} projects match',
     );
   }
+  // Load all projects by making multiple requests if needed
+  Future<Either<StatusRequest, List<ProjectModel>>> _loadAllProjects({
+    required String companyId,
+    String? status,
+  }) async {
+    List<ProjectModel> allProjects = [];
+    int currentPage = 1;
+    const int maxLimit = 100; // API maximum limit
+
+    while (true) {
+      final result = await _repository.getProjects(
+        page: currentPage,
+        limit: maxLimit,
+        companyId: companyId,
+        status: status,
+      );
+
+      final shouldContinue = result.fold(
+        (error) {
+          // If we have some projects already, return them; otherwise return error
+          if (allProjects.isNotEmpty) {
+            return false; // Stop and return what we have
+          }
+          return false; // Stop on error
+        },
+        (projects) {
+          allProjects.addAll(projects);
+          // If we got less than maxLimit, we've reached the end
+          return projects.length >= maxLimit; // Continue if we got full page
+        },
+      );
+
+      // Check if we should return early (error or partial success)
+      if (!shouldContinue) {
+        return result.fold(
+          (error) {
+            if (allProjects.isNotEmpty) {
+              return Right<StatusRequest, List<ProjectModel>>(allProjects);
+            }
+            return Left<StatusRequest, List<ProjectModel>>(error);
+          },
+          (projects) => Right<StatusRequest, List<ProjectModel>>(allProjects),
+        );
+      }
+
+      // Continue to next page
+      currentPage++;
+    }
+  }
+
   @override
   List<ProjectModel> get filteredProjects {
     return _projects;

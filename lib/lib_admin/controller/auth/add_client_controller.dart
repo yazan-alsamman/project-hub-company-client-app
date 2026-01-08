@@ -1,3 +1,4 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
@@ -275,10 +276,7 @@ class AddClientControllerImp extends AddClientController {
     clientsStatusRequest = StatusRequest.loading;
     update();
     try {
-      final result = await _authRepository.getClients(
-        page: currentPage,
-        limit: limit,
-      );
+      final result = await _loadAllClients();
       result.fold(
         (error) {
           debugPrint('🔴 Error loading clients: $error');
@@ -293,28 +291,9 @@ class AddClientControllerImp extends AddClientController {
           isLoadingClients = false;
           update();
         },
-        (data) {
+        (clientsList) {
           try {
-            final clientsList = data['clients'] as List<ClientModel>;
-            final paginationData = data['pagination'] as Map<String, dynamic>?;
-            if (refresh) {
-              clients = clientsList;
-            } else {
-              clients.addAll(clientsList);
-            }
-            pagination = paginationData;
-            if (paginationData != null) {
-              final totalPages = paginationData['totalPages'] as int? ?? 1;
-              hasMore = currentPage < totalPages;
-              if (hasMore) {
-                currentPage++;
-              }
-            } else {
-              hasMore = clientsList.length >= limit;
-              if (hasMore) {
-                currentPage++;
-              }
-            }
+            clients = clientsList; // Replace all clients (no pagination)
             clientsStatusRequest = StatusRequest.success;
             isLoadingClients = false;
             update();
@@ -338,6 +317,59 @@ class AddClientControllerImp extends AddClientController {
   @override
   void refreshClients() {
     loadClients(refresh: true);
+  }
+
+  // Load all clients by making multiple requests if needed
+  Future<Either<dynamic, List<ClientModel>>> _loadAllClients() async {
+    List<ClientModel> allClients = [];
+    int currentPage = 1;
+    const int maxLimit = 100; // API maximum limit
+
+    while (true) {
+      final result = await _authRepository.getClients(
+        page: currentPage,
+        limit: maxLimit,
+      );
+
+      final shouldContinue = result.fold(
+        (error) {
+          // If we have some clients already, return them; otherwise return error
+          if (allClients.isNotEmpty) {
+            return false; // Stop and return what we have
+          }
+          return false; // Stop on error
+        },
+        (data) {
+          try {
+            final clientsList = data['clients'] as List<ClientModel>;
+            allClients.addAll(clientsList);
+            // If we got less than maxLimit, we've reached the end
+            return clientsList.length >= maxLimit; // Continue if we got full page
+          } catch (e) {
+            debugPrint('🔴 Error parsing clients in loop: $e');
+            return false; // Stop on parsing error
+          }
+        },
+      );
+
+      // Check if we should return early (error or partial success)
+      if (!shouldContinue) {
+        return result.fold(
+          (error) {
+            if (allClients.isNotEmpty) {
+              return Right<dynamic, List<ClientModel>>(allClients);
+            }
+            return Left<dynamic, List<ClientModel>>(error);
+          },
+          (data) {
+            return Right<dynamic, List<ClientModel>>(allClients);
+          },
+        );
+      }
+
+      // Continue to next page
+      currentPage++;
+    }
   }
 
   @override
