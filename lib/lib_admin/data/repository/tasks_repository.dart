@@ -396,4 +396,47 @@ class TasksRepository {
       return const Left(StatusRequest.serverException);
     }
   }
+
+  Future<Either<StatusRequest, Map<String, dynamic>>> bulkCreateTasks({
+    required String projectId,
+    required List<Map<String, dynamic>> tasks,
+  }) async {
+    debugPrint('🔵 TasksRepository: Bulk creating tasks...');
+    debugPrint('ProjectId: $projectId');
+    debugPrint('Tasks count: ${tasks.length}');
+    try {
+      final body = {
+        'projectId': projectId,
+        'tasks': tasks,
+      };
+      debugPrint('Request body: $body');
+      final result = await _apiService.post(
+        ApiConstant.bulkCreateTasks,
+        body: body,
+        requiresAuth: true,
+      );
+      return result.fold(
+        (error) {
+          debugPrint('🔴 TasksRepository bulkCreateTasks error: $error');
+          return Left(error);
+        },
+        (response) {
+          debugPrint(
+            '🟢 TasksRepository bulkCreateTasks response received: $response',
+          );
+          if (response['success'] == true) {
+            debugPrint('✅ Successfully created tasks in bulk');
+            return Right(response);
+          } else {
+            debugPrint('🔴 Bulk create tasks failed: ${response['message']}');
+            return const Left(StatusRequest.serverFailure);
+          }
+        },
+      );
+    } catch (e, stackTrace) {
+      debugPrint('🔴 TasksRepository bulkCreateTasks exception: $e');
+      debugPrint('Stack trace: $stackTrace');
+      return const Left(StatusRequest.serverException);
+    }
+  }
 }

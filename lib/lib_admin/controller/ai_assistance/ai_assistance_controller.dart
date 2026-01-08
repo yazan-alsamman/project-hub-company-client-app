@@ -5,10 +5,15 @@ import 'package:http/http.dart' as http;
 import '../../core/class/statusrequest.dart';
 import '../../core/constant/color.dart';
 import '../../data/Models/task_model.dart';
+import '../../data/Models/project_model.dart';
+import '../../data/repository/projects_repository.dart';
+import '../../data/repository/tasks_repository.dart';
+import '../../core/services/auth_service.dart';
 
 abstract class AiAssistanceController extends GetxController {
   void generateTasks(String projectDescription, int numTasks);
   void clearGeneratedTasks();
+  Future<void> showProjectSelectionDialog(BuildContext context);
 }
 
 class AiAssistanceControllerImp extends AiAssistanceController {
@@ -236,8 +241,41 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           duration: const Duration(seconds: 2),
         );
       } else {
-        final errorMessage = jsonDecode(response.body)['message']?.toString() ?? 
-                            'Failed to generate tasks';
+        // Parse error response
+        String errorMessage = 'Failed to generate tasks';
+        try {
+          final errorResponse = jsonDecode(response.body) as Map<String, dynamic>;
+          
+          // Check for detail array (validation errors)
+          if (errorResponse['detail'] != null && errorResponse['detail'] is List) {
+            final detailList = errorResponse['detail'] as List<dynamic>;
+            if (detailList.isNotEmpty) {
+              // Extract messages from detail array
+              final messages = detailList.map((error) {
+                if (error is Map<String, dynamic> && error['msg'] != null) {
+                  return error['msg'].toString();
+                }
+                return null;
+              }).where((msg) => msg != null).toList();
+              
+              if (messages.isNotEmpty) {
+                errorMessage = messages.join('\n');
+              }
+            }
+          } 
+          // Check for message field
+          else if (errorResponse['message'] != null) {
+            errorMessage = errorResponse['message'].toString();
+          }
+          // Check for error field
+          else if (errorResponse['error'] != null) {
+            errorMessage = errorResponse['error'].toString();
+          }
+        } catch (e) {
+          debugPrint('🔴 Error parsing error response: $e');
+          errorMessage = 'Failed to generate tasks';
+        }
+        
         debugPrint('🔴 AI API Error: $errorMessage');
         statusRequest = StatusRequest.serverFailure;
         
@@ -249,6 +287,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           colorText: AppColor.white,
           borderRadius: 12,
           margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
         );
       }
     } catch (e, stackTrace) {
@@ -423,6 +462,325 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       return 'primary';
     } else {
       return 'primary';
+    }
+  }
+
+  Future<void> showProjectSelectionDialog(BuildContext context) async {
+    try {
+      // Get company ID
+      final authService = AuthService();
+      final companyId = await authService.getCompanyId();
+      
+      if (companyId == null || companyId.isEmpty) {
+        Get.snackbar(
+          'Error',
+          'Company ID not found',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColor.errorColor,
+          colorText: AppColor.white,
+          borderRadius: 12,
+          margin: const EdgeInsets.all(16),
+        );
+        return;
+      }
+
+      // Load projects
+      final projectsRepository = ProjectsRepository();
+      final result = await projectsRepository.getProjects(
+        companyId: companyId,
+        page: 1,
+        limit: 100, // Get more projects for selection
+      );
+
+      result.fold(
+        (error) {
+          Get.snackbar(
+            'Error',
+            'Failed to load projects',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.errorColor,
+            colorText: AppColor.white,
+            borderRadius: 12,
+            margin: const EdgeInsets.all(16),
+          );
+        },
+        (projects) {
+          if (projects.isEmpty) {
+            Get.snackbar(
+              'Info',
+              'No projects available',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColor.warningColor,
+              colorText: AppColor.white,
+              borderRadius: 12,
+              margin: const EdgeInsets.all(16),
+            );
+            return;
+          }
+
+          // Show dialog
+          showDialog(
+            context: context,
+            builder: (BuildContext dialogContext) {
+              return AlertDialog(
+                title: Text(
+                  'Choose Project',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.textColor,
+                  ),
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 400),
+                    child: projects.isEmpty
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20.0),
+                              child: Text('No projects available'),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: projects.length,
+                            itemBuilder: (context, index) {
+                              final project = projects[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColor.borderColor,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: ListTile(
+                                  title: Text(
+                                    project.title,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColor.textColor,
+                                    ),
+                                  ),
+                                  subtitle: project.code != null
+                                      ? Padding(
+                                          padding: const EdgeInsets.only(top: 4),
+                                          child: Text(
+                                            'Code: ${project.code}',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: AppColor.textSecondaryColor,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                  trailing: const Icon(
+                                    Icons.chevron_right,
+                                    color: AppColor.textSecondaryColor,
+                                  ),
+                                onTap: () {
+                                  Navigator.of(dialogContext).pop();
+                                  _acceptTasksForProject(project.id, project.title);
+                                },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColor.textSecondaryColor,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 Error showing project selection dialog: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred while loading projects',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: AppColor.white,
+        borderRadius: 12,
+        margin: const EdgeInsets.all(16),
+      );
+    }
+  }
+
+  Future<void> _acceptTasksForProject(String projectId, String projectTitle) async {
+    if (generatedTasks.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'No tasks to accept',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: AppColor.white,
+        borderRadius: 12,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    // Show loading dialog
+    Get.dialog(
+      const Center(child: CircularProgressIndicator()),
+      barrierDismissible: false,
+    );
+
+    try {
+      // Convert TaskModel to API format
+      final tasksForApi = generatedTasks.map((task) {
+        // Convert priority from H/M/L to High/Medium/Low
+        String priority = 'Medium';
+        if (task.taskPriority != null) {
+          switch (task.taskPriority!.toUpperCase()) {
+            case 'H':
+            case 'HIGH':
+              priority = 'High';
+              break;
+            case 'M':
+            case 'MEDIUM':
+              priority = 'Medium';
+              break;
+            case 'L':
+            case 'LOW':
+              priority = 'Low';
+              break;
+          }
+        }
+
+        // Get hours and minutes from estimated hours
+        int hours = task.minEstimatedHour ?? 0;
+        int minutes = 0;
+        
+        // If there's a range, use the average or max
+        if (task.maxEstimatedHour != null && task.maxEstimatedHour! > hours) {
+          hours = task.maxEstimatedHour!;
+        }
+
+        // Extract role from category or targetRole
+        String role = task.category.isNotEmpty 
+            ? task.category 
+            : (task.targetRole ?? 'Unassigned');
+
+        return {
+          'task': task.title,
+          'role': role,
+          'priority': priority,
+          'time': {
+            'hours': hours,
+            'minutes': minutes,
+          },
+        };
+      }).toList();
+
+      debugPrint('🔵 Sending ${tasksForApi.length} tasks to project: $projectTitle');
+      debugPrint('🔵 Project ID: $projectId');
+
+      // Send to API
+      final tasksRepository = TasksRepository();
+      final result = await tasksRepository.bulkCreateTasks(
+        projectId: projectId,
+        tasks: tasksForApi,
+      );
+
+      Get.back(); // Close loading dialog
+
+      result.fold(
+        (error) {
+          String errorMsg = 'Failed to create tasks';
+          if (error == StatusRequest.serverFailure) {
+            errorMsg = 'Server error. Please try again.';
+          } else if (error == StatusRequest.offlineFailure) {
+            errorMsg = 'No internet connection. Please check your network.';
+          } else if (error == StatusRequest.timeoutException) {
+            errorMsg = 'Request timed out. Please try again.';
+          } else if (error == StatusRequest.serverException) {
+            errorMsg = 'An unexpected server error occurred.';
+          }
+          
+          Get.snackbar(
+            'Error',
+            errorMsg,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.errorColor,
+            colorText: AppColor.white,
+            borderRadius: 12,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+          );
+        },
+        (response) {
+          final data = response['data'] as Map<String, dynamic>?;
+          final total = data?['total'] ?? 0;
+          final successCount = data?['successCount'] ?? 0;
+          final failureCount = data?['failureCount'] ?? 0;
+          final message = response['message']?.toString() ?? 
+              'Tasks created successfully';
+
+          debugPrint('✅ Bulk create result:');
+          debugPrint('  Total: $total');
+          debugPrint('  Success: $successCount');
+          debugPrint('  Failed: $failureCount');
+
+          if (failureCount > 0) {
+            // Partial success
+            Get.snackbar(
+              'Partial Success',
+              '$message\nSuccess: $successCount, Failed: $failureCount',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColor.warningColor,
+              colorText: AppColor.white,
+              borderRadius: 12,
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 4),
+            );
+          } else {
+            // Full success
+            Get.snackbar(
+              'Success',
+              '$message\nAll $successCount tasks created successfully!',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColor.successColor,
+              colorText: AppColor.white,
+              borderRadius: 12,
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
+            );
+          }
+
+          // Clear generated tasks after successful creation
+          clearGeneratedTasks();
+        },
+      );
+    } catch (e) {
+      Get.back(); // Close loading dialog
+      debugPrint('🔴 Exception accepting tasks: $e');
+      Get.snackbar(
+        'Error',
+        'An unexpected error occurred: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: AppColor.white,
+        borderRadius: 12,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      );
     }
   }
 

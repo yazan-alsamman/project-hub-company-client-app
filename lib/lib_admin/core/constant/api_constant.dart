@@ -74,6 +74,7 @@ class ApiConstant {
   static const String deleteTask = '/task/{id}';
   static const String taskByProject = '/projects/{projectId}/tasks';
   static const String tasksByProject = '/task/project/{projectId}';
+  static const String bulkCreateTasks = '/task/bulk/create';
   static const String taskAssignments = '/task-assignment';
   static const String taskAssignmentsByEmployee =
       '/task-assignment/employee/{employeeId}';
