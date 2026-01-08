@@ -1,3 +1,4 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
@@ -75,11 +76,7 @@ class TasksControllerImp extends TasksController {
     debugPrint('Selected Project ID: $_selectedProjectId');
     
     final result = _selectedProjectId != null && _selectedProjectId!.isNotEmpty
-        ? await _tasksRepository.getTasksByProject(
-            projectId: _selectedProjectId!,
-            page: _currentPage,
-            limit: _limit,
-          )
+        ? await _loadAllTasksForProject(_selectedProjectId!)
         : await _tasksRepository.getTasks(
             page: _currentPage,
             limit: _limit,
@@ -99,14 +96,20 @@ class TasksControllerImp extends TasksController {
             '  - Task: ${task.title}, Status: ${task.status}, Priority: ${task.priority}',
           );
         }
-        if (refresh) {
-          _allTasks = tasks;
+        // If project is selected, show all tasks without pagination
+        if (_selectedProjectId != null && _selectedProjectId!.isNotEmpty) {
+          _allTasks = tasks; // Replace all tasks (no pagination)
         } else {
-          _allTasks.addAll(tasks);
-        }
-        _hasMore = tasks.length >= _limit;
-        if (_hasMore) {
-          _currentPage++;
+          // For all tasks, keep pagination logic
+          if (refresh) {
+            _allTasks = tasks;
+          } else {
+            _allTasks.addAll(tasks);
+          }
+          _hasMore = tasks.length >= _limit;
+          if (_hasMore) {
+            _currentPage++;
+          }
         }
         _statusRequest = StatusRequest.success;
         update();
@@ -178,6 +181,54 @@ class TasksControllerImp extends TasksController {
     _allTasks.clear();
     update();
     loadTasks(refresh: true);
+  }
+
+  // Load all tasks for a project by making multiple requests if needed
+  Future<Either<StatusRequest, List<TaskModel>>> _loadAllTasksForProject(
+    String projectId,
+  ) async {
+    List<TaskModel> allProjectTasks = [];
+    int currentPage = 1;
+    const int maxLimit = 100; // API maximum limit
+
+    while (true) {
+      final result = await _tasksRepository.getTasksByProject(
+        projectId: projectId,
+        page: currentPage,
+        limit: maxLimit,
+      );
+
+      final shouldContinue = result.fold(
+        (error) {
+          // If we have some tasks already, return them; otherwise return error
+          if (allProjectTasks.isNotEmpty) {
+            return false; // Stop and return what we have
+          }
+          return false; // Stop on error
+        },
+        (tasks) {
+          allProjectTasks.addAll(tasks);
+          // If we got less than maxLimit, we've reached the end
+          return tasks.length >= maxLimit; // Continue if we got full page
+        },
+      );
+
+      // Check if we should return early (error or partial success)
+      if (!shouldContinue) {
+        return result.fold(
+          (error) {
+            if (allProjectTasks.isNotEmpty) {
+              return Right<StatusRequest, List<TaskModel>>(allProjectTasks);
+            }
+            return Left<StatusRequest, List<TaskModel>>(error);
+          },
+          (tasks) => Right<StatusRequest, List<TaskModel>>(allProjectTasks),
+        );
+      }
+
+      // Continue to next page
+      currentPage++;
+    }
   }
 
   @override
