@@ -302,4 +302,98 @@ class TasksRepository {
       return const Left(StatusRequest.serverException);
     }
   }
+
+  Future<Either<StatusRequest, List<TaskModel>>> getTasksByProject({
+    required String projectId,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    debugPrint('🔵 TasksRepository: Getting tasks by project...');
+    debugPrint('ProjectId: $projectId, Page: $page, Limit: $limit');
+    try {
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+      debugPrint('Query params: $queryParams');
+      final result = await _apiService.get(
+        ApiConstant.tasksByProject,
+        pathParams: {'projectId': projectId},
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+      return result.fold(
+        (error) {
+          debugPrint('🔴 TasksRepository error: $error');
+          debugPrint('🔴 Error type: ${error.runtimeType}');
+          return Left(error);
+        },
+        (response) {
+          try {
+            debugPrint('🟢 TasksRepository response received');
+            debugPrint('🟢 Full response: $response');
+            debugPrint('🟢 Response keys: ${response.keys}');
+            debugPrint('🟢 Response type: ${response.runtimeType}');
+            if (response['success'] == true && response['data'] != null) {
+              final data = response['data'];
+              debugPrint('🟢 Data type: ${data.runtimeType}');
+              debugPrint('🟢 Data: $data');
+              List<dynamic> tasksList;
+              if (data is List) {
+                tasksList = data;
+                debugPrint(
+                  '🟢 Found direct array format with ${tasksList.length} items',
+                );
+              } else if (data is Map<String, dynamic>) {
+                if (data['tasks'] is List) {
+                  tasksList = data['tasks'] as List<dynamic>;
+                  if (data['pagination'] != null) {
+                    final pagination =
+                        data['pagination'] as Map<String, dynamic>;
+                    debugPrint(
+                      '🟢 Pagination: page=${pagination['page']}, limit=${pagination['limit']}, total=${pagination['total']}, totalPages=${pagination['totalPages']}',
+                    );
+                  }
+                } else if (data['data'] is List) {
+                  tasksList = data['data'] as List<dynamic>;
+                } else {
+                  debugPrint('🔴 Unexpected data format: ${data.runtimeType}');
+                  return const Left(StatusRequest.serverFailure);
+                }
+              } else {
+                debugPrint('🔴 Unexpected data format: ${data.runtimeType}');
+                return const Left(StatusRequest.serverFailure);
+              }
+              debugPrint('🟢 Found ${tasksList.length} tasks in list');
+              final tasks = tasksList.map((item) {
+                try {
+                  return TaskModel.fromJson(item as Map<String, dynamic>);
+                } catch (e) {
+                  debugPrint('🔴 Error parsing task: $e');
+                  debugPrint('🔴 Task data: $item');
+                  rethrow;
+                }
+              }).toList();
+              debugPrint('✅ Successfully parsed ${tasks.length} tasks');
+              return Right(tasks);
+            } else {
+              debugPrint('🔴 Response validation failed:');
+              debugPrint('🔴 success: ${response['success']}');
+              debugPrint('🔴 message: ${response['message']}');
+              debugPrint('🔴 data: ${response['data']}');
+              debugPrint('🔴 data is null: ${response['data'] == null}');
+              return const Left(StatusRequest.serverFailure);
+            }
+          } catch (e, stackTrace) {
+            debugPrint('🔴 Task parsing error: $e');
+            debugPrint('Stack trace: $stackTrace');
+            return const Left(StatusRequest.serverException);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 TasksRepository exception: $e');
+      return const Left(StatusRequest.serverException);
+    }
+  }
 }

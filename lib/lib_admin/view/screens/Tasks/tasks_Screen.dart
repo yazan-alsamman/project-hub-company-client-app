@@ -91,7 +91,113 @@ class TasksScreen extends StatelessWidget {
                               Get.toNamed(AppRoute.addTask);
                             },
                           ),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 20),
+                          // Project Filter Dropdown
+                          GetBuilder<TasksControllerImp>(
+                            builder: (tasksController) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColor.borderColor,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.folder_outlined,
+                                      color: AppColor.textSecondaryColor,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<String?>(
+                                          value: tasksController.selectedProjectId,
+                                          isExpanded: true,
+                                          hint: Text(
+                                            'Select Project',
+                                            style: TextStyle(
+                                              color: AppColor.textSecondaryColor,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          items: [
+                                            // View All Tasks option
+                                            DropdownMenuItem<String?>(
+                                              value: null,
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.view_list,
+                                                    size: 18,
+                                                    color: AppColor.primaryColor,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    'View All Tasks',
+                                                    style: TextStyle(
+                                                      color: AppColor.textColor,
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            // Projects list
+                                            ...tasksController.projects.map(
+                                              (project) => DropdownMenuItem<String?>(
+                                                value: project.id,
+                                                child: Text(
+                                                  project.title,
+                                                  style: TextStyle(
+                                                    color: AppColor.textColor,
+                                                    fontSize: 14,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                          onChanged: (String? projectId) {
+                                            if (projectId == null) {
+                                              tasksController.viewAllTasks();
+                                            } else {
+                                              tasksController.selectProject(projectId);
+                                            }
+                                          },
+                                          icon: Icon(
+                                            Icons.arrow_drop_down,
+                                            color: AppColor.textSecondaryColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (tasksController.selectedProjectId != null)
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.close,
+                                          size: 18,
+                                          color: AppColor.textSecondaryColor,
+                                        ),
+                                        onPressed: () {
+                                          tasksController.viewAllTasks();
+                                        },
+                                        tooltip: 'Clear filter',
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
                           GetBuilder<FilterButtonController>(
                             builder: (filterController) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
