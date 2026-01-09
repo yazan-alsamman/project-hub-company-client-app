@@ -110,7 +110,7 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Task Description',
+                                'Project Description',
                                 style: TextStyle(
                                   fontSize: Responsive.fontSize(
                                     context,
@@ -353,7 +353,9 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                                       ),
                                     TextButton.icon(
                                       onPressed: () {
-                                        // TODO: Implement accept tasks functionality
+                                        controller.showProjectSelectionDialog(
+                                          context,
+                                        );
                                       },
                                       icon: const Icon(
                                         Icons.check_circle,
@@ -413,6 +415,301 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                           const SizedBox(height: 24),
                           _buildPagination(context, controller),
                         ],
+                      ],
+                      if (controller.showAssignTasksButton) ...[
+                        const SizedBox(height: 40),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColor.successColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColor.successColor.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: AppColor.successColor,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Tasks Accepted Successfully!',
+                                      style: TextStyle(
+                                        fontSize: Responsive.fontSize(
+                                          context,
+                                          mobile: 16,
+                                        ),
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColor.textColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'You can now assign tasks to employees using AI',
+                                      style: TextStyle(
+                                        fontSize: Responsive.fontSize(
+                                          context,
+                                          mobile: 14,
+                                        ),
+                                        color: AppColor.textSecondaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              SizedBox(
+                                height: 40,
+                                child: ElevatedButton.icon(
+                                  onPressed: controller.isAssigningTasks
+                                      ? null
+                                      : () {
+                                          controller.assignTasksByAI();
+                                        },
+                                  icon: controller.isAssigningTasks
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.auto_awesome,
+                                          size: 18,
+                                        ),
+                                  label: Text(
+                                    controller.isAssigningTasks
+                                        ? 'Assigning...'
+                                        : 'Assign Tasks by AI',
+                                    style: TextStyle(
+                                      fontSize: Responsive.fontSize(
+                                        context,
+                                        mobile: 14,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColor.successColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (controller.showAssignmentStatus) ...[
+                        const SizedBox(height: 24),
+                        Container(
+                          decoration: BoxDecoration(
+                            color:
+                                (controller.assignmentStatusColor ??
+                                        AppColor.primaryColor)
+                                    .withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color:
+                                  (controller.assignmentStatusColor ??
+                                          AppColor.primaryColor)
+                                      .withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                controller.assignmentStatusColor ==
+                                        AppColor.errorColor
+                                    ? Icons.error_outline
+                                    : controller.assignmentStatusColor ==
+                                          AppColor.warningColor
+                                    ? Icons.warning_amber_rounded
+                                    : Icons.check_circle_outline,
+                                color:
+                                    controller.assignmentStatusColor ??
+                                    AppColor.primaryColor,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      controller.assignmentStatusTitle ??
+                                          'Status',
+                                      style: TextStyle(
+                                        fontSize: Responsive.fontSize(
+                                          context,
+                                          mobile: 16,
+                                        ),
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColor.textColor,
+                                      ),
+                                    ),
+                                    if (controller.assignmentStatusMessage !=
+                                        null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        controller.assignmentStatusMessage!,
+                                        style: TextStyle(
+                                          fontSize: Responsive.fontSize(
+                                            context,
+                                            mobile: 14,
+                                          ),
+                                          color: AppColor.textSecondaryColor,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 20),
+                                onPressed: () {
+                                  controller.showAssignmentStatus = false;
+                                  controller.assignmentStatusMessage = null;
+                                  controller.assignmentStatusTitle = null;
+                                  controller.assignmentStatusColor = null;
+                                  controller.update();
+                                },
+                                color: AppColor.textSecondaryColor,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (controller.showAiAssignments &&
+                          controller.aiAssignments.isNotEmpty) ...[
+                        const SizedBox(height: 32),
+                        Text(
+                          'AI-Generated Assignments',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, mobile: 20),
+                            fontWeight: FontWeight.bold,
+                            color: AppColor.textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ...controller.aiAssignments.map((assignment) {
+                          return _buildAssignmentCard(context, assignment);
+                        }).toList(),
+                      ],
+                      if (controller.showPdfButton) ...[
+                        const SizedBox(height: 24),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColor.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColor.primaryColor.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.picture_as_pdf,
+                                color: AppColor.primaryColor,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Assignments Completed!',
+                                      style: TextStyle(
+                                        fontSize: Responsive.fontSize(
+                                          context,
+                                          mobile: 16,
+                                        ),
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColor.textColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Download PDF report with task and employee details',
+                                      style: TextStyle(
+                                        fontSize: Responsive.fontSize(
+                                          context,
+                                          mobile: 14,
+                                        ),
+                                        color: AppColor.textSecondaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              SizedBox(
+                                height: 40,
+                                child: ElevatedButton.icon(
+                                  onPressed: controller.isGeneratingPdf
+                                      ? null
+                                      : () {
+                                          controller.downloadAssignmentsPDF();
+                                        },
+                                  icon: controller.isGeneratingPdf
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.picture_as_pdf,
+                                          size: 18,
+                                        ),
+                                  label: Text(
+                                    controller.isGeneratingPdf
+                                        ? 'Generating...'
+                                        : 'View as PDF',
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColor.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -614,6 +911,72 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
       avatarColor: avatarColor,
       isCompleted: isCompleted,
       isPending: isPending,
+    );
+  }
+
+  Widget _buildAssignmentCard(
+    BuildContext context,
+    Map<String, dynamic> assignment,
+  ) {
+    final taskName = assignment['taskName']?.toString() ?? 'Unknown Task';
+    final employeeName =
+        assignment['employeeName']?.toString() ?? 'Unknown Employee';
+    final employeeRole = assignment['employeeRole']?.toString() ?? '';
+    final startDate = assignment['startDate']?.toString() ?? 'N/A';
+    final endDate = assignment['endDate']?.toString() ?? 'N/A';
+    final estimatedHours = assignment['estimatedHours'] is int
+        ? assignment['estimatedHours'] as int
+        : assignment['estimatedHours'] is num
+        ? (assignment['estimatedHours'] as num).toInt()
+        : 0;
+    final notes = assignment['notes']?.toString() ?? '';
+
+    // Get initials for avatar
+    final initials = employeeName
+        .split(' ')
+        .map((n) => n.isNotEmpty ? n[0].toUpperCase() : '')
+        .take(2)
+        .join();
+
+    // Determine priority color based on estimated hours
+    Color priorityColor = AppColor.primaryColor;
+    String priority = 'Medium';
+    if (estimatedHours >= 12) {
+      priorityColor = AppColor.errorColor;
+      priority = 'High';
+    } else if (estimatedHours >= 6) {
+      priorityColor = Colors.orange;
+      priority = 'Medium';
+    } else {
+      priorityColor = AppColor.successColor;
+      priority = 'Low';
+    }
+
+    // Determine avatar color
+    Color avatarColor = AppColor.primaryColor;
+    final roleLower = employeeRole.toLowerCase();
+    if (roleLower.contains('backend')) {
+      avatarColor = Colors.purple;
+    } else if (roleLower.contains('frontend')) {
+      avatarColor = Colors.blue;
+    } else if (roleLower.contains('qa') || roleLower.contains('test')) {
+      avatarColor = Colors.green;
+    } else if (roleLower.contains('devops')) {
+      avatarColor = Colors.orange;
+    }
+
+    return TaskCard(
+      title: taskName,
+      subtitle: notes.isNotEmpty ? notes : 'Assigned to $employeeName',
+      category: employeeRole.isNotEmpty ? employeeRole : 'Unassigned',
+      priority: priority,
+      dueDate: 'Start: $startDate | End: $endDate | Hours: $estimatedHours',
+      assigneeName: employeeName,
+      assigneeInitials: initials.isNotEmpty ? initials : 'UN',
+      priorityColor: priorityColor,
+      avatarColor: avatarColor,
+      isCompleted: false,
+      isPending: false,
     );
   }
 }

@@ -810,4 +810,376 @@ class PDFService {
       ),
     );
   }
+
+  /// Generate PDF for task assignments
+  /// [assignments] should be a list of maps containing:
+  /// - taskName: String
+  /// - employeeName: String
+  /// - employeeRole: String (optional)
+  /// - startDate: String (optional)
+  /// - endDate: String (optional)
+  /// - estimatedHours: int (optional)
+  static Future<File?> generateAssignmentsPDF(
+    List<Map<String, dynamic>> assignments,
+  ) async {
+    try {
+      debugPrint('=== STARTING ASSIGNMENTS PDF GENERATION ===');
+      debugPrint('Assignments count: ${assignments.length}');
+
+      if (Platform.isAndroid) {
+        await _requestStoragePermissions();
+      }
+
+      final pdf = pw.Document();
+      debugPrint('PDF document created');
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(30),
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _buildAssignmentsHeader(),
+                pw.SizedBox(height: 25),
+                _buildAssignmentsSummary(assignments.length),
+                pw.SizedBox(height: 20),
+                _buildAssignmentsTable(assignments),
+                pw.SizedBox(height: 20),
+                _buildFooter(),
+              ],
+            );
+          },
+        ),
+      );
+
+      debugPrint('PDF page added');
+
+      Directory output;
+      try {
+        output = await getApplicationDocumentsDirectory();
+        debugPrint('Using application documents directory: ${output.path}');
+        if (!await output.exists()) {
+          await output.create(recursive: true);
+        }
+      } catch (e) {
+        debugPrint('Failed to get application documents directory: $e');
+        try {
+          if (Platform.isAndroid) {
+            final externalDir = await getExternalStorageDirectory();
+            if (externalDir != null) {
+              output = externalDir;
+              debugPrint('Using external storage directory: ${output.path}');
+            } else {
+              throw Exception('External storage directory is null');
+            }
+          } else {
+            throw Exception('Not Android platform');
+          }
+        } catch (e2) {
+          debugPrint('Failed to get external storage directory: $e2');
+          try {
+            if (Platform.isAndroid) {
+              final downloadsDir = await getDownloadsDirectory();
+              if (downloadsDir != null) {
+                output = downloadsDir;
+                debugPrint('Using downloads directory: ${output.path}');
+              } else {
+                throw Exception('Downloads directory is null');
+              }
+            } else {
+              throw Exception('Not Android platform');
+            }
+          } catch (e3) {
+            debugPrint('Failed to get downloads directory: $e3');
+            output = Directory.systemTemp;
+            debugPrint('Using system temp directory: ${output.path}');
+            if (!await output.exists()) {
+              await output.create(recursive: true);
+            }
+          }
+        }
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'task_assignments_$timestamp.pdf';
+      final file = File('${output.path}/$fileName');
+      debugPrint('Saving PDF to: ${file.path}');
+
+      final pdfBytes = await pdf.save();
+      await file.writeAsBytes(pdfBytes, flush: true);
+
+      if (await file.exists()) {
+        final fileSize = await file.length();
+        debugPrint('PDF saved successfully. File size: $fileSize bytes');
+        return file;
+      } else {
+        throw Exception('File was not created successfully');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error generating assignments PDF: $e');
+      debugPrint('Stack trace: $stackTrace');
+      return null;
+    }
+  }
+
+  static pw.Widget _buildAssignmentsHeader() {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(25),
+      decoration: pw.BoxDecoration(
+        gradient: const pw.LinearGradient(
+          colors: [PdfColors.blue600, PdfColors.purple600],
+          begin: pw.Alignment.topLeft,
+          end: pw.Alignment.bottomRight,
+        ),
+        borderRadius: pw.BorderRadius.circular(15),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            children: [
+              pw.Container(
+                width: 60,
+                height: 60,
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.white,
+                  borderRadius: pw.BorderRadius.circular(12),
+                ),
+                child: pw.Center(
+                  child: pw.Text(
+                    'T',
+                    style: pw.TextStyle(
+                      fontSize: 28,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue600,
+                    ),
+                  ),
+                ),
+              ),
+              pw.SizedBox(width: 20),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'TASK ASSIGNMENTS',
+                      style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    pw.SizedBox(height: 8),
+                    pw.Text(
+                      'AI-Assigned Tasks Report',
+                      style: pw.TextStyle(
+                        fontSize: 24,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildAssignmentsSummary(int totalAssignments) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(20),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.blue50,
+        borderRadius: pw.BorderRadius.circular(12),
+        border: pw.Border.all(color: PdfColors.blue200),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+        children: [
+          pw.Column(
+            children: [
+              pw.Text(
+                '$totalAssignments',
+                style: pw.TextStyle(
+                  fontSize: 32,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue700,
+                ),
+              ),
+              pw.SizedBox(height: 5),
+              pw.Text(
+                'Total Assignments',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  color: PdfColors.blue600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildAssignmentsTable(List<Map<String, dynamic>> assignments) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(20),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(12),
+        border: pw.Border.all(color: PdfColors.grey200),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Assignment Details',
+            style: pw.TextStyle(
+              fontSize: 18,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey800,
+            ),
+          ),
+          pw.SizedBox(height: 15),
+          ...assignments.asMap().entries.map((entry) {
+            final index = entry.key;
+            final assignment = entry.value;
+            return pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 12),
+              padding: const pw.EdgeInsets.all(15),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey50,
+                borderRadius: pw.BorderRadius.circular(10),
+                border: pw.Border.all(color: PdfColors.grey200),
+              ),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Container(
+                    width: 30,
+                    height: 30,
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.blue600,
+                      borderRadius: pw.BorderRadius.circular(15),
+                    ),
+                    child: pw.Center(
+                      child: pw.Text(
+                        '${index + 1}',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(width: 15),
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          assignment['taskName']?.toString() ?? 'Unknown Task',
+                          style: pw.TextStyle(
+                            fontSize: 14,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.grey800,
+                          ),
+                        ),
+                        pw.SizedBox(height: 8),
+                        pw.Row(
+                          children: [
+                            pw.Text(
+                              'Employee: ',
+                              style: pw.TextStyle(
+                                fontSize: 12,
+                                color: PdfColors.grey600,
+                              ),
+                            ),
+                            pw.Text(
+                              assignment['employeeName']?.toString() ?? 'Unknown',
+                              style: pw.TextStyle(
+                                fontSize: 12,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.blue700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (assignment['taskRole'] != null &&
+                            assignment['taskRole'].toString().isNotEmpty) ...[
+                          pw.SizedBox(height: 4),
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                'Task Role: ',
+                                style: pw.TextStyle(
+                                  fontSize: 12,
+                                  color: PdfColors.grey600,
+                                ),
+                              ),
+                              pw.Text(
+                                assignment['taskRole']?.toString() ?? '',
+                                style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: PdfColors.purple700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (assignment['estimatedHours'] != null) ...[
+                          pw.SizedBox(height: 4),
+                          pw.Text(
+                            'Estimated Hours: ${assignment['estimatedHours']}',
+                            style: pw.TextStyle(
+                              fontSize: 11,
+                              color: PdfColors.grey600,
+                            ),
+                          ),
+                        ],
+                        if (assignment['startDate'] != null ||
+                            assignment['endDate'] != null) ...[
+                          pw.SizedBox(height: 4),
+                          pw.Text(
+                            'Period: ${_formatDate(assignment['startDate'])} - ${_formatDate(assignment['endDate'])}',
+                            style: pw.TextStyle(
+                              fontSize: 11,
+                              color: PdfColors.grey600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  static String _formatDate(dynamic date) {
+    if (date == null) return 'N/A';
+    try {
+      if (date is String) {
+        final parsedDate = DateTime.tryParse(date);
+        if (parsedDate != null) {
+          return '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
+        }
+      }
+      return date.toString();
+    } catch (e) {
+      return date.toString();
+    }
+  }
 }

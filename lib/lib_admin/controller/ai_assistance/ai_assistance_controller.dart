@@ -5,10 +5,15 @@ import 'package:http/http.dart' as http;
 import '../../core/class/statusrequest.dart';
 import '../../core/constant/color.dart';
 import '../../data/Models/task_model.dart';
-import '../../data/Models/project_model.dart';
 import '../../data/repository/projects_repository.dart';
 import '../../data/repository/tasks_repository.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/constant/api_constant.dart';
+import '../../core/services/api_service.dart';
+import '../../core/services/pdf_service.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:open_file/open_file.dart';
+import 'package:flutter/services.dart';
 
 abstract class AiAssistanceController extends GetxController {
   void generateTasks(String projectDescription, int numTasks);
@@ -26,13 +31,37 @@ class AiAssistanceControllerImp extends AiAssistanceController {
   bool isLoading = false;
   List<TaskModel> generatedTasks = [];
   double? generationTime; // Time taken to generate tasks in seconds
-  
+
   // Pagination variables
   int currentPage = 1;
   static const int itemsPerPage = 10;
   bool viewAll = false;
 
+  // Accepted tasks data
+  Map<String, dynamic>? acceptedTasksResponse;
+  bool showAssignTasksButton = false;
+  bool isAssigningTasks = false;
+
+  // PDF generation
+  bool showPdfButton = false;
+  bool isGeneratingPdf = false;
+  List<Map<String, dynamic>> successfulAssignments = [];
+
+  // Assignment status message (for persistent display)
+  String? assignmentStatusMessage;
+  String? assignmentStatusTitle;
+  Color? assignmentStatusColor;
+  bool showAssignmentStatus = false;
+
+  // AI Assignments from API response - to display in UI
+  List<Map<String, dynamic>> aiAssignments = [];
+  bool showAiAssignments = false;
+
   static const String aiApiUrl = 'https://daliliai.com/api/ai/generate';
+  static const String assignTasksApiUrl =
+      'https://daliliai.com/api/assignment/api/assign-tasks';
+
+  final ApiService _apiService = ApiService();
 
   @override
   void onInit() {
@@ -97,12 +126,13 @@ class AiAssistanceControllerImp extends AiAssistanceController {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-        
+
         // Parse the response - assuming it returns tasks in a 'tasks' or 'data' field
         List<dynamic> tasksList = [];
         if (responseData['tasks'] != null && responseData['tasks'] is List) {
           tasksList = responseData['tasks'] as List<dynamic>;
-        } else if (responseData['data'] != null && responseData['data'] is List) {
+        } else if (responseData['data'] != null &&
+            responseData['data'] is List) {
           tasksList = responseData['data'] as List<dynamic>;
         } else if (responseData is List) {
           tasksList = responseData as List<dynamic>;
@@ -124,14 +154,15 @@ class AiAssistanceControllerImp extends AiAssistanceController {
                 : <String, dynamic>{};
 
             // Extract task name
-            final taskName = taskMap['task']?.toString() ?? 
-                            taskMap['taskName']?.toString() ?? 
-                            taskMap['title']?.toString() ?? 
-                            'Untitled Task';
+            final taskName =
+                taskMap['task']?.toString() ??
+                taskMap['taskName']?.toString() ??
+                taskMap['title']?.toString() ??
+                'Untitled Task';
 
             // Extract role
             final role = taskMap['role']?.toString() ?? 'Unassigned';
-            
+
             // Extract priority and convert to code
             final priorityStr = taskMap['priority']?.toString() ?? 'Medium';
             final priorityCode = _convertPriorityToCode(priorityStr);
@@ -142,19 +173,19 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             String timeDisplay = 'No time estimate';
             int? minEstimatedHour;
             int? maxEstimatedHour;
-            
+
             if (timeObj is Map<String, dynamic>) {
-              final hours = timeObj['hours'] is int 
+              final hours = timeObj['hours'] is int
                   ? timeObj['hours'] as int
-                  : timeObj['hours'] is num 
-                      ? (timeObj['hours'] as num).toInt()
-                      : 0;
-              final minutes = timeObj['minutes'] is int 
+                  : timeObj['hours'] is num
+                  ? (timeObj['hours'] as num).toInt()
+                  : 0;
+              final minutes = timeObj['minutes'] is int
                   ? timeObj['minutes'] as int
-                  : timeObj['minutes'] is num 
-                      ? (timeObj['minutes'] as num).toInt()
-                      : 0;
-              
+                  : timeObj['minutes'] is num
+                  ? (timeObj['minutes'] as num).toInt()
+                  : 0;
+
               if (hours > 0 || minutes > 0) {
                 if (minutes > 0) {
                   timeDisplay = '${hours}h ${minutes}m';
@@ -220,16 +251,16 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           generationTime = responseData['generation_time'] is double
               ? responseData['generation_time'] as double
               : responseData['generation_time'] is int
-                  ? (responseData['generation_time'] as int).toDouble()
-                  : responseData['generation_time'] is num
-                      ? (responseData['generation_time'] as num).toDouble()
-                      : null;
+              ? (responseData['generation_time'] as int).toDouble()
+              : responseData['generation_time'] is num
+              ? (responseData['generation_time'] as num).toDouble()
+              : null;
         }
 
         debugPrint('✅ Successfully generated ${generatedTasks.length} tasks');
         debugPrint('⏱️ Generation time: ${generationTime ?? 'N/A'} seconds');
         statusRequest = StatusRequest.success;
-        
+
         Get.snackbar(
           'Success',
           'Generated ${generatedTasks.length} tasks successfully!',
@@ -244,25 +275,30 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         // Parse error response
         String errorMessage = 'Failed to generate tasks';
         try {
-          final errorResponse = jsonDecode(response.body) as Map<String, dynamic>;
-          
+          final errorResponse =
+              jsonDecode(response.body) as Map<String, dynamic>;
+
           // Check for detail array (validation errors)
-          if (errorResponse['detail'] != null && errorResponse['detail'] is List) {
+          if (errorResponse['detail'] != null &&
+              errorResponse['detail'] is List) {
             final detailList = errorResponse['detail'] as List<dynamic>;
             if (detailList.isNotEmpty) {
               // Extract messages from detail array
-              final messages = detailList.map((error) {
-                if (error is Map<String, dynamic> && error['msg'] != null) {
-                  return error['msg'].toString();
-                }
-                return null;
-              }).where((msg) => msg != null).toList();
-              
+              final messages = detailList
+                  .map((error) {
+                    if (error is Map<String, dynamic> && error['msg'] != null) {
+                      return error['msg'].toString();
+                    }
+                    return null;
+                  })
+                  .where((msg) => msg != null)
+                  .toList();
+
               if (messages.isNotEmpty) {
                 errorMessage = messages.join('\n');
               }
             }
-          } 
+          }
           // Check for message field
           else if (errorResponse['message'] != null) {
             errorMessage = errorResponse['message'].toString();
@@ -275,10 +311,10 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           debugPrint('🔴 Error parsing error response: $e');
           errorMessage = 'Failed to generate tasks';
         }
-        
+
         debugPrint('🔴 AI API Error: $errorMessage');
         statusRequest = StatusRequest.serverFailure;
-        
+
         Get.snackbar(
           'Error',
           errorMessage,
@@ -294,15 +330,16 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       debugPrint('🔴 Exception generating tasks: $e');
       debugPrint('🔴 Stack trace: $stackTrace');
       statusRequest = StatusRequest.serverException;
-      
+
       String errorMessage = 'Failed to generate tasks';
-      if (e.toString().contains('timeout') || e.toString().contains('Timeout')) {
+      if (e.toString().contains('timeout') ||
+          e.toString().contains('Timeout')) {
         errorMessage = 'Request timed out. Please try again.';
-      } else if (e.toString().contains('SocketException') || 
-                 e.toString().contains('Failed host lookup')) {
+      } else if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
         errorMessage = 'No internet connection. Please check your network.';
       }
-      
+
       Get.snackbar(
         'Error',
         errorMessage,
@@ -324,6 +361,8 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     generationTime = null;
     currentPage = 1;
     viewAll = false;
+    acceptedTasksResponse = null;
+    showAssignTasksButton = false;
     update();
   }
 
@@ -470,7 +509,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       // Get company ID
       final authService = AuthService();
       final companyId = await authService.getCompanyId();
-      
+
       if (companyId == null || companyId.isEmpty) {
         Get.snackbar(
           'Error',
@@ -568,12 +607,15 @@ class AiAssistanceControllerImp extends AiAssistanceController {
                                   ),
                                   subtitle: project.code != null
                                       ? Padding(
-                                          padding: const EdgeInsets.only(top: 4),
+                                          padding: const EdgeInsets.only(
+                                            top: 4,
+                                          ),
                                           child: Text(
                                             'Code: ${project.code}',
                                             style: TextStyle(
                                               fontSize: 14,
-                                              color: AppColor.textSecondaryColor,
+                                              color:
+                                                  AppColor.textSecondaryColor,
                                             ),
                                           ),
                                         )
@@ -582,10 +624,13 @@ class AiAssistanceControllerImp extends AiAssistanceController {
                                     Icons.chevron_right,
                                     color: AppColor.textSecondaryColor,
                                   ),
-                                onTap: () {
-                                  Navigator.of(dialogContext).pop();
-                                  _acceptTasksForProject(project.id, project.title);
-                                },
+                                  onTap: () {
+                                    Navigator.of(dialogContext).pop();
+                                    _acceptTasksForProject(
+                                      project.id,
+                                      project.title,
+                                    );
+                                  },
                                 ),
                               );
                             },
@@ -622,7 +667,10 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     }
   }
 
-  Future<void> _acceptTasksForProject(String projectId, String projectTitle) async {
+  Future<void> _acceptTasksForProject(
+    String projectId,
+    String projectTitle,
+  ) async {
     if (generatedTasks.isEmpty) {
       Get.snackbar(
         'Error',
@@ -667,29 +715,28 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         // Get hours and minutes from estimated hours
         int hours = task.minEstimatedHour ?? 0;
         int minutes = 0;
-        
+
         // If there's a range, use the average or max
         if (task.maxEstimatedHour != null && task.maxEstimatedHour! > hours) {
           hours = task.maxEstimatedHour!;
         }
 
         // Extract role from category or targetRole
-        String role = task.category.isNotEmpty 
-            ? task.category 
+        String role = task.category.isNotEmpty
+            ? task.category
             : (task.targetRole ?? 'Unassigned');
 
         return {
           'task': task.title,
           'role': role,
           'priority': priority,
-          'time': {
-            'hours': hours,
-            'minutes': minutes,
-          },
+          'time': {'hours': hours, 'minutes': minutes},
         };
       }).toList();
 
-      debugPrint('🔵 Sending ${tasksForApi.length} tasks to project: $projectTitle');
+      debugPrint(
+        '🔵 Sending ${tasksForApi.length} tasks to project: $projectTitle',
+      );
       debugPrint('🔵 Project ID: $projectId');
 
       // Send to API
@@ -713,7 +760,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           } else if (error == StatusRequest.serverException) {
             errorMsg = 'An unexpected server error occurred.';
           }
-          
+
           Get.snackbar(
             'Error',
             errorMsg,
@@ -730,8 +777,8 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           final total = data?['total'] ?? 0;
           final successCount = data?['successCount'] ?? 0;
           final failureCount = data?['failureCount'] ?? 0;
-          final message = response['message']?.toString() ?? 
-              'Tasks created successfully';
+          final message =
+              response['message']?.toString() ?? 'Tasks created successfully';
 
           debugPrint('✅ Bulk create result:');
           debugPrint('  Total: $total');
@@ -764,8 +811,16 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             );
           }
 
-          // Clear generated tasks after successful creation
-          clearGeneratedTasks();
+          // Store the response and show assign button
+          acceptedTasksResponse = response;
+          showAssignTasksButton = true;
+
+          // Clear generated tasks after successful creation but keep the response
+          generatedTasks.clear();
+          generationTime = null;
+          currentPage = 1;
+          viewAll = false;
+          update();
         },
       );
     } catch (e) {
@@ -813,5 +868,648 @@ class AiAssistanceControllerImp extends AiAssistanceController {
 
     return null;
   }
-}
 
+  Future<void> assignTasksByAI() async {
+    if (acceptedTasksResponse == null) {
+      // Set persistent error message
+      assignmentStatusTitle = 'Error';
+      assignmentStatusMessage = 'No accepted tasks found';
+      assignmentStatusColor = AppColor.errorColor;
+      showAssignmentStatus = true;
+      update();
+      return;
+    }
+
+    // Clear previous status message
+    showAssignmentStatus = false;
+    assignmentStatusMessage = null;
+    assignmentStatusTitle = null;
+    assignmentStatusColor = null;
+
+    isAssigningTasks = true;
+    update();
+
+    try {
+      // Step 1: Fetch employees from API - Fresh request every time (no caching)
+      // This ensures we always get the latest employee data
+      final employeesEndpoint = '/employee/roles';
+      debugPrint(
+        '🔵 Fetching employees from: ${ApiConstant.baseUrl}$employeesEndpoint',
+      );
+      debugPrint('🔄 Making fresh API request (no caching) for employees...');
+
+      final employeesResult = await _apiService.get(
+        employeesEndpoint,
+        requiresAuth: true,
+      );
+
+      final employeesData = employeesResult.fold((error) {
+        debugPrint('🔴 Failed to fetch employees: $error');
+        String errorMsg = 'Failed to fetch employees';
+        if (error == StatusRequest.serverFailure) {
+          errorMsg = 'Server error. Please try again.';
+        } else if (error == StatusRequest.offlineFailure) {
+          errorMsg = 'No internet connection. Please check your network.';
+        } else if (error == StatusRequest.timeoutException) {
+          errorMsg = 'Request timed out. Please try again.';
+        } else if (error == StatusRequest.serverException) {
+          errorMsg = 'Authentication failed. Please login again.';
+        }
+        throw Exception(errorMsg);
+      }, (response) => response);
+
+      debugPrint('🟢 Employees response: $employeesData');
+
+      // Parse employees list - Creating fresh list for this request only
+      // This list is local to this method and not stored in the controller
+      List<dynamic> employeesList = [];
+      if (employeesData['data'] != null && employeesData['data'] is List) {
+        employeesList = employeesData['data'] as List<dynamic>;
+        debugPrint('🟢 Found ${employeesList.length} employees in data field');
+      } else if (employeesData['employees'] != null &&
+          employeesData['employees'] is List) {
+        employeesList = employeesData['employees'] as List<dynamic>;
+        debugPrint(
+          '🟢 Found ${employeesList.length} employees in employees field',
+        );
+      } else {
+        // Try to find any list in the response
+        employeesData.forEach((key, value) {
+          if (value is List && value.isNotEmpty && employeesList.isEmpty) {
+            employeesList = value;
+            debugPrint(
+              '🟢 Found ${employeesList.length} employees in $key field',
+            );
+          }
+        });
+      }
+
+      if (employeesList.isEmpty) {
+        debugPrint(
+          '🔴 No employees found in response. Available keys: ${employeesData.keys}',
+        );
+        throw Exception('No employees found in response');
+      }
+
+      debugPrint('🔵 Processing ${employeesList.length} employees...');
+      debugPrint(
+        '📝 Note: Employees are fetched fresh from API in each request (no caching)',
+      );
+
+      // Define allowed roles for task assignment (development-related roles only)
+      // Based on backend validation: "Only development-related roles can be assigned tasks"
+      final allowedRoles = [
+        'backend',
+        'frontend',
+        'fullstack',
+        'qa',
+        'tester',
+        'devops',
+        'developer',
+        'dev',
+        'software engineer',
+        'test engineer',
+      ].map((r) => r.toLowerCase()).toSet();
+
+      // Format employees for AI API
+      // Filter out employees with roles that cannot be assigned tasks
+      // The response already has the correct structure: {employeeId, role, employeeName}
+      // This list is created fresh for each request and not stored in the controller
+      final List<Map<String, dynamic>> employeesForAI = [];
+      int filteredCount = 0;
+
+      for (var emp in employeesList) {
+        try {
+          final empMap = emp as Map<String, dynamic>;
+          // The API already returns the correct structure, use it directly
+          final employeeId = empMap['employeeId']?.toString() ?? '';
+          final role = empMap['role']?.toString() ?? '';
+          final employeeName = empMap['employeeName']?.toString() ?? '';
+
+          if (employeeId.isEmpty) {
+            debugPrint('  ⚠️ Skipping employee with empty ID: $empMap');
+            continue;
+          }
+
+          // Filter by role - only include employees with development-related roles
+          final roleLower = role.toLowerCase();
+          if (!allowedRoles.contains(roleLower)) {
+            filteredCount++;
+            debugPrint(
+              '  ⏭️ Skipping employee "$employeeName" with role "$role" (not a development role)',
+            );
+            continue;
+          }
+
+          debugPrint('  ✅ Employee: $employeeName ($employeeId) - Role: $role');
+
+          employeesForAI.add({
+            'employeeId': employeeId,
+            'role': role,
+            'employeeName': employeeName,
+          });
+        } catch (e) {
+          debugPrint('🔴 Error processing employee: $e');
+          debugPrint('🔴 Employee data: $emp');
+          continue;
+        }
+      }
+
+      debugPrint(
+        '📊 Filtered ${filteredCount} employee(s) with non-development roles',
+      );
+
+      debugPrint('✅ Parsed ${employeesForAI.length} employees for AI');
+      debugPrint(
+        '📊 Total employees: ${employeesList.length}, Valid (dev roles): ${employeesForAI.length}, Filtered: $filteredCount',
+      );
+
+      if (employeesForAI.isEmpty) {
+        throw Exception(
+          'No valid employees found after filtering. All employees have non-development roles (ui_ux, data, etc.). Only employees with development-related roles can be assigned tasks.',
+        );
+      }
+
+      // Step 2: Format tasks from accepted response
+      // Use the response from "Accept Tasks" button directly
+      final responseData = acceptedTasksResponse!;
+      debugPrint('🔵 Accepted tasks response structure: ${responseData.keys}');
+
+      // Extract tasks data from acceptedTasksResponse
+      // The structure should be: {success, message, data: {results: {successful: [...]}}}
+      Map<String, dynamic>? tasksDataForAI;
+
+      if (responseData['data'] != null && responseData['data'] is Map) {
+        final dataField = responseData['data'] as Map<String, dynamic>;
+
+        // Check if data contains results.successful structure
+        if (dataField['results'] != null && dataField['results'] is Map) {
+          final results = dataField['results'] as Map<String, dynamic>;
+          if (results['successful'] != null && results['successful'] is List) {
+            // Build tasks structure for AI API: {data: {results: {successful: [...]}}}
+            tasksDataForAI = {
+              'data': {
+                'results': {'successful': results['successful']},
+              },
+            };
+            debugPrint(
+              '✅ Found ${(results['successful'] as List).length} successful tasks',
+            );
+          }
+        }
+      }
+
+      if (tasksDataForAI == null) {
+        debugPrint('🔴 Could not find tasks in expected structure');
+        debugPrint('🔴 Available keys in data: ${responseData['data']?.keys}');
+        throw Exception(
+          'No tasks found in expected structure. Please try accepting tasks again.',
+        );
+      }
+
+      // Format tasks for AI API - exactly as specified
+      final tasksForAI = tasksDataForAI;
+
+      // Step 3: Call AI assignment API
+      debugPrint('🔵 Calling AI assignment API: $assignTasksApiUrl');
+      debugPrint('🔵 Employees count: ${employeesForAI.length}');
+
+      // Count tasks from the formatted structure
+      final tasksCount =
+          (tasksForAI['data']?['results']?['successful'] as List?)?.length ?? 0;
+      debugPrint('🔵 Tasks count: $tasksCount');
+
+      // Get authentication token
+      final authService = AuthService();
+      final token = await authService.getToken();
+
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+        debugPrint('✅ Token added to headers');
+      } else {
+        debugPrint('⚠️ No token available');
+      }
+
+      final assignBody = {'employees': employeesForAI, 'tasks': tasksForAI};
+      debugPrint('🔵 Request body: ${jsonEncode(assignBody)}');
+
+      final assignResponse = await http
+          .post(
+            Uri.parse(assignTasksApiUrl),
+            headers: headers,
+            body: jsonEncode(assignBody),
+          )
+          .timeout(const Duration(seconds: 60));
+
+      debugPrint(
+        '🟢 AI Assignment Response Status: ${assignResponse.statusCode}',
+      );
+      debugPrint('🟢 AI Assignment Response Body: ${assignResponse.body}');
+
+      if (assignResponse.statusCode != 200 &&
+          assignResponse.statusCode != 201) {
+        throw Exception('AI assignment failed: ${assignResponse.statusCode}');
+      }
+
+      final assignResponseData =
+          jsonDecode(assignResponse.body) as Map<String, dynamic>;
+
+      if (assignResponseData['success'] != true ||
+          assignResponseData['data'] == null) {
+        throw Exception(
+          assignResponseData['message']?.toString() ?? 'AI assignment failed',
+        );
+      }
+
+      final assignmentsData =
+          assignResponseData['data'] as Map<String, dynamic>;
+      final assignments = assignmentsData['assignments'] as List<dynamic>?;
+
+      if (assignments == null || assignments.isEmpty) {
+        throw Exception('No assignments generated');
+      }
+
+      debugPrint('✅ Generated ${assignments.length} assignments');
+
+      // Get total tasks count and unassigned tasks from AI response
+      // Store these values to use later in the bulk create response handler
+      final totalTasksSent = tasksCount; // Number of tasks sent to AI
+      final assignmentsGenerated =
+          assignments.length; // Number of assignments AI generated
+      final unassignedTasks =
+          assignmentsData['unassigned_tasks'] as List<dynamic>? ?? [];
+      final unassignedCount = unassignedTasks.length;
+
+      // Get summary from AI response if available
+      final summary = assignmentsData['summary'] as Map<String, dynamic>?;
+
+      debugPrint('');
+      debugPrint('=' * 80);
+      debugPrint('📊 AI ASSIGNMENT SUMMARY');
+      debugPrint('=' * 80);
+      debugPrint('🔵 Total tasks sent to AI: $totalTasksSent');
+      debugPrint('✅ Assignments generated by AI: $assignmentsGenerated');
+      debugPrint(
+        '❌ Unassigned tasks (from unassigned_tasks array): $unassignedCount',
+      );
+      if (summary != null) {
+        debugPrint('📋 Summary from AI response:');
+        debugPrint('   - Total assignments: ${summary['total_assignments']}');
+        debugPrint('   - Total employees: ${summary['total_employees']}');
+        debugPrint('   - Total unassigned: ${summary['total_unassigned']}');
+      }
+      debugPrint('=' * 80);
+      debugPrint('');
+
+      // Log unassigned tasks details if available
+      if (unassignedCount > 0) {
+        debugPrint('📝 Unassigned tasks details:');
+        for (var i = 0; i < unassignedTasks.length; i++) {
+          final unassignedTask = unassignedTasks[i];
+          if (unassignedTask is Map<String, dynamic>) {
+            final taskId = unassignedTask['taskId']?.toString() ?? 'Unknown';
+            final taskName =
+                unassignedTask['taskName']?.toString() ?? 'Unknown';
+            final reason =
+                unassignedTask['reason']?.toString() ?? 'No reason provided';
+            debugPrint('   ${i + 1}. Task: $taskName (ID: $taskId)');
+            debugPrint('      Reason: $reason');
+          }
+        }
+        debugPrint('');
+      }
+
+      // Warning if not all tasks were assigned
+      if (totalTasksSent > assignmentsGenerated) {
+        final missingCount = totalTasksSent - assignmentsGenerated;
+        debugPrint('⚠️ WARNING: $missingCount task(s) were not assigned by AI');
+        debugPrint('   This could be due to:');
+        debugPrint('   - Lack of suitable employees for the task role');
+        debugPrint('   - Time conflicts or workload balancing');
+        debugPrint('   - AI decision to optimize assignments');
+        debugPrint('');
+      }
+
+      // Extract tasks from acceptedTasksResponse for mapping task IDs to names and roles
+      // This is used later for PDF generation
+      final taskIdToNameMap = <String, String>{};
+      final taskIdToRoleMap = <String, String>{};
+      if (responseData['data'] != null && responseData['data'] is Map) {
+        final dataField = responseData['data'] as Map<String, dynamic>;
+        if (dataField['results'] != null && dataField['results'] is Map) {
+          final results = dataField['results'] as Map<String, dynamic>;
+          if (results['successful'] != null && results['successful'] is List) {
+            final successfulTasksList = results['successful'] as List<dynamic>;
+            for (var taskItem in successfulTasksList) {
+              if (taskItem is Map<String, dynamic>) {
+                var taskData = taskItem['data'] as Map<String, dynamic>?;
+                if (taskData == null && taskItem['taskName'] != null) {
+                  taskData = taskItem;
+                }
+                if (taskData != null) {
+                  final taskId = taskData['_id']?.toString() ?? '';
+                  final taskName = taskData['taskName']?.toString() ?? '';
+                  final taskRole = taskData['targetRole']?.toString() ?? '';
+                  if (taskId.isNotEmpty && taskName.isNotEmpty) {
+                    taskIdToNameMap[taskId] = taskName;
+                  }
+                  if (taskId.isNotEmpty && taskRole.isNotEmpty) {
+                    taskIdToRoleMap[taskId] = taskRole;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Create a map of employeeId -> employeeName from employeesList
+      final employeeIdToNameMap = <String, Map<String, String>>{};
+      for (var empMap in employeesList) {
+        if (empMap is Map<String, dynamic>) {
+          final employeeId = empMap['employeeId']?.toString() ?? '';
+          final employeeName = empMap['employeeName']?.toString() ?? '';
+          final employeeRole = empMap['role']?.toString() ?? '';
+          if (employeeId.isNotEmpty && employeeName.isNotEmpty) {
+            employeeIdToNameMap[employeeId] = {
+              'name': employeeName,
+              'role': employeeRole,
+            };
+          }
+        }
+      }
+
+      // Step 4: Prepare assignments data for display in UI
+      // Format assignments with task names and employee names for TaskCard display
+      aiAssignments = [];
+      for (var assignment in assignments) {
+        final assignMap = assignment as Map<String, dynamic>;
+        final taskId = assignMap['taskId']?.toString() ?? '';
+        final employeeId = assignMap['employeeId']?.toString() ?? '';
+
+        // Get task name and role
+        final taskName = taskIdToNameMap[taskId] ?? 'Unknown Task';
+        final taskRole = taskIdToRoleMap[taskId] ?? '';
+
+        // Get employee info
+        final employeeInfo = employeeIdToNameMap[employeeId];
+        final employeeName = employeeInfo?['name'] ?? 'Unknown Employee';
+        final employeeRole = employeeInfo?['role'] ?? '';
+
+        // Format dates
+        String formattedStartDate = 'N/A';
+        String formattedEndDate = 'N/A';
+        try {
+          final startDateStr = assignMap['startDate']?.toString();
+          final endDateStr = assignMap['endDate']?.toString();
+          if (startDateStr != null && startDateStr.isNotEmpty) {
+            final startDate = DateTime.tryParse(startDateStr);
+            if (startDate != null) {
+              formattedStartDate =
+                  '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
+            }
+          }
+          if (endDateStr != null && endDateStr.isNotEmpty) {
+            final endDate = DateTime.tryParse(endDateStr);
+            if (endDate != null) {
+              formattedEndDate =
+                  '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error formatting dates: $e');
+        }
+
+        final estimatedHours = assignMap['estimatedHours'] is int
+            ? assignMap['estimatedHours'] as int
+            : assignMap['estimatedHours'] is num
+            ? (assignMap['estimatedHours'] as num).toInt()
+            : 0;
+
+        final notes = assignMap['notes']?.toString() ?? '';
+
+        aiAssignments.add({
+          'taskId': taskId,
+          'taskName': taskName,
+          'taskRole': taskRole,
+          'employeeId': employeeId,
+          'employeeName': employeeName,
+          'employeeRole': employeeRole,
+          'startDate': formattedStartDate,
+          'endDate': formattedEndDate,
+          'estimatedHours': estimatedHours,
+          'notes': notes,
+        });
+      }
+
+      // Also prepare for PDF
+      successfulAssignments = aiAssignments.map((assign) {
+        return {
+          'taskName': assign['taskName'],
+          'taskRole': assign['taskRole'],
+          'employeeName': assign['employeeName'],
+          'startDate': assign['startDate'],
+          'endDate': assign['endDate'],
+          'estimatedHours': assign['estimatedHours'],
+        };
+      }).toList();
+
+      isAssigningTasks = false;
+      showAiAssignments = true;
+
+      // Show success message
+      String successMessage =
+          '✅ ${assignments.length} assignment(s) generated successfully!';
+      if (unassignedCount > 0) {
+        successMessage +=
+            '\n\n⚠️ Note: $unassignedCount task(s) were not assigned by AI';
+      } else if (totalTasksSent > assignmentsGenerated) {
+        final missingCount = totalTasksSent - assignmentsGenerated;
+        successMessage +=
+            '\n\n⚠️ Note: $missingCount task(s) were not assigned';
+      } else if (totalTasksSent == assignmentsGenerated) {
+        successMessage +=
+            '\n\n✨ All $totalTasksSent task(s) have been assigned!';
+      }
+
+      assignmentStatusTitle = 'Success';
+      assignmentStatusMessage = successMessage;
+      assignmentStatusColor = AppColor.successColor;
+      showAssignmentStatus = true;
+
+      // Clear accepted tasks response
+      acceptedTasksResponse = null;
+      showAssignTasksButton = false;
+
+      // Show PDF button
+      if (successfulAssignments.isNotEmpty) {
+        showPdfButton = true;
+      }
+
+      update();
+    } catch (e, stackTrace) {
+      isAssigningTasks = false;
+      update();
+      debugPrint('🔴 Exception assigning tasks by AI: $e');
+      debugPrint('🔴 Stack trace: $stackTrace');
+
+      String errorMessage = 'Failed to assign tasks';
+      if (e.toString().contains('timeout') ||
+          e.toString().contains('Timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        errorMessage = 'No internet connection. Please check your network.';
+      } else if (e.toString().contains('Exception:')) {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      }
+
+      // Set persistent error message
+      assignmentStatusTitle = 'Error';
+      assignmentStatusMessage = errorMessage;
+      assignmentStatusColor = AppColor.errorColor;
+      showAssignmentStatus = true;
+
+      acceptedTasksResponse = null;
+      showAssignTasksButton = false;
+      showPdfButton = false;
+      successfulAssignments = [];
+      update();
+    }
+  }
+
+  /// Generate and download PDF for successful assignments
+  Future<void> downloadAssignmentsPDF() async {
+    if (successfulAssignments.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'No assignments available to generate PDF',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: AppColor.white,
+        borderRadius: 12,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      );
+      return;
+    }
+
+    isGeneratingPdf = true;
+    update();
+
+    try {
+      debugPrint(
+        '🟢 Generating PDF for ${successfulAssignments.length} assignments',
+      );
+
+      final file = await PDFService.generateAssignmentsPDF(
+        successfulAssignments,
+      );
+
+      if (file != null && await file.exists()) {
+        debugPrint('✅ PDF generated successfully at: ${file.path}');
+        final fileSize = await file.length();
+        debugPrint('📄 PDF file size: $fileSize bytes');
+
+        try {
+          // Try to share/open the file
+          await Share.shareXFiles(
+            [XFile(file.path, mimeType: 'application/pdf')],
+            text: 'Task Assignments Report',
+            subject:
+                'Task Assignments - ${DateTime.now().toString().split(' ')[0]}',
+          );
+          debugPrint('✅ PDF shared successfully');
+        } catch (shareError) {
+          debugPrint('⚠️ Share error: $shareError');
+          // Try alternative method
+          try {
+            final result = await OpenFile.open(file.path);
+            if (result.type == ResultType.done) {
+              debugPrint('✅ PDF opened successfully');
+              Get.snackbar(
+                'PDF Opened',
+                'PDF opened successfully in default app',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: AppColor.successColor,
+                colorText: AppColor.white,
+                borderRadius: 12,
+                margin: const EdgeInsets.all(16),
+              );
+            } else {
+              throw Exception('Failed to open file: ${result.message}');
+            }
+          } catch (openError) {
+            debugPrint('⚠️ Open file error: $openError');
+            // Show success message with file path
+            Get.snackbar(
+              'PDF Generated Successfully!',
+              'PDF saved at: ${file.path}\n\nTap to copy path',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColor.successColor,
+              colorText: AppColor.white,
+              duration: const Duration(seconds: 8),
+              borderRadius: 12,
+              margin: const EdgeInsets.all(16),
+              onTap: (snack) {
+                Clipboard.setData(ClipboardData(text: file.path));
+                Get.snackbar(
+                  'Path Copied',
+                  'File path copied to clipboard',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: AppColor.primaryColor,
+                  colorText: AppColor.white,
+                  borderRadius: 12,
+                  margin: const EdgeInsets.all(16),
+                );
+              },
+            );
+          }
+        }
+
+        Get.snackbar(
+          'Success',
+          'PDF generated and saved successfully!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColor.successColor,
+          colorText: AppColor.white,
+          borderRadius: 12,
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        throw Exception('PDF file was not created successfully');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('🔴 Error generating PDF: $e');
+      debugPrint('🔴 Stack trace: $stackTrace');
+
+      String errorMessage = 'Failed to generate PDF';
+      if (e.toString().contains('permission')) {
+        errorMessage =
+            'Storage permission denied. Please grant permission to save PDF.';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'PDF generation timed out. Please try again.';
+      }
+
+      Get.snackbar(
+        'Error',
+        errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: AppColor.white,
+        borderRadius: 12,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      );
+    } finally {
+      isGeneratingPdf = false;
+      update();
+    }
+  }
+}
