@@ -21,6 +21,7 @@ class AppRoute {
   static const String taskDetail = "/task-detail";
   static const String projects = "/projects";
   static const String projectDetails = "/project-details";
+  static const String projectComments = "/project-comments";
   static const String addProject = "/add-project";
   static const String editProject = "/edit-project";
   static const String analytics = "/analytics";

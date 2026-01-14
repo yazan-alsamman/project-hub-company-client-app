@@ -8,6 +8,7 @@ import 'view/screens/onBoarding.dart';
 import 'view/screens/splash/splash_screen.dart';
 import 'view/screens/projects/project_Screen.dart';
 import 'view/screens/projects/project_details_screen.dart';
+import 'view/screens/projects/project_comments_screen.dart';
 import 'view/screens/team/team_screen.dart';
 import 'view/screens/team/member_detail_screen.dart';
 import 'view/screens/team/add_employee_screen.dart';
@@ -54,6 +55,12 @@ List<GetPage<dynamic>>? routes = [
     page: () {
       final project = Get.arguments as ProjectModel;
       return ProjectDetailsScreen(project: project);
+    },
+  ),
+  GetPage(
+    name: AppRoute.projectComments,
+    page: () {
+      return const ProjectCommentsScreen();
     },
   ),
   GetPage(name: AppRoute.profile, page: () => const ProfileScreen()),

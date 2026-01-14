@@ -329,35 +329,49 @@ class ProjectScreen extends StatelessWidget {
                             itemCount: controller.projects.length,
                             itemBuilder: (context, index) {
                               final project = controller.projects[index];
-                              return ProjectCard(
-                                title: project.title,
-                                company: project.company,
-                                description: project.description,
-                                progress: project.progress,
-                                startDate: project.startDate,
-                                endDate: project.endDate,
-                                teamMembers: project.teamMembers,
-                                status: project.status,
-                                onTap: () {
-                                  print(
-                                    'Navigating to project details for: ${project.title}',
-                                  );
-                                  Get.toNamed(
-                                    AppRoute.projectDetails,
-                                    arguments: project,
-                                  );
-                                },
-                                onEdit: () {
-                                  Get.toNamed(
-                                    AppRoute.editProject,
-                                    arguments: project.id,
-                                  );
-                                },
-                                onDelete: () {
-                                  _handleDeleteProject(
-                                    context,
-                                    project,
-                                    controller,
+                              return FutureBuilder<String?>(
+                                future: AuthService().getUserRole(),
+                                builder: (context, roleSnapshot) {
+                                  final userRole = roleSnapshot.data?.toLowerCase() ?? '';
+                                  final isDeveloper = userRole == 'developer';
+                                  final isPM = userRole == 'pm';
+                                  final canViewComments = isDeveloper || isPM;
+                                  
+                                  return ProjectCard(
+                                    title: project.title,
+                                    company: project.company,
+                                    description: project.description,
+                                    progress: project.progress,
+                                    startDate: project.startDate,
+                                    endDate: project.endDate,
+                                    teamMembers: project.teamMembers,
+                                    status: project.status,
+                                    onTap: canViewComments
+                                        ? () {
+                                            _showProjectOptionsDialog(context, project);
+                                          }
+                                        : () {
+                                            print(
+                                              'Navigating to project details for: ${project.title}',
+                                            );
+                                            Get.toNamed(
+                                              AppRoute.projectDetails,
+                                              arguments: project,
+                                            );
+                                          },
+                                    onEdit: () {
+                                      Get.toNamed(
+                                        AppRoute.editProject,
+                                        arguments: project.id,
+                                      );
+                                    },
+                                    onDelete: () {
+                                      _handleDeleteProject(
+                                        context,
+                                        project,
+                                        controller,
+                                      );
+                                    },
                                   );
                                 },
                               );
@@ -373,6 +387,79 @@ class ProjectScreen extends StatelessWidget {
       ),
     );
   }
+
+  void _showProjectOptionsDialog(BuildContext context, ProjectModel project) {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Project Options',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColor.textColor,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.info_outline, color: AppColor.primaryColor),
+              title: Text(
+                'View Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColor.textColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              onTap: () {
+                Get.back();
+                Get.toNamed(
+                  AppRoute.projectDetails,
+                  arguments: project,
+                );
+              },
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.comment_outlined, color: AppColor.primaryColor),
+              title: Text(
+                'View Comments',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColor.textColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              onTap: () {
+                Get.back();
+                Get.toNamed(
+                  AppRoute.projectComments,
+                  arguments: project,
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColor.textSecondaryColor,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _handleDeleteProject(
     BuildContext context,
     ProjectModel project,
