@@ -6,6 +6,7 @@ import '../../core/services/auth_service.dart';
 import '../../data/Models/project_model.dart';
 import '../../data/repository/projects_repository.dart';
 import '../../data/repository/team_repository.dart';
+
 abstract class ProjectsController extends GetxController {
   List<ProjectModel> get projects;
   String get selectedFilter;
@@ -16,6 +17,7 @@ abstract class ProjectsController extends GetxController {
   Future<void> refreshProjects();
   List<ProjectModel> get filteredProjects;
 }
+
 class ProjectsControllerImp extends ProjectsController {
   final ProjectsRepository _repository = ProjectsRepository();
   List<ProjectModel> _projects = [];
@@ -36,6 +38,7 @@ class ProjectsControllerImp extends ProjectsController {
     debugPrint('🔵 ProjectsControllerImp.onInit() called');
     loadProjects();
   }
+
   @override
   Future<void> loadProjects({bool refresh = false}) async {
     if (_isLoading && !refresh) {
@@ -56,17 +59,29 @@ class ProjectsControllerImp extends ProjectsController {
       debugPrint('⏳ Initial load of projects...');
     }
     update();
-    String? companyId = await _getCompanyId();
-    // التحقق من وجود companyId قبل الإرسال
-    if (companyId == null || companyId.isEmpty) {
-      debugPrint('🔴 CompanyId is required but not found');
-      _isLoading = false;
-      _statusRequest = StatusRequest.serverFailure;
-      update();
-      return;
+    final authService = AuthService();
+    final userRole = await authService.getUserRole();
+    final isDeveloper = userRole?.toLowerCase() == 'developer';
+
+    String? companyId;
+    // إذا كان المستخدم developer، لا نرسل companyID
+    if (!isDeveloper) {
+      companyId = await _getCompanyId();
+      // التحقق من وجود companyId قبل الإرسال
+      if (companyId == null || companyId.isEmpty) {
+        debugPrint('🔴 CompanyId is required but not found');
+        _isLoading = false;
+        _statusRequest = StatusRequest.serverFailure;
+        update();
+        return;
+      }
+    } else {
+      debugPrint('🔵 User is developer, not sending companyId in request');
     }
     debugPrint('🔵 Loading projects...');
-    debugPrint('CompanyId: $companyId, Filter: $_selectedFilter');
+    debugPrint(
+      'CompanyId: ${companyId ?? "not sent (developer)"}, Filter: $_selectedFilter',
+    );
     String? apiStatus;
     if (_selectedFilter != 'All') {
       switch (_selectedFilter.toLowerCase()) {
@@ -127,47 +142,65 @@ class ProjectsControllerImp extends ProjectsController {
       },
     );
   }
+
   Future<String?> _getCompanyId() async {
     try {
       final authService = AuthService();
-      // جلب companyId من AuthService في كل مرة
+      // التحقق من role المستخدم
+      final userRole = await authService.getUserRole();
+      final isDeveloper = userRole?.toLowerCase() == 'developer';
+
+      // جلب companyId من AuthService مباشرة (من response الـ login)
       final savedCompanyId = await authService.getCompanyId();
       if (savedCompanyId != null && savedCompanyId.isNotEmpty) {
-        debugPrint('✅ Got companyId from AuthService: $savedCompanyId');
+        debugPrint(
+          '✅ Got companyId from AuthService (from login response): $savedCompanyId',
+        );
+        if (isDeveloper) {
+          // للمستخدم developer، نستخدم فقط companyID من response الـ login
+          debugPrint(
+            '🔵 User is developer, using companyId from login response only',
+          );
+          return savedCompanyId;
+        }
         return savedCompanyId;
       }
-      // محاولة جلب companyId من بيانات employee
-      final userId = await authService.getUserId();
-      if (userId != null && userId.isNotEmpty) {
-        debugPrint(
-          '🔵 Getting companyId from employee data for userId: $userId',
-        );
-        try {
-          final teamRepository = TeamRepository();
-          final employeeResult = await teamRepository.getEmployeeById(userId);
-          String? companyIdFromEmployee;
-          employeeResult.fold(
-            (error) {
-              debugPrint('⚠️ Could not get employee data: $error');
-            },
-            (employee) {
-              if (employee.companyId != null) {
-                final companyIdStr = employee.companyId!['_id']?.toString();
-                if (companyIdStr != null && companyIdStr.isNotEmpty) {
-                  debugPrint(
-                    '✅ Got companyId from employee data: $companyIdStr',
-                  );
-                  authService.saveCompanyId(companyIdStr);
-                  companyIdFromEmployee = companyIdStr;
-                }
-              }
-            },
+
+      // إذا كان المستخدم ليس developer، نبحث عن companyId من مصادر أخرى
+      if (!isDeveloper) {
+        // محاولة جلب companyId من بيانات employee
+        final userId = await authService.getUserId();
+        if (userId != null && userId.isNotEmpty) {
+          debugPrint(
+            '🔵 Getting companyId from employee data for userId: $userId',
           );
-          if (companyIdFromEmployee != null) {
-            return companyIdFromEmployee;
+          try {
+            final teamRepository = TeamRepository();
+            final employeeResult = await teamRepository.getEmployeeById(userId);
+            String? companyIdFromEmployee;
+            employeeResult.fold(
+              (error) {
+                debugPrint('⚠️ Could not get employee data: $error');
+              },
+              (employee) {
+                if (employee.companyId != null) {
+                  final companyIdStr = employee.companyId!['_id']?.toString();
+                  if (companyIdStr != null && companyIdStr.isNotEmpty) {
+                    debugPrint(
+                      '✅ Got companyId from employee data: $companyIdStr',
+                    );
+                    authService.saveCompanyId(companyIdStr);
+                    companyIdFromEmployee = companyIdStr;
+                  }
+                }
+              },
+            );
+            if (companyIdFromEmployee != null) {
+              return companyIdFromEmployee;
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error getting employee data: $e');
           }
-        } catch (e) {
-          debugPrint('⚠️ Error getting employee data: $e');
         }
       }
     } catch (e) {
@@ -176,6 +209,7 @@ class ProjectsControllerImp extends ProjectsController {
     debugPrint('🔴 CompanyId not found. User must login again.');
     return null;
   }
+
   @override
   void selectFilter(String filter) {
     debugPrint(
@@ -188,10 +222,12 @@ class ProjectsControllerImp extends ProjectsController {
     _selectedFilter = filter;
     loadProjects(refresh: true);
   }
+
   @override
   Future<void> refreshProjects() async {
     await loadProjects(refresh: true);
   }
+
   void _applyLocalFilter() {
     if (_selectedFilter == 'All') {
       return; // No filtering needed for 'All'
@@ -218,9 +254,10 @@ class ProjectsControllerImp extends ProjectsController {
       '🔍 Applied local filter "$_selectedFilter": ${_projects.length} projects match',
     );
   }
+
   // Load all projects by making multiple requests if needed
   Future<Either<StatusRequest, List<ProjectModel>>> _loadAllProjects({
-    required String companyId,
+    String? companyId,
     String? status,
   }) async {
     List<ProjectModel> allProjects = [];
@@ -252,15 +289,12 @@ class ProjectsControllerImp extends ProjectsController {
 
       // Check if we should return early (error or partial success)
       if (!shouldContinue) {
-        return result.fold(
-          (error) {
-            if (allProjects.isNotEmpty) {
-              return Right<StatusRequest, List<ProjectModel>>(allProjects);
-            }
-            return Left<StatusRequest, List<ProjectModel>>(error);
-          },
-          (projects) => Right<StatusRequest, List<ProjectModel>>(allProjects),
-        );
+        return result.fold((error) {
+          if (allProjects.isNotEmpty) {
+            return Right<StatusRequest, List<ProjectModel>>(allProjects);
+          }
+          return Left<StatusRequest, List<ProjectModel>>(error);
+        }, (projects) => Right<StatusRequest, List<ProjectModel>>(allProjects));
       }
 
       // Continue to next page

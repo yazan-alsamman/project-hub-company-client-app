@@ -6,6 +6,7 @@ import '../../../controller/common/filter_button_controller.dart';
 import '../../../core/class/statusrequest.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/constant/routes.dart';
+import '../../../core/services/auth_service.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/custom_drawer.dart';
 import '../../widgets/common/filter_button.dart';
@@ -82,13 +83,23 @@ class TasksScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Header(
-                            title: "Tasks",
-                            subtitle: "Track and manage all your project tasks",
-                            buttonText: "New Task",
-                            buttonIcon: Icons.add,
-                            onPressed: () {
-                              Get.toNamed(AppRoute.addTask);
+                          FutureBuilder<String?>(
+                            future: AuthService().getUserRole(),
+                            builder: (context, snapshot) {
+                              final role = snapshot.data?.toLowerCase() ?? '';
+                              final canAddTask = role != 'developer';
+                              return Header(
+                                title: "Tasks",
+                                subtitle: "Track and manage all your project tasks",
+                                buttonText: canAddTask ? "New Task" : null,
+                                buttonIcon: canAddTask ? Icons.add : null,
+                                haveButton: canAddTask,
+                                onPressed: canAddTask
+                                    ? () {
+                                        Get.toNamed(AppRoute.addTask);
+                                      }
+                                    : null,
+                              );
                             },
                           ),
                           const SizedBox(height: 20),

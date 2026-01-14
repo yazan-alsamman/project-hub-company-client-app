@@ -23,7 +23,6 @@ class AddProjectControllerImp extends AddProjectController {
   final TextEditingController safeDelayController = TextEditingController();
   String? selectedClientId;
   String? selectedStatus = 'pending';
-  String? companyId;
   StatusRequest statusRequest = StatusRequest.none;
   bool isLoading = false;
   bool isLoadingClients = false;
@@ -32,14 +31,8 @@ class AddProjectControllerImp extends AddProjectController {
   @override
   void onInit() {
     super.onInit();
-    loadCompanyId();
     loadClients();
     safeDelayController.text = '7'; // Default safe delay
-  }
-  Future<void> loadCompanyId() async {
-    companyId = await _authService.getCompanyId();
-    debugPrint('✅ Loaded companyId: $companyId');
-    update();
   }
   Future<void> loadClients() async {
     debugPrint('🔵 AddProjectController: Loading clients...');
@@ -90,12 +83,9 @@ class AddProjectControllerImp extends AddProjectController {
     statusRequest = StatusRequest.loading;
     update();
     try {
-      // جلب companyId من AuthService في كل مرة قبل الإرسال
-      String? finalCompanyId = companyId;
-      if (finalCompanyId == null || finalCompanyId.isEmpty) {
-        finalCompanyId = await _authService.getCompanyId();
-        debugPrint('🔵 Got companyId from AuthService: $finalCompanyId');
-      }
+      // جلب companyId من AuthService مباشرة في كل مرة (من response الـ login)
+      final finalCompanyId = await _authService.getCompanyId();
+      debugPrint('🔵 Got companyId from AuthService (from login response): $finalCompanyId');
       // التحقق من وجود companyId قبل الإرسال
       if (finalCompanyId == null || finalCompanyId.isEmpty) {
         Get.snackbar(

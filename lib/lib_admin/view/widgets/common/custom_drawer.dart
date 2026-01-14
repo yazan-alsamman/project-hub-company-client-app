@@ -46,6 +46,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
     return roleLower == 'admin' || roleLower == 'pm';
   }
 
+  bool _isDev() {
+    if (_userRole == null) return false;
+    final roleLower = _userRole!.toLowerCase();
+    return roleLower == 'developer';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -131,17 +137,18 @@ class _CustomDrawerState extends State<CustomDrawer> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  buildMenuItem(
-                    icon: Icons.group,
-                    title: 'Team',
-                    onTap: () {
-                      if (widget.onItemTap != null) {
-                        widget.onItemTap!('Team');
-                      }
-                      Get.back();
-                      Get.offAllNamed(AppRoute.team);
-                    },
-                  ),
+                  if (!_isDev())
+                    buildMenuItem(
+                      icon: Icons.group,
+                      title: 'Team',
+                      onTap: () {
+                        if (widget.onItemTap != null) {
+                          widget.onItemTap!('Team');
+                        }
+                        Get.back();
+                        Get.offAllNamed(AppRoute.team);
+                      },
+                    ),
                   buildMenuItem(
                     icon: Icons.assignment,
                     title: 'Tasks',
@@ -164,50 +171,54 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       Get.offAllNamed(AppRoute.projects);
                     },
                   ),
-                  buildMenuItem(
-                    icon: Icons.analytics,
-                    title: 'Analytics',
-                    onTap: () {
-                      if (widget.onItemTap != null) {
-                        widget.onItemTap!('Analytics');
-                      }
-                      Get.back();
-                      Get.offAllNamed(AppRoute.analytics);
-                    },
-                  ),
-                  buildMenuItem(
-                    icon: Icons.dashboard,
-                    title: 'Project Dashboard',
-                    onTap: () {
-                      if (widget.onItemTap != null) {
-                        widget.onItemTap!('Project Dashboard');
-                      }
-                      Get.back();
-                      Get.offAllNamed(AppRoute.projectDashboard);
-                    },
-                  ),
-                  buildMenuItem(
-                    icon: Icons.assignment_ind,
-                    title: 'Assignment',
-                    onTap: () {
-                      if (widget.onItemTap != null) {
-                        widget.onItemTap!('Assignment');
-                      }
-                      Get.back();
-                      Get.offAllNamed(AppRoute.assignments);
-                    },
-                  ),
-                  buildMenuItem(
-                    icon: Icons.smart_toy,
-                    title: 'AI Assistance',
-                    onTap: () {
-                      if (widget.onItemTap != null) {
-                        widget.onItemTap!('AI Assistance');
-                      }
-                      Get.back();
-                      Get.offAllNamed(AppRoute.aiAssistance);
-                    },
-                  ),
+                  if (!_isDev())
+                    buildMenuItem(
+                      icon: Icons.analytics,
+                      title: 'Analytics',
+                      onTap: () {
+                        if (widget.onItemTap != null) {
+                          widget.onItemTap!('Analytics');
+                        }
+                        Get.back();
+                        Get.offAllNamed(AppRoute.analytics);
+                      },
+                    ),
+                  if (!_isDev())
+                    buildMenuItem(
+                      icon: Icons.dashboard,
+                      title: 'Project Dashboard',
+                      onTap: () {
+                        if (widget.onItemTap != null) {
+                          widget.onItemTap!('Project Dashboard');
+                        }
+                        Get.back();
+                        Get.offAllNamed(AppRoute.projectDashboard);
+                      },
+                    ),
+                  if (!_isDev())
+                    buildMenuItem(
+                      icon: Icons.assignment_ind,
+                      title: 'Assignment',
+                      onTap: () {
+                        if (widget.onItemTap != null) {
+                          widget.onItemTap!('Assignment');
+                        }
+                        Get.back();
+                        Get.offAllNamed(AppRoute.assignments);
+                      },
+                    ),
+                  if (!_isDev())
+                    buildMenuItem(
+                      icon: Icons.smart_toy,
+                      title: 'AI Assistance',
+                      onTap: () {
+                        if (widget.onItemTap != null) {
+                          widget.onItemTap!('AI Assistance');
+                        }
+                        Get.back();
+                        Get.offAllNamed(AppRoute.aiAssistance);
+                      },
+                    ),
                   if (_canAddClient())
                     buildMenuItem(
                       icon: Icons.person,

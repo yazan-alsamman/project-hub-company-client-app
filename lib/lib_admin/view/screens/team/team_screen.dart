@@ -21,6 +21,23 @@ class TeamScreen extends StatefulWidget {
 }
 class _TeamScreenState extends State<TeamScreen> {
   @override
+  void initState() {
+    super.initState();
+    _checkDeveloperAccess();
+  }
+
+  Future<void> _checkDeveloperAccess() async {
+    final authService = AuthService();
+    final role = await authService.getUserRole();
+    if (role?.toLowerCase() == 'developer') {
+      // Redirect developer to tasks page
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.offAllNamed(AppRoute.tasks);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();

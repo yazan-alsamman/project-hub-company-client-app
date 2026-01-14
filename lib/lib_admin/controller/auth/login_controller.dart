@@ -165,13 +165,19 @@ class LoginControllerImpl extends LoginController {
           }
           Get.offAllNamed('/client/tasks-page');
         } else {
-          // Route to admin app (dev, admin, pm)
+          // Route to admin app (developer, admin, pm)
           debugPrint('🔵 Routing to admin app');
           // Initialize all controllers after successful login
           debugPrint('🔄 Initializing all controllers after login...');
           ControllersInitializer.initializeControllers();
           debugPrint('✅ All controllers initialized');
-          Get.offAllNamed(AppRoute.team);
+          // Route developer to tasks page, others to team page
+          if (userRole?.toLowerCase() == 'developer') {
+            debugPrint('🔵 Routing developer to tasks page');
+            Get.offAllNamed(AppRoute.tasks);
+          } else {
+            Get.offAllNamed(AppRoute.team);
+          }
         }
       },
     );
