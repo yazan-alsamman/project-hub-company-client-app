@@ -5,6 +5,7 @@ import '../../../controller/delays/delays_controller.dart';
 import '../../../core/class/statusrequest.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/constant/responsive.dart';
+import '../../../core/services/auth_service.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/custom_drawer.dart';
 import '../../widgets/common/header.dart';
@@ -19,17 +20,11 @@ class DelaysScreen extends StatefulWidget {
 
 class _DelaysScreenState extends State<DelaysScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
+  TabController? _tabController;
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -45,36 +40,58 @@ class _DelaysScreenState extends State<DelaysScreen>
       ),
       appBar: const CustomAppBar(),
       body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              color: AppColor.backgroundColor,
-              child: TabBar(
-                controller: _tabController,
-                labelColor: AppColor.primaryColor,
-                unselectedLabelColor: AppColor.textSecondaryColor,
-                indicatorColor: AppColor.primaryColor,
-                isScrollable: true,
-                tabs: const [
-                  Tab(text: 'Delay Summary'),
-                  Tab(text: 'All Projects Delay Status'),
-                  Tab(text: 'Project Delay Status'),
-                  Tab(text: 'Project Task Delays'),
-                ],
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildDelaySummaryTab(context),
-                  _buildAllProjectsDelayStatusTab(context),
-                  _buildProjectDelayStatusTab(context),
-                  _buildProjectTaskDelaysTab(context),
-                ],
-              ),
-            ),
-          ],
+        child: FutureBuilder<String?>(
+          future: AuthService().getUserRole(),
+          builder: (context, snapshot) {
+            final role = snapshot.data?.toLowerCase() ?? '';
+            final isPm = role == 'pm';
+            final tabCount = isPm ? 2 : 4;
+
+            // Initialize TabController only once
+            _tabController ??= TabController(length: tabCount, vsync: this);
+
+            return Column(
+              children: [
+                Container(
+                  color: AppColor.backgroundColor,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: AppColor.primaryColor,
+                    unselectedLabelColor: AppColor.textSecondaryColor,
+                    indicatorColor: AppColor.primaryColor,
+                    isScrollable: true,
+                    tabs: isPm
+                        ? const [
+                            Tab(text: 'Project Delay Status'),
+                            Tab(text: 'Project Task Delays'),
+                          ]
+                        : const [
+                            Tab(text: 'Delay Summary'),
+                            Tab(text: 'All Projects Delay Status'),
+                            Tab(text: 'Project Delay Status'),
+                            Tab(text: 'Project Task Delays'),
+                          ],
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: isPm
+                        ? [
+                            _buildProjectDelayStatusTab(context),
+                            _buildProjectTaskDelaysTab(context),
+                          ]
+                        : [
+                            _buildDelaySummaryTab(context),
+                            _buildAllProjectsDelayStatusTab(context),
+                            _buildProjectDelayStatusTab(context),
+                            _buildProjectTaskDelaysTab(context),
+                          ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

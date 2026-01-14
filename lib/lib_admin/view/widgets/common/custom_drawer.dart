@@ -58,6 +58,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
     return roleLower == 'developer';
   }
 
+  bool _isPm() {
+    if (_userRole == null) return false;
+    final roleLower = _userRole!.toLowerCase();
+    return roleLower == 'pm';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -237,7 +243,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         Get.toNamed(AppRoute.addClient);
                       },
                     ),
-                  if (_isAdmin())
+                  if (_isAdmin() || _isPm())
                     buildMenuItem(
                       icon: Icons.timer_off,
                       title: 'Delays',
