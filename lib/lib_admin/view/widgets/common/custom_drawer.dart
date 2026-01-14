@@ -46,6 +46,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
     return roleLower == 'admin' || roleLower == 'pm';
   }
 
+  bool _isAdmin() {
+    if (_userRole == null) return false;
+    final roleLower = _userRole!.toLowerCase();
+    return roleLower == 'admin';
+  }
+
   bool _isDev() {
     if (_userRole == null) return false;
     final roleLower = _userRole!.toLowerCase();
@@ -229,6 +235,18 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         }
                         Get.back();
                         Get.toNamed(AppRoute.addClient);
+                      },
+                    ),
+                  if (_isAdmin())
+                    buildMenuItem(
+                      icon: Icons.timer_off,
+                      title: 'Delays',
+                      onTap: () {
+                        if (widget.onItemTap != null) {
+                          widget.onItemTap!('Delays');
+                        }
+                        Get.back();
+                        Get.offAllNamed(AppRoute.delays);
                       },
                     ),
                 ],

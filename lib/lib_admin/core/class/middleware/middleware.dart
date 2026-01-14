@@ -32,7 +32,8 @@ class MyMiddleWare extends GetMiddleware {
         route == AppRoute.assignments ||
         route == AppRoute.addAssignment ||
         route == AppRoute.addClient ||
-        route == AppRoute.aiAssistance) {
+        route == AppRoute.aiAssistance ||
+        route == AppRoute.delays) {
       return null;
     }
     String? onBoardingStatus = myservices.sharedPreferences.getString(

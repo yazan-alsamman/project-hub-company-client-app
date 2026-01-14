@@ -106,6 +106,10 @@ class ApiConstant {
   static const String uploadAvatar = '/upload/avatar';
   static const String createClient = '/user';
   static const String deleteClient = '/user/{id}';
+  static const String projectDelaySummary = '/project-delay/summary';
+  static const String projectDelay = '/project-delay';
+  static const String projectDelayByProject = '/project-delay/project/{projectId}';
+  static const String projectTaskDelays = '/project-delay/project/{projectId}/tasks';
   static String replacePathParams(String path, Map<String, String> params) {
     String result = path;
     params.forEach((key, value) {
