@@ -303,6 +303,59 @@ class TasksRepository {
     }
   }
 
+  Future<Either<StatusRequest, bool>> requestTaskDelay({
+    required String taskId,
+    required String newDueDate,
+    required String reason,
+  }) async {
+    debugPrint('🔵 TasksRepository: Requesting task delay...');
+    debugPrint('🔵 TaskId: $taskId, NewDueDate: $newDueDate, Reason: $reason');
+    try {
+      final body = <String, dynamic>{
+        'newDueDate': newDueDate,
+        'reason': reason,
+      };
+      debugPrint('🔵 Request body: $body');
+      final result = await _apiService.post(
+        ApiConstant.requestTaskDelay,
+        pathParams: {'id': taskId},
+        body: body,
+        requiresAuth: true,
+      );
+      return result.fold(
+        (error) {
+          debugPrint('🔴 TasksRepository error requesting task delay: $error');
+          return Left(error);
+        },
+        (response) {
+          try {
+            debugPrint('🟢 TasksRepository request delay response received');
+            debugPrint('🟢 Response: $response');
+            if (response['success'] == true) {
+              debugPrint('✅ Successfully requested task delay');
+              return const Right(true);
+            } else {
+              final errorMessage =
+                  response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to request task delay';
+              debugPrint('🔴 Failed to request task delay');
+              debugPrint('🔴 Error message: $errorMessage');
+              return Left(StatusRequest.serverFailure);
+            }
+          } catch (e, stackTrace) {
+            debugPrint('🔴 Task delay request parsing error: $e');
+            debugPrint('Stack trace: $stackTrace');
+            return const Left(StatusRequest.serverException);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 TasksRepository exception requesting task delay: $e');
+      return const Left(StatusRequest.serverException);
+    }
+  }
+
   Future<Either<StatusRequest, List<TaskModel>>> getTasksByProject({
     required String projectId,
     int page = 1,

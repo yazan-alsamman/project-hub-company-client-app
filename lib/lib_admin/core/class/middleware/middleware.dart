@@ -18,11 +18,17 @@ class MyMiddleWare extends GetMiddleware {
         route == AppRoute.team ||
         route == AppRoute.tasks ||
         route == AppRoute.addEmployee ||
+        route == AppRoute.editEmployee ||
         route == AppRoute.addTask ||
+        route == AppRoute.editTask ||
+        route == AppRoute.taskDetail ||
+        route == AppRoute.requestDelay ||
         route == AppRoute.addProject ||
+        route == AppRoute.editProject ||
+        route == AppRoute.projectDetails ||
+        route == AppRoute.projectComments ||
         route == AppRoute.memberDetail ||
         route == AppRoute.profile ||
-        route == AppRoute.projectDetails ||
         route == AppRoute.assignments ||
         route == AppRoute.addAssignment ||
         route == AppRoute.addClient ||

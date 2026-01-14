@@ -402,6 +402,14 @@ class TasksScreen extends StatelessWidget {
                                                 controller,
                                               );
                                             },
+                                      onRequestDelay: isDeveloper
+                                          ? () {
+                                              Get.toNamed(
+                                                AppRoute.requestDelay,
+                                                arguments: task,
+                                              );
+                                            }
+                                          : null,
                                     );
                                   }).toList(),
                                 );

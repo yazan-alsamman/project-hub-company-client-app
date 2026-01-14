@@ -17,6 +17,7 @@ class TaskCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onRequestDelay;
   const TaskCard({
     super.key,
     required this.title,
@@ -33,6 +34,7 @@ class TaskCard extends StatelessWidget {
     this.onTap,
     this.onEdit,
     this.onDelete,
+    this.onRequestDelay,
   });
   Widget _buildCardContent(BuildContext context) {
     return Container(
@@ -105,20 +107,47 @@ class TaskCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColor.backgroundColor,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              category,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColor.textColor,
-                fontWeight: FontWeight.w500,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColor.backgroundColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  category,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColor.textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
+              if (onRequestDelay != null) ...[
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: onRequestDelay,
+                  icon: const Icon(Icons.schedule, size: 14),
+                  label: const Text(
+                    'Request Delay',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    minimumSize: const Size(0, 28),
+                    side: BorderSide(color: AppColor.primaryColor, width: 1),
+                    foregroundColor: AppColor.primaryColor,
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 16),
           Row(
