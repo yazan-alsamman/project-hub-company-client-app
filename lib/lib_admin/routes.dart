@@ -14,6 +14,7 @@ import 'view/screens/team/add_employee_screen.dart';
 import 'view/screens/team/edit_employee_screen.dart';
 import 'view/screens/Tasks/add_task_screen.dart';
 import 'view/screens/Tasks/edit_task_screen.dart';
+import 'view/screens/Tasks/task_detail_screen.dart';
 import 'view/screens/projects/add_project_screen.dart';
 import 'view/screens/projects/edit_project_screen.dart';
 import 'view/screens/analytics/analytics_Screen.dart';
@@ -70,6 +71,12 @@ List<GetPage<dynamic>>? routes = [
     page: () {
       final taskId = Get.arguments as String;
       return EditTaskScreen(taskId: taskId);
+    },
+  ),
+  GetPage(
+    name: AppRoute.taskDetail,
+    page: () {
+      return const TaskDetailScreen();
     },
   ),
   GetPage(name: AppRoute.addProject, page: () => const AddProjectScreen()),

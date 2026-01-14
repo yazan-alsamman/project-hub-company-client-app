@@ -295,96 +295,117 @@ class TasksScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        GetBuilder<FilterButtonController>(
-                          builder: (filterController) {
-                            final filteredTasks = controller.filteredTasks;
-                            if (filteredTasks.isEmpty &&
-                                !controller.isLoading &&
-                                controller.statusRequest ==
-                                    StatusRequest.success) {
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(40.0),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.task_outlined,
-                                        size: 64,
-                                        color: AppColor.textSecondaryColor,
+                        FutureBuilder<String?>(
+                          future: AuthService().getUserRole(),
+                          builder: (context, roleSnapshot) {
+                            return GetBuilder<FilterButtonController>(
+                              builder: (filterController) {
+                                final filteredTasks = controller.filteredTasks;
+                                final userRole = roleSnapshot.data?.toLowerCase() ?? '';
+                                final isDeveloper = userRole == 'developer';
+                                final isPM = userRole == 'pm';
+                                final canViewTaskDetail = isDeveloper || isPM;
+                                if (filteredTasks.isEmpty &&
+                                    !controller.isLoading &&
+                                    controller.statusRequest ==
+                                        StatusRequest.success) {
+                                  return Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(40.0),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.task_outlined,
+                                            size: 64,
+                                            color: AppColor.textSecondaryColor,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'No tasks found',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: AppColor.textSecondaryColor,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'No tasks found',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: AppColor.textSecondaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-                            return Column(
-                              children: filteredTasks.map((task) {
-                                Color priorityColor;
-                                Color avatarColor;
-                                bool isCompleted = task.status == 'Completed';
-                                bool isPending = task.status == 'Pending';
-                                switch (task.priorityColor) {
-                                  case 'error':
-                                    priorityColor = AppColor.errorColor;
-                                    break;
-                                  case 'orange':
-                                    priorityColor = Colors.orange;
-                                    break;
-                                  case 'green':
-                                    priorityColor = Colors.green;
-                                    break;
-                                  default:
-                                    priorityColor = AppColor.errorColor;
+                                    ),
+                                  );
                                 }
-                                switch (task.avatarColor) {
-                                  case 'primary':
-                                    avatarColor = AppColor.primaryColor;
-                                    break;
-                                  case 'purple':
-                                    avatarColor = Colors.purple;
-                                    break;
-                                  case 'blue':
-                                    avatarColor = Colors.blue;
-                                    break;
-                                  default:
-                                    avatarColor = AppColor.primaryColor;
-                                }
-                                return TaskCard(
-                                  title: task.title,
-                                  subtitle: task.subtitle,
-                                  category: task.category,
-                                  priority: task.priority,
-                                  dueDate: task.dueDate,
-                                  assigneeName: task.assigneeName,
-                                  assigneeInitials: task.assigneeInitials,
-                                  priorityColor: priorityColor,
-                                  avatarColor: avatarColor,
-                                  isCompleted: isCompleted,
-                                  isPending: isPending,
-                                  onEdit: () {
-                                    Get.toNamed(
-                                      AppRoute.editTask,
-                                      arguments: task.id,
+                                return Column(
+                                  children: filteredTasks.map((task) {
+                                    Color priorityColor;
+                                    Color avatarColor;
+                                    bool isCompleted = task.status == 'Completed';
+                                    bool isPending = task.status == 'Pending';
+                                    switch (task.priorityColor) {
+                                      case 'error':
+                                        priorityColor = AppColor.errorColor;
+                                        break;
+                                      case 'orange':
+                                        priorityColor = Colors.orange;
+                                        break;
+                                      case 'green':
+                                        priorityColor = Colors.green;
+                                        break;
+                                      default:
+                                        priorityColor = AppColor.errorColor;
+                                    }
+                                    switch (task.avatarColor) {
+                                      case 'primary':
+                                        avatarColor = AppColor.primaryColor;
+                                        break;
+                                      case 'purple':
+                                        avatarColor = Colors.purple;
+                                        break;
+                                      case 'blue':
+                                        avatarColor = Colors.blue;
+                                        break;
+                                      default:
+                                        avatarColor = AppColor.primaryColor;
+                                    }
+                                    return TaskCard(
+                                      title: task.title,
+                                      subtitle: task.subtitle,
+                                      category: task.category,
+                                      priority: task.priority,
+                                      dueDate: task.dueDate,
+                                      assigneeName: task.assigneeName,
+                                      assigneeInitials: task.assigneeInitials,
+                                      priorityColor: priorityColor,
+                                      avatarColor: avatarColor,
+                                      isCompleted: isCompleted,
+                                      isPending: isPending,
+                                      onTap: canViewTaskDetail
+                                          ? () {
+                                              Get.toNamed(
+                                                AppRoute.taskDetail,
+                                                arguments: task,
+                                              );
+                                            }
+                                          : null,
+                                      onEdit: isDeveloper
+                                          ? null
+                                          : () {
+                                              Get.toNamed(
+                                                AppRoute.editTask,
+                                                arguments: task.id,
+                                              );
+                                            },
+                                      onDelete: isDeveloper
+                                          ? null
+                                          : () {
+                                              _handleDeleteTask(
+                                                context,
+                                                task,
+                                                controller,
+                                              );
+                                            },
                                     );
-                                  },
-                                  onDelete: () {
-                                    _handleDeleteTask(
-                                      context,
-                                      task,
-                                      controller,
-                                    );
-                                  },
+                                  }).toList(),
                                 );
-                              }).toList(),
+                              },
                             );
                           },
                         ),

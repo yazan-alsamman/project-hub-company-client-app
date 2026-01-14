@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../../core/constant/color.dart';
+
 class TaskCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -13,6 +14,7 @@ class TaskCard extends StatelessWidget {
   final Color avatarColor;
   final bool isCompleted;
   final bool isPending;
+  final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   const TaskCard({
@@ -28,6 +30,7 @@ class TaskCard extends StatelessWidget {
     this.avatarColor = AppColor.primaryColor,
     this.isCompleted = false,
     this.isPending = false,
+    this.onTap,
     this.onEdit,
     this.onDelete,
   });
@@ -212,10 +215,15 @@ class TaskCard extends StatelessWidget {
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
+    final cardContent = onTap != null
+        ? GestureDetector(onTap: onTap, child: _buildCardContent(context))
+        : _buildCardContent(context);
+
     if (onEdit == null && onDelete == null) {
-      return _buildCardContent(context);
+      return cardContent;
     }
     return Slidable(
       key: ValueKey(title),
@@ -249,7 +257,7 @@ class TaskCard extends StatelessWidget {
             ),
         ],
       ),
-      child: _buildCardContent(context),
+      child: cardContent,
     );
   }
 }
