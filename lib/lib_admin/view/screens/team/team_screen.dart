@@ -144,8 +144,7 @@ class _TeamScreenState extends State<TeamScreen> {
                               final role = snapshot.data?.toLowerCase() ?? '';
                               final canAddEmployee =
                                   role == 'pm' ||
-                                  role == 'admin' ||
-                                  role == 'superadmin';
+                                  role == 'admin';
                               return Header(
                                 title: "Team",
                                 subtitle: "Manage your team members and roles",

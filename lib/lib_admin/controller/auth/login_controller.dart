@@ -112,6 +112,37 @@ class LoginControllerImpl extends LoginController {
         );
         debugPrint('🔵 User role: $userRole');
 
+        // Check if user is superadmin and block login
+        if (userRole?.toLowerCase() == 'superadmin' ||
+            userRole?.toLowerCase() == 'super admin') {
+          debugPrint('🔴 Superadmin login blocked');
+          statusRequest = StatusRequest.serverFailure;
+          update();
+          Get.snackbar(
+            'Access Denied',
+            'Super admin accounts are not allowed to access this application.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.errorColor,
+            colorText: AppColor.white,
+            icon: const Icon(
+              Icons.block,
+              color: AppColor.white,
+              size: 28,
+            ),
+            duration: const Duration(seconds: 5),
+            borderRadius: 12,
+            margin: const EdgeInsets.all(16),
+          );
+          // Clear any saved auth data
+          await authService.sharedPreferences.remove('user_role');
+          await authService.sharedPreferences.remove('auth_token');
+          await authService.sharedPreferences.remove('refresh_token');
+          await authService.sharedPreferences.remove('user_id');
+          await authService.sharedPreferences.remove('user_email');
+          await authService.sharedPreferences.remove('user_username');
+          return;
+        }
+
         // Route based on user role
         if (userRole?.toLowerCase() == 'client') {
           // Route to client app
@@ -134,7 +165,7 @@ class LoginControllerImpl extends LoginController {
           }
           Get.offAllNamed('/client/tasks-page');
         } else {
-          // Route to admin app (dev, admin, superAdmin, pm)
+          // Route to admin app (dev, admin, pm)
           debugPrint('🔵 Routing to admin app');
           // Initialize all controllers after successful login
           debugPrint('🔄 Initializing all controllers after login...');
@@ -146,7 +177,6 @@ class LoginControllerImpl extends LoginController {
     );
   }
 
-  @override
   void toggleRememberMe() {
     rememberMe = !rememberMe;
     update();
