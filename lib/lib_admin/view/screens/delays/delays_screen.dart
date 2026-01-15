@@ -19,13 +19,22 @@ class DelaysScreen extends StatefulWidget {
 }
 
 class _DelaysScreenState extends State<DelaysScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   TabController? _tabController;
+  int? _previousTabCount;
 
   @override
   void dispose() {
     _tabController?.dispose();
     super.dispose();
+  }
+
+  void _initializeTabController(int tabCount) {
+    if (_tabController == null || _previousTabCount != tabCount) {
+      _tabController?.dispose();
+      _tabController = TabController(length: tabCount, vsync: this);
+      _previousTabCount = tabCount;
+    }
   }
 
   @override
@@ -47,8 +56,8 @@ class _DelaysScreenState extends State<DelaysScreen>
             final isPm = role == 'pm';
             final tabCount = isPm ? 2 : 4;
 
-            // Initialize TabController only once
-            _tabController ??= TabController(length: tabCount, vsync: this);
+            // Initialize or update TabController when tab count changes
+            _initializeTabController(tabCount);
 
             return Column(
               children: [

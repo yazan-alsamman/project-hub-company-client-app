@@ -58,6 +58,11 @@ class AddEmployeeControllerImp extends AddEmployeeController {
     isLoadingRoles = true;
     update();
     try {
+      // Get current user role
+      final currentUserRole = await authService.getUserRole();
+      final currentUserRoleLower = currentUserRole?.toLowerCase() ?? '';
+      debugPrint('🔵 Current user role: $currentUserRoleLower');
+      
       final result = await _teamRepository.getRoles();
       result.fold(
         (error) {
@@ -67,12 +72,31 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         },
         (rolesList) {
           debugPrint('✅ Loaded ${rolesList.length} roles');
-          // Filter out "client" role (case-insensitive)
+          // Filter roles based on current user role
           roles = rolesList.where((role) {
             final roleNameLower = role.name.toLowerCase();
-            return roleNameLower != 'client';
+            
+            // Always exclude "client" role
+            if (roleNameLower == 'client') {
+              return false;
+            }
+            
+            // If current user is admin: show only "project manager" and "developer"
+            if (currentUserRoleLower == 'admin') {
+              return roleNameLower == 'project manager' || 
+                     roleNameLower == 'pm' ||
+                     roleNameLower == 'developer';
+            }
+            
+            // If current user is PM: show only "developer"
+            if (currentUserRoleLower == 'pm' || currentUserRoleLower == 'project manager') {
+              return roleNameLower == 'developer';
+            }
+            
+            // For other roles (like superadmin), show all roles except client
+            return true;
           }).toList();
-          debugPrint('✅ Filtered roles: ${roles.length} roles (excluding client)');
+          debugPrint('✅ Filtered roles: ${roles.length} roles for user role: $currentUserRoleLower');
           if (roles.isNotEmpty && selectedRoleId == null) {
             selectedRoleId = roles.first.id;
           }
