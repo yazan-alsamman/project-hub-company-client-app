@@ -508,7 +508,7 @@ class _DelaysScreenState extends State<DelaysScreen>
               ),
               child: _buildProjectDelayStatusCard(context, projectData),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -945,7 +945,7 @@ class _DelaysScreenState extends State<DelaysScreen>
               ),
               child: _buildTaskDelayCard(context, taskData),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -1019,7 +1019,7 @@ class _DelaysScreenState extends State<DelaysScreen>
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${delayDays} days',
+                  '$delayDays days',
                   style: TextStyle(
                     fontSize: Responsive.fontSize(context, mobile: 12),
                     fontWeight: FontWeight.bold,

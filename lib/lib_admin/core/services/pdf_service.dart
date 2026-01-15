@@ -1162,7 +1162,7 @@ class PDFService {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

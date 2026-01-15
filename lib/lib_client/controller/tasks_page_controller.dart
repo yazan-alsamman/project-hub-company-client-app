@@ -382,7 +382,7 @@ class TasksPageController extends GetxController {
 
     if (currentProjectId != null &&
         currentProjectId != 'All' &&
-        currentProjectId!.isNotEmpty) {
+        currentProjectId.isNotEmpty) {
       relevantTasks = allTasks
           .where((task) => task.projectId == currentProjectId)
           .toList();

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 import 'package:project_hub/lib_client/core/services/api_service.dart';
 import 'package:project_hub/lib_client/data/Models/comment_model.dart';
 
@@ -9,6 +10,7 @@ class CommentRepository {
     String taskId,
   ) async {
     try {
+      debugPrint('🔵 CommentRepository: Getting comments for task $taskId');
       final response = await _apiService.get('/comment/task/$taskId');
       final data = _apiService.handleResponse(response);
 
@@ -20,6 +22,7 @@ class CommentRepository {
                 (item) => CommentModel.fromJson(item as Map<String, dynamic>),
               )
               .toList();
+          debugPrint('✅ Found ${comments.length} comments');
           return Right(comments);
         }
         if (dataObj is List) {
@@ -28,12 +31,15 @@ class CommentRepository {
                 (item) => CommentModel.fromJson(item as Map<String, dynamic>),
               )
               .toList();
+          debugPrint('✅ Found ${comments.length} comments');
           return Right(comments);
         }
       }
 
-      return Right([]);
+      debugPrint('⚠️ No comments found');
+      return const Right([]);
     } catch (e) {
+      debugPrint('🔴 Exception loading comments: $e');
       return Left(e.toString());
     }
   }
@@ -42,13 +48,14 @@ class CommentRepository {
     CommentModel comment,
   ) async {
     try {
+      debugPrint('🔵 CommentRepository: Creating comment');
       // Determine refType and refId from comment
       String refType = 'Task';
       String? refId = comment.taskId;
 
       // If taskId is null, try to infer from the comment structure
       if (refId == null || refId.isEmpty) {
-        return Left('Task ID or Project ID is required');
+        return const Left('Task ID or Project ID is required');
       }
 
       final response = await _apiService.post(
@@ -62,11 +69,13 @@ class CommentRepository {
         final createdComment = CommentModel.fromJson(
           data['data'] as Map<String, dynamic>,
         );
+        debugPrint('✅ Comment created successfully');
         return Right(createdComment);
       }
 
-      return Left('Failed to create comment');
+      return const Left('Failed to create comment');
     } catch (e) {
+      debugPrint('🔴 Exception creating comment: $e');
       return Left(e.toString());
     }
   }
@@ -76,6 +85,7 @@ class CommentRepository {
     String text,
   ) async {
     try {
+      debugPrint('🔵 CommentRepository: Adding comment to task');
       final commentData = {'content': text, 'refType': 'Task', 'refId': taskId};
 
       final response = await _apiService.post('/comment', body: commentData);
@@ -86,11 +96,13 @@ class CommentRepository {
         final createdComment = CommentModel.fromJson(
           data['data'] as Map<String, dynamic>,
         );
+        debugPrint('✅ Comment added successfully');
         return Right(createdComment);
       }
 
-      return Left('Failed to create comment');
+      return const Left('Failed to create comment');
     } catch (e) {
+      debugPrint('🔴 Exception adding comment: $e');
       return Left(e.toString());
     }
   }
@@ -211,6 +223,69 @@ class CommentRepository {
       final response = await _apiService.delete('/comment/$id');
       _apiService.handleResponse(response);
       return const Right(true);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  Future<Either<String, List<CommentModel>>> getCommentReplies(
+    String commentId,
+  ) async {
+    try {
+      final response = await _apiService.get('/comment/$commentId/replies');
+      final data = _apiService.handleResponse(response);
+
+      if (data['data'] != null) {
+        final dataObj = data['data'] as Map<String, dynamic>;
+        if (dataObj['replies'] != null && dataObj['replies'] is List) {
+          final replies = (dataObj['replies'] as List)
+              .map(
+                (item) => CommentModel.fromJson(item as Map<String, dynamic>),
+              )
+              .toList();
+          return Right(replies);
+        }
+        if (dataObj is List) {
+          final replies = (dataObj as List)
+              .map(
+                (item) => CommentModel.fromJson(item as Map<String, dynamic>),
+              )
+              .toList();
+          return Right(replies);
+        }
+      }
+
+      return Right([]);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  Future<Either<String, CommentModel>> addReplyToComment(
+    String taskId,
+    String commentId,
+    String text,
+  ) async {
+    try {
+      final commentData = {
+        'content': text,
+        'refType': 'Task',
+        'refId': taskId,
+        'parentId': commentId,
+      };
+
+      final response = await _apiService.post('/comment', body: commentData);
+
+      final data = _apiService.handleResponse(response);
+
+      if (data['data'] != null) {
+        final createdReply = CommentModel.fromJson(
+          data['data'] as Map<String, dynamic>,
+        );
+        return Right(createdReply);
+      }
+
+      return Left('Failed to create reply');
     } catch (e) {
       return Left(e.toString());
     }

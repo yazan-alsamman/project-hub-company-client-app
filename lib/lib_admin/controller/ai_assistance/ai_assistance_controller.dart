@@ -504,6 +504,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     }
   }
 
+  @override
   Future<void> showProjectSelectionDialog(BuildContext context) async {
     try {
       // Get company ID
@@ -1016,7 +1017,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       }
 
       debugPrint(
-        '📊 Filtered ${filteredCount} employee(s) with non-development roles',
+        '📊 Filtered $filteredCount employee(s) with non-development roles',
       );
 
       debugPrint('✅ Parsed ${employeesForAI.length} employees for AI');

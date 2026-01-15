@@ -107,7 +107,7 @@ class LoginControllerImpl extends LoginController {
 
         // Get user role from auth service
         final authService = Get.find<Myservices>();
-        final userRole = await authService.sharedPreferences.getString(
+        final userRole = authService.sharedPreferences.getString(
           'user_role',
         );
         debugPrint('🔵 User role: $userRole');

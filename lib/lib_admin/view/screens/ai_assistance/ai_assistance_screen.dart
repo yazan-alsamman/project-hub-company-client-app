@@ -616,7 +616,7 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                         const SizedBox(height: 16),
                         ...controller.aiAssignments.map((assignment) {
                           return _buildAssignmentCard(context, assignment);
-                        }).toList(),
+                        }),
                       ],
                       if (controller.showPdfButton) ...[
                         const SizedBox(height: 24),

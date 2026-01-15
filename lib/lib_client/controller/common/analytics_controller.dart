@@ -217,7 +217,7 @@ class AnalyticsControllerImp extends AnalyticsController {
         assigneeMap[assignee] = (assigneeMap[assignee] ?? 0) + 1;
       }
 
-      final total = tasks.length > 0 ? tasks.length : 1;
+      final total = tasks.isNotEmpty ? tasks.length : 1;
       final completedPercent = completedCount / total;
       final inProgressPercent = inProgressCount / total;
       final pendingPercent = pendingCount / total;

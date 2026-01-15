@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/color.dart';
-import '../../../core/constant/routes.dart';
 import '../../../controller/auth/login_controller.dart';
 
 class Options extends StatelessWidget {

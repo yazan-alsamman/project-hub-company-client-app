@@ -108,6 +108,24 @@ class AuthController extends GetxController {
     }
   }
 
+  /// Called by ApiService when tokens are refreshed
+  /// Persists the new tokens to storage
+  Future<void> updateTokensFromRefresh(
+    String newToken,
+    String? newRefreshToken,
+  ) async {
+    try {
+      token.value = newToken;
+      if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+        refreshToken.value = newRefreshToken;
+      }
+      await _storeAuth();
+      debugPrint('✅ Tokens updated and persisted after refresh');
+    } catch (e) {
+      debugPrint('Error updating tokens from refresh: $e');
+    }
+  }
+
   Future<void> logout() async {
     try {
       await _authRepository.logout();

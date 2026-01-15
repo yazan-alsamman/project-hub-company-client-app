@@ -12,6 +12,10 @@ class ApiService {
 
   static const Duration timeoutDuration = Duration(seconds: 30);
 
+  // Token refresh state to prevent multiple simultaneous refresh attempts
+  static bool _isRefreshing = false;
+  static Completer<String>? _refreshCompleter;
+
   Future<bool> testConnection() async {
     try {
       final response = await http
@@ -48,6 +52,103 @@ class ApiService {
       debugPrint('Connection test: Unknown error - $e');
 
       return false;
+    }
+  }
+
+  /// Refreshes the access token using the refresh token
+  Future<String?> _refreshAccessToken() async {
+    try {
+      // If another request is already refreshing, wait for it to complete
+      if (_isRefreshing && _refreshCompleter != null) {
+        debugPrint(
+          '🔄 Token refresh already in progress, waiting for completion',
+        );
+        return await _refreshCompleter!.future;
+      }
+
+      _isRefreshing = true;
+      _refreshCompleter = Completer<String>();
+
+      if (!Get.isRegistered<AuthController>()) {
+        debugPrint('🔴 AuthController not available, cannot refresh token');
+        _isRefreshing = false;
+        _refreshCompleter = null;
+        return null;
+      }
+
+      final authController = Get.find<AuthController>();
+      final currentRefreshToken = authController.refreshToken.value;
+
+      if (currentRefreshToken.isEmpty) {
+        debugPrint('🔴 No refresh token available');
+        _isRefreshing = false;
+        _refreshCompleter = null;
+        return null;
+      }
+
+      debugPrint('🔄 Attempting to refresh access token...');
+
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/user/refresh'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({'refreshToken': currentRefreshToken}),
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw Exception('Token refresh timeout');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['success'] == true && data['data'] != null) {
+          final newToken = data['data']['token'] as String?;
+          final newRefreshToken = data['data']['refreshToken'] as String?;
+
+          if (newToken != null && newToken.isNotEmpty) {
+            // Update the token in the auth controller and persist to storage
+            final authController = Get.find<AuthController>();
+            await authController.updateTokensFromRefresh(
+              newToken,
+              newRefreshToken,
+            );
+
+            debugPrint('✅ Token refreshed successfully');
+            _refreshCompleter?.complete(newToken);
+
+            _isRefreshing = false;
+            _refreshCompleter = null;
+
+            return newToken;
+          }
+        }
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        debugPrint('🔴 Refresh token is invalid or expired, logging out');
+        // Refresh token is invalid, log out the user
+        await authController.logout();
+      }
+
+      debugPrint('🔴 Token refresh failed: ${response.statusCode}');
+      _refreshCompleter?.completeError('Token refresh failed');
+
+      _isRefreshing = false;
+      _refreshCompleter = null;
+
+      return null;
+    } catch (e) {
+      debugPrint('🔴 Token refresh error: $e');
+      _refreshCompleter?.completeError(e);
+
+      _isRefreshing = false;
+      _refreshCompleter = null;
+
+      return null;
     }
   }
 
@@ -97,6 +198,27 @@ class ApiService {
             },
           );
 
+      // Handle 401 Unauthorized - try to refresh token and retry
+      if (response.statusCode == 401) {
+        debugPrint('🔴 GET $endpoint returned 401, attempting token refresh');
+        final newToken = await _refreshAccessToken();
+
+        if (newToken != null && newToken.isNotEmpty) {
+          debugPrint('🔄 Retrying GET request after token refresh');
+          // Retry the request with the new token
+          return await http
+              .get(uri, headers: getHeaders(additionalHeaders: headers))
+              .timeout(
+                timeoutDuration,
+                onTimeout: () {
+                  throw Exception(
+                    'Request timeout: Unable to connect to server',
+                  );
+                },
+              );
+        }
+      }
+
       return response;
     } on SocketException catch (e) {
       throw Exception(
@@ -130,6 +252,31 @@ class ApiService {
               throw Exception('Request timeout: Unable to connect to server');
             },
           );
+
+      // Handle 401 Unauthorized - try to refresh token and retry
+      if (response.statusCode == 401) {
+        debugPrint('🔴 POST $endpoint returned 401, attempting token refresh');
+        final newToken = await _refreshAccessToken();
+
+        if (newToken != null && newToken.isNotEmpty) {
+          debugPrint('🔄 Retrying POST request after token refresh');
+          // Retry the request with the new token
+          return await http
+              .post(
+                Uri.parse('$baseUrl$endpoint'),
+                headers: getHeaders(additionalHeaders: headers),
+                body: body != null ? jsonEncode(body) : null,
+              )
+              .timeout(
+                timeoutDuration,
+                onTimeout: () {
+                  throw Exception(
+                    'Request timeout: Unable to connect to server',
+                  );
+                },
+              );
+        }
+      }
 
       return response;
     } on SocketException catch (e) {
@@ -165,6 +312,31 @@ class ApiService {
             },
           );
 
+      // Handle 401 Unauthorized - try to refresh token and retry
+      if (response.statusCode == 401) {
+        debugPrint('🔴 PUT $endpoint returned 401, attempting token refresh');
+        final newToken = await _refreshAccessToken();
+
+        if (newToken != null && newToken.isNotEmpty) {
+          debugPrint('🔄 Retrying PUT request after token refresh');
+          // Retry the request with the new token
+          return await http
+              .put(
+                Uri.parse('$baseUrl$endpoint'),
+                headers: getHeaders(additionalHeaders: headers),
+                body: body != null ? jsonEncode(body) : null,
+              )
+              .timeout(
+                timeoutDuration,
+                onTimeout: () {
+                  throw Exception(
+                    'Request timeout: Unable to connect to server',
+                  );
+                },
+              );
+        }
+      }
+
       return response;
     } on SocketException catch (e) {
       throw Exception(
@@ -199,6 +371,31 @@ class ApiService {
             },
           );
 
+      // Handle 401 Unauthorized - try to refresh token and retry
+      if (response.statusCode == 401) {
+        debugPrint('🔴 PATCH $endpoint returned 401, attempting token refresh');
+        final newToken = await _refreshAccessToken();
+
+        if (newToken != null && newToken.isNotEmpty) {
+          debugPrint('🔄 Retrying PATCH request after token refresh');
+          // Retry the request with the new token
+          return await http
+              .patch(
+                Uri.parse('$baseUrl$endpoint'),
+                headers: getHeaders(additionalHeaders: headers),
+                body: body != null ? jsonEncode(body) : null,
+              )
+              .timeout(
+                timeoutDuration,
+                onTimeout: () {
+                  throw Exception(
+                    'Request timeout: Unable to connect to server',
+                  );
+                },
+              );
+        }
+      }
+
       return response;
     } on SocketException catch (e) {
       throw Exception(
@@ -230,6 +427,32 @@ class ApiService {
               throw Exception('Request timeout: Unable to connect to server');
             },
           );
+
+      // Handle 401 Unauthorized - try to refresh token and retry
+      if (response.statusCode == 401) {
+        debugPrint(
+          '🔴 DELETE $endpoint returned 401, attempting token refresh',
+        );
+        final newToken = await _refreshAccessToken();
+
+        if (newToken != null && newToken.isNotEmpty) {
+          debugPrint('🔄 Retrying DELETE request after token refresh');
+          // Retry the request with the new token
+          return await http
+              .delete(
+                Uri.parse('$baseUrl$endpoint'),
+                headers: getHeaders(additionalHeaders: headers),
+              )
+              .timeout(
+                timeoutDuration,
+                onTimeout: () {
+                  throw Exception(
+                    'Request timeout: Unable to connect to server',
+                  );
+                },
+              );
+        }
+      }
 
       return response;
     } on SocketException catch (e) {

@@ -6,6 +6,7 @@ import 'package:project_hub/lib_client/core/constant/color.dart';
 import 'package:project_hub/lib_client/core/constant/responsive.dart';
 import 'package:project_hub/lib_client/controller/comments_page_controller.dart';
 import 'package:project_hub/lib_client/controller/custom_app_bar_controller.dart';
+import 'package:project_hub/lib_client/controller/auth_controller.dart';
 import 'package:project_hub/lib_client/data/Models/task_model.dart';
 import 'package:project_hub/lib_client/data/Models/comment_model.dart';
 import '../widgets/custom_app_bar.dart';
@@ -29,55 +30,49 @@ class CommentsPage extends StatelessWidget {
       appBar: const CustomAppBar(showBackButton: true, title: ''),
       body: GetBuilder<CommentsPageController>(
         builder: (controller) {
-          return Obx(() {
-            if (controller.isLoading.value) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppColor.primaryColor),
-              );
-            }
+          if (controller.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColor.primaryColor),
+            );
+          }
 
-            // Get keyboard height
-            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+          // Get keyboard height
+          final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-            return Column(
-              children: [
-                _buildHeaderSection(context, controller),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      left: Responsive.spacing(context, mobile: 16),
-                      right: Responsive.spacing(context, mobile: 16),
-                      top: Responsive.spacing(context, mobile: 16),
-                      bottom:
-                          Responsive.spacing(context, mobile: 16) +
-                          keyboardHeight,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Comments',
-                          style: TextStyle(
-                            fontSize: Responsive.fontSize(context, mobile: 24),
-                            fontWeight: FontWeight.bold,
-                            color: AppColor.textColor,
-                          ),
+          return Column(
+            children: [
+              _buildHeaderSection(context, controller),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    left: Responsive.spacing(context, mobile: 16),
+                    right: Responsive.spacing(context, mobile: 16),
+                    top: Responsive.spacing(context, mobile: 16),
+                    bottom:
+                        Responsive.spacing(context, mobile: 16) +
+                        keyboardHeight,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Comments',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 24),
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.textColor,
                         ),
-                        SizedBox(
-                          height: Responsive.spacing(context, mobile: 24),
-                        ),
-                        _buildAddCommentInput(context, controller),
-                        SizedBox(
-                          height: Responsive.spacing(context, mobile: 24),
-                        ),
-                        _buildCommentsList(context, controller),
-                      ],
-                    ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 24)),
+                      _buildAddCommentInput(context, controller),
+                      SizedBox(height: Responsive.spacing(context, mobile: 24)),
+                      _buildCommentsList(context, controller),
+                    ],
                   ),
                 ),
-              ],
-            );
-          });
+              ),
+            ],
+          );
         },
       ),
     );
@@ -110,11 +105,8 @@ class CommentsPage extends StatelessWidget {
             ],
           ),
           SizedBox(height: Responsive.spacing(context, mobile: 16)),
-          Obx(
-            () => controller.selectedTask.value != null
-                ? _buildTaskSummaryCard(context, controller.selectedTask.value!)
-                : const SizedBox(),
-          ),
+          if (controller.selectedTask != null)
+            _buildTaskSummaryCard(context, controller.selectedTask!),
         ],
       ),
     );
@@ -360,7 +352,6 @@ class CommentsPage extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: textController,
-              textInputAction: TextInputAction.done,
               style: TextStyle(
                 color: AppColor.textColor,
                 fontSize: Responsive.fontSize(context, mobile: 14),
@@ -374,28 +365,21 @@ class CommentsPage extends StatelessWidget {
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
-              onSubmitted: (value) async {
+              onSubmitted: (value) {
                 if (value.trim().isNotEmpty) {
-                  final success = await controller.addComment(value);
-                  if (success) {
-                    textController.clear();
-                    // Hide keyboard
-                    FocusScope.of(context).unfocus();
-                  }
+                  controller.addComment(value);
+                  textController.clear();
                 }
               },
             ),
           ),
           SizedBox(width: Responsive.spacing(context, mobile: 8)),
           GestureDetector(
-            onTap: () async {
+            onTap: () {
               final value = textController.text;
               if (value.trim().isNotEmpty) {
-                final success = await controller.addComment(value);
-                if (success) {
-                  textController.clear();
-                  FocusScope.of(context).unfocus();
-                }
+                controller.addComment(value);
+                textController.clear();
               }
             },
             child: Icon(
@@ -456,6 +440,21 @@ class _CommentItemWidget extends StatefulWidget {
 }
 
 class _CommentItemWidgetState extends State<_CommentItemWidget> {
+  late TextEditingController _replyController;
+  bool _isShowingReplyInput = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _replyController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _replyController.dispose();
+    super.dispose();
+  }
+
   void _showDeleteConfirmation() {
     Get.dialog(
       AlertDialog(
@@ -477,14 +476,182 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
     );
   }
 
+  bool _isCommentOwner(CommentModel comment) {
+    if (Get.isRegistered<AuthController>()) {
+      final authController = Get.find<AuthController>();
+      final currentUserId = authController.user['_id']?.toString() ?? '';
+      return comment.authorId == currentUserId && currentUserId.isNotEmpty;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.all(Responsive.spacing(context, mobile: 16)),
+          decoration: BoxDecoration(
+            color: AppColor.cardBackgroundColor,
+            borderRadius: BorderRadius.circular(
+              Responsive.borderRadius(context, mobile: 12),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.comment.text,
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 14),
+                        color: AppColor.textColor,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                  if (_isCommentOwner(widget.comment))
+                    GestureDetector(
+                      onTap: _showDeleteConfirmation,
+                      child: Icon(
+                        Icons.delete_outline,
+                        color: AppColor.errorColor,
+                        size: Responsive.iconSize(context, mobile: 20),
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(height: Responsive.spacing(context, mobile: 8)),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: Responsive.size(context, mobile: 12),
+                    backgroundColor: Color(
+                      widget.comment.authorColor,
+                    ).withValues(alpha: 0.2),
+                    child: Text(
+                      widget.comment.author.isNotEmpty
+                          ? widget.comment.author.substring(0, 1).toUpperCase()
+                          : 'U',
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 10),
+                        color: Color(widget.comment.authorColor),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                  Text(
+                    widget.comment.author,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, mobile: 12),
+                      color: AppColor.textSecondaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, mobile: 12),
+                      color: AppColor.textSecondaryColor,
+                    ),
+                  ),
+                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                  Text(
+                    widget.comment.date,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, mobile: 12),
+                      color: AppColor.textSecondaryColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  if ((widget.comment.replies?.length ?? 0) > 0)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isShowingReplyInput = !_isShowingReplyInput;
+                        });
+                      },
+                      child: Text(
+                        '${widget.comment.replies?.length ?? 0} ${(widget.comment.replies?.length ?? 0) == 1 ? 'reply' : 'replies'}',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 12),
+                          color: AppColor.primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  SizedBox(width: Responsive.spacing(context, mobile: 12)),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isShowingReplyInput = !_isShowingReplyInput;
+                      });
+                    },
+                    child: Text(
+                      'Reply',
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 12),
+                        color: AppColor.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // Display replies
+        if ((widget.comment.replies?.isNotEmpty ?? false))
+          Padding(
+            padding: EdgeInsets.only(
+              left: Responsive.spacing(context, mobile: 24),
+              top: Responsive.spacing(context, mobile: 12),
+              right: 0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: (widget.comment.replies ?? []).map((reply) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: Responsive.spacing(context, mobile: 12),
+                  ),
+                  child: _buildReplyItem(context, reply),
+                );
+              }).toList(),
+            ),
+          ),
+        // Reply input form
+        if (_isShowingReplyInput)
+          Padding(
+            padding: EdgeInsets.only(
+              left: Responsive.spacing(context, mobile: 24),
+              top: Responsive.spacing(context, mobile: 12),
+              right: 0,
+            ),
+            child: _buildReplyInputForm(context),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildReplyItem(BuildContext context, CommentModel reply) {
     return Container(
-      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 16)),
+      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 12)),
       decoration: BoxDecoration(
-        color: AppColor.cardBackgroundColor,
+        color: AppColor.cardBackgroundColor.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(
-          Responsive.borderRadius(context, mobile: 12),
+          Responsive.borderRadius(context, mobile: 8),
+        ),
+        border: Border.all(
+          color: AppColor.borderColor.withValues(alpha: 0.5),
+          width: 0.5,
         ),
       ),
       child: Column(
@@ -495,19 +662,177 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
             children: [
               Expanded(
                 child: Text(
-                  widget.comment.text,
+                  reply.text,
                   style: TextStyle(
-                    fontSize: Responsive.fontSize(context, mobile: 14),
+                    fontSize: Responsive.fontSize(context, mobile: 13),
                     color: AppColor.textColor,
                   ),
                 ),
               ),
               SizedBox(width: Responsive.spacing(context, mobile: 8)),
+              if (_isCommentOwner(reply))
+                GestureDetector(
+                  onTap: () {
+                    Get.dialog(
+                      AlertDialog(
+                        title: const Text('Delete Reply'),
+                        content: const Text(
+                          'Are you sure you want to delete this reply?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Get.back();
+                              if (reply.id != null &&
+                                  widget.comment.id != null) {
+                                widget.controller.deleteReply(
+                                  widget.comment.id!,
+                                  reply.id!,
+                                );
+                              }
+                            },
+                            child: Text(
+                              'Delete',
+                              style: TextStyle(color: AppColor.errorColor),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: AppColor.errorColor,
+                    size: Responsive.iconSize(context, mobile: 16),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: Responsive.size(context, mobile: 10),
+                backgroundColor: Color(
+                  reply.authorColor,
+                ).withValues(alpha: 0.2),
+                child: Text(
+                  reply.author.isNotEmpty
+                      ? reply.author.substring(0, 1).toUpperCase()
+                      : 'U',
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, mobile: 8),
+                    color: Color(reply.authorColor),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 6)),
+              Text(
+                reply.author,
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 11),
+                  color: AppColor.textSecondaryColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 6)),
+              Text(
+                '•',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 11),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 6)),
+              Text(
+                reply.date,
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 11),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyInputForm(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: Responsive.spacing(context, mobile: 12),
+        vertical: Responsive.spacing(context, mobile: 10),
+      ),
+      decoration: BoxDecoration(
+        color: AppColor.cardBackgroundColor.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(
+          Responsive.borderRadius(context, mobile: 8),
+        ),
+        border: Border.all(color: AppColor.borderColor, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _replyController,
+                  style: TextStyle(
+                    color: AppColor.textColor,
+                    fontSize: Responsive.fontSize(context, mobile: 13),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Add a reply...',
+                    hintStyle: TextStyle(
+                      color: AppColor.textSecondaryColor,
+                      fontSize: Responsive.fontSize(context, mobile: 13),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty && widget.comment.id != null) {
+                      widget.controller.addReplyToComment(
+                        widget.comment.id!,
+                        value,
+                      );
+                      if (mounted) {
+                        _replyController.clear();
+                        setState(() {
+                          _isShowingReplyInput = false;
+                        });
+                      }
+                    }
+                  },
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 8)),
               GestureDetector(
-                onTap: _showDeleteConfirmation,
+                onTap: () {
+                  final value = _replyController.text;
+                  if (value.trim().isNotEmpty && widget.comment.id != null) {
+                    widget.controller.addReplyToComment(
+                      widget.comment.id!,
+                      value,
+                    );
+                    if (mounted) {
+                      _replyController.clear();
+                      setState(() {
+                        _isShowingReplyInput = false;
+                      });
+                    }
+                  }
+                },
                 child: Icon(
-                  Icons.delete_outline,
-                  color: AppColor.errorColor,
+                  Icons.send,
+                  color: AppColor.primaryColor,
                   size: Responsive.iconSize(context, mobile: 20),
                 ),
               ),
@@ -515,46 +840,24 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
           ),
           SizedBox(height: Responsive.spacing(context, mobile: 8)),
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              CircleAvatar(
-                radius: Responsive.size(context, mobile: 12),
-                backgroundColor: Color(
-                  widget.comment.authorColor,
-                ).withValues(alpha: 0.2),
+              GestureDetector(
+                onTap: () {
+                  if (mounted) {
+                    setState(() {
+                      _isShowingReplyInput = false;
+                    });
+                    _replyController.clear();
+                  }
+                },
                 child: Text(
-                  widget.comment.author.isNotEmpty
-                      ? widget.comment.author.substring(0, 1).toUpperCase()
-                      : 'U',
+                  'Cancel',
                   style: TextStyle(
-                    fontSize: Responsive.fontSize(context, mobile: 10),
-                    color: Color(widget.comment.authorColor),
-                    fontWeight: FontWeight.w600,
+                    fontSize: Responsive.fontSize(context, mobile: 12),
+                    color: AppColor.textSecondaryColor,
+                    fontWeight: FontWeight.w500,
                   ),
-                ),
-              ),
-              SizedBox(width: Responsive.spacing(context, mobile: 8)),
-              Text(
-                widget.comment.author,
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, mobile: 12),
-                  color: AppColor.textSecondaryColor,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(width: Responsive.spacing(context, mobile: 8)),
-              Text(
-                '•',
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, mobile: 12),
-                  color: AppColor.textSecondaryColor,
-                ),
-              ),
-              SizedBox(width: Responsive.spacing(context, mobile: 8)),
-              Text(
-                widget.comment.date,
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, mobile: 12),
-                  color: AppColor.textSecondaryColor,
                 ),
               ),
             ],
