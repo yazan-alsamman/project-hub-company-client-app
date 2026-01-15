@@ -460,7 +460,7 @@ class CommentsPageController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading replies: $e');
+      debugPrint('🔴 Exception loading replie: $e');
       _errorMessage = e.toString();
       update();
       return [];
