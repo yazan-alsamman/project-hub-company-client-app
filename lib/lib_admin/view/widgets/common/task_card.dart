@@ -18,6 +18,8 @@ class TaskCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onRequestDelay;
+  final List<Map<String, dynamic>>? delayRequests;
+  
   const TaskCard({
     super.key,
     required this.title,
@@ -35,44 +37,136 @@ class TaskCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onRequestDelay,
+    this.delayRequests,
   });
+  List<Map<String, dynamic>> _parseDelayRequests() {
+    if (delayRequests != null && delayRequests!.isNotEmpty) {
+      return delayRequests!;
+    }
+    
+    // Try to parse from subtitle if it contains delay information
+    if (subtitle.contains('DELAY REQUESTED') || subtitle.contains('delay requested')) {
+      final List<Map<String, dynamic>> delays = [];
+      final lines = subtitle.split('\n');
+      
+      for (var line in lines) {
+        final trimmedLine = line.trim();
+        if (trimmedLine.isEmpty) continue;
+        
+        // Check for delay request pattern: "DELAY REQUESTED date - Reason: reason"
+        if (trimmedLine.toUpperCase().contains('DELAY REQUESTED')) {
+          // Try pattern: "DELAY REQUESTED date - Reason: reason"
+          if (trimmedLine.contains(' - Reason: ') || trimmedLine.contains(' - reason: ')) {
+            final parts = trimmedLine.split(RegExp(r' - [Rr]eason: '));
+            if (parts.length == 2) {
+              String datePart = parts[0]
+                  .replaceAll(RegExp(r'[Dd][Ee][Ll][Aa][Yy]\s+[Rr][Ee][Qq][Uu][Ee][Ss][Tt][Ee][Dd]'), '')
+                  .trim();
+              final reason = parts[1].trim();
+              
+              if (datePart.isNotEmpty && reason.isNotEmpty) {
+                delays.add({
+                  'date': datePart,
+                  'reason': reason,
+                });
+              }
+            }
+          } else {
+            // Try to extract date and reason separately
+            final dateMatch = RegExp(r'\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}').firstMatch(trimmedLine);
+            if (dateMatch != null) {
+              final datePart = dateMatch.group(0) ?? '';
+              final reasonPart = trimmedLine.substring(dateMatch.end).trim();
+              final reason = reasonPart.replaceAll(RegExp(r'^[-:\s]+'), '').trim();
+              
+              if (datePart.isNotEmpty) {
+                delays.add({
+                  'date': datePart,
+                  'reason': reason.isNotEmpty ? reason : 'No reason provided',
+                });
+              }
+            }
+          }
+        }
+      }
+      return delays;
+    }
+    
+    return [];
+  }
+
+  String _formatDelayDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      final hour = date.hour.toString().padLeft(2, '0');
+      final minute = date.minute.toString().padLeft(2, '0');
+      return '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year} • $hour:$minute';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
   Widget _buildCardContent(BuildContext context) {
+    final parsedDelays = _parseDelayRequests();
+    final hasDelays = parsedDelays.isNotEmpty;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColor.borderColor, width: 1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasDelays ? Colors.orange.withOpacity(0.3) : AppColor.borderColor,
+          width: hasDelays ? 1.5 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with icon and title
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isCompleted
                       ? Colors.green.shade50
                       : isPending
-                      ? Colors.yellow.shade50
+                      ? Colors.orange.shade50
+                      : hasDelays
+                      ? Colors.orange.shade50
                       : AppColor.backgroundColor,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  isCompleted
+                  hasDelays
+                      ? Icons.schedule_outlined
+                      : isCompleted
                       ? Icons.check_circle
                       : isPending
                       ? Icons.warning_amber_rounded
                       : Icons.access_time,
-                  color: isCompleted
+                  color: hasDelays
+                      ? Colors.orange
+                      : isCompleted
                       ? Colors.green
                       : isPending
                       ? Colors.orange
                       : AppColor.primaryColor,
-                  size: 20,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 12),
@@ -85,6 +179,7 @@ class TaskCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        height: 1.3,
                         color: isCompleted
                             ? AppColor.textSecondaryColor
                             : AppColor.textColor,
@@ -92,21 +187,85 @@ class TaskCard extends StatelessWidget {
                             ? TextDecoration.lineThrough
                             : null,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColor.textSecondaryColor,
+                    if (subtitle.isNotEmpty && !hasDelays) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColor.textSecondaryColor,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          
+          // Delay Requests Section
+          if (hasDelays) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule,
+                        size: 16,
+                        color: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Delay Requests (${parsedDelays.length})',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ...parsedDelays.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final delay = entry.value;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index < parsedDelays.length - 1 ? 10 : 0,
+                      ),
+                      child: _buildDelayRequestItem(
+                        context,
+                        delay['date']?.toString() ?? '',
+                        delay['reason']?.toString() ?? '',
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 16),
+          
+          // Category and Request Delay Button
           Row(
             children: [
               Container(
@@ -116,14 +275,14 @@ class TaskCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: AppColor.backgroundColor,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   category,
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColor.textColor,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -138,18 +297,24 @@ class TaskCard extends StatelessWidget {
                   ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    minimumSize: const Size(0, 28),
-                    side: BorderSide(color: AppColor.primaryColor, width: 1),
+                    minimumSize: const Size(0, 32),
+                    side: BorderSide(color: AppColor.primaryColor, width: 1.5),
                     foregroundColor: AppColor.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ],
             ],
           ),
+          
           const SizedBox(height: 16),
+          
+          // Priority, Due Date, and Assignee
           Row(
             children: [
               Container(
@@ -159,7 +324,7 @@ class TaskCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: priorityColor,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -179,20 +344,29 @@ class TaskCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      dueDate,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColor.textColor,
-                        fontWeight: FontWeight.w500,
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: AppColor.textSecondaryColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        dueDate,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColor.textColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Row(
                 children: [
                   Container(
@@ -201,6 +375,13 @@ class TaskCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: avatarColor,
                       borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: avatarColor.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Center(
                       child: Text(
@@ -216,6 +397,7 @@ class TaskCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         assigneeName.split(' ').first,
@@ -225,20 +407,86 @@ class TaskCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text(
-                        assigneeName.split(' ').length > 1
-                            ? assigneeName.split(' ').last
-                            : '',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColor.textSecondaryColor,
+                      if (assigneeName.split(' ').length > 1)
+                        Text(
+                          assigneeName.split(' ').last,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColor.textSecondaryColor,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDelayRequestItem(BuildContext context, String date, String reason) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.orange.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 4,
+            height: 4,
+            margin: const EdgeInsets.only(top: 6, right: 10),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade600,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 12,
+                      color: Colors.orange.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _formatDelayDate(date),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  reason,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColor.textColor,
+                    height: 1.4,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),

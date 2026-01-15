@@ -377,6 +377,7 @@ class TasksScreen extends StatelessWidget {
                                       avatarColor: avatarColor,
                                       isCompleted: isCompleted,
                                       isPending: isPending,
+                                      delayRequests: task.delayRequests,
                                       onTap: canViewTaskDetail
                                           ? () {
                                               Get.toNamed(

@@ -8,6 +8,7 @@ class CommentModel {
   final String? refType;
   final String? refId;
   final String? parentId;
+  final String? userId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final List<CommentModel>? replies;
@@ -22,6 +23,7 @@ class CommentModel {
     this.refType,
     this.refId,
     this.parentId,
+    this.userId,
     this.createdAt,
     this.updatedAt,
     this.replies,
@@ -32,10 +34,13 @@ class CommentModel {
     final text = json['content'] ?? json['text'] ?? '';
     
     String authorName = '';
+    String? userIdStr;
     if (json['userId'] != null && json['userId'] is Map) {
       authorName = json['userId']['username'] ?? json['userId']['email'] ?? '';
+      userIdStr = json['userId']['_id']?.toString() ?? json['userId']['id']?.toString();
     } else {
       authorName = json['author'] ?? '';
+      userIdStr = json['userId']?.toString();
     }
     
     String? taskIdStr;
@@ -80,6 +85,7 @@ class CommentModel {
       refType: refType ?? 'Task',
       refId: refId ?? taskIdStr,
       parentId: parentId,
+      userId: userIdStr,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : null,
@@ -113,6 +119,7 @@ class CommentModel {
     String? refType,
     String? refId,
     String? parentId,
+    String? userId,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<CommentModel>? replies,
@@ -127,6 +134,7 @@ class CommentModel {
       refType: refType ?? this.refType,
       refId: refId ?? this.refId,
       parentId: parentId ?? this.parentId,
+      userId: userId ?? this.userId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       replies: replies ?? this.replies,

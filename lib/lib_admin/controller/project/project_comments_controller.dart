@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
+import '../../core/services/auth_service.dart';
 import '../../data/Models/project_model.dart';
 import '../../data/Models/comment_model.dart';
 import '../../data/repository/comment_repository.dart';
 
 class ProjectCommentsController extends GetxController {
   final CommentRepository _commentRepository = CommentRepository();
+  final AuthService _authService = AuthService();
   final String projectId;
   final ProjectModel project;
 
@@ -20,14 +22,17 @@ class ProjectCommentsController extends GetxController {
   bool _isLoading = false;
   String? _errorMessage;
   String? _replyingToCommentId;
+  String? _editingCommentId;
   final TextEditingController commentController = TextEditingController();
   final TextEditingController replyController = TextEditingController();
+  final TextEditingController editController = TextEditingController();
 
   List<CommentModel> get comments => _comments;
   StatusRequest get statusRequest => _statusRequest;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String? get replyingToCommentId => _replyingToCommentId;
+  String? get editingCommentId => _editingCommentId;
 
   @override
   void onInit() {
@@ -39,6 +44,7 @@ class ProjectCommentsController extends GetxController {
   void onClose() {
     commentController.dispose();
     replyController.dispose();
+    editController.dispose();
     super.onClose();
   }
 
@@ -187,6 +193,133 @@ class ProjectCommentsController extends GetxController {
       _isLoading = false;
       update();
     }
+  }
+
+  Future<void> updateComment(String commentId, String newContent) async {
+    if (newContent.trim().isEmpty) return;
+
+    _isLoading = true;
+    update();
+
+    try {
+      final result = await _commentRepository.updateComment(
+        commentId: commentId,
+        content: newContent.trim(),
+      );
+
+      result.fold(
+        (error) {
+          debugPrint('🔴 Error updating comment: $error');
+          Get.snackbar(
+            'Error',
+            'Failed to update comment',
+            snackPosition: SnackPosition.TOP,
+          );
+        },
+        (updatedComment) {
+          debugPrint('✅ Comment updated successfully');
+          final index = _comments.indexWhere((c) => c.id == commentId);
+          if (index != -1) {
+            // It's a top-level comment
+            _comments[index] = updatedComment;
+          } else {
+            // It might be a reply, search in replies
+            for (int i = 0; i < _comments.length; i++) {
+              if (_comments[i].replies != null) {
+                final replyIndex = _comments[i].replies!.indexWhere((r) => r.id == commentId);
+                if (replyIndex != -1) {
+                  final updatedReplies = List<CommentModel>.from(_comments[i].replies!);
+                  updatedReplies[replyIndex] = updatedComment;
+                  _comments[i] = _comments[i].copyWith(replies: updatedReplies);
+                  break;
+                }
+              }
+            }
+          }
+          _editingCommentId = null;
+          editController.clear();
+          update();
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 Exception updating comment: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred while updating comment',
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      _isLoading = false;
+      update();
+    }
+  }
+
+  Future<void> deleteComment(String commentId) async {
+    _isLoading = true;
+    update();
+
+    try {
+      final result = await _commentRepository.deleteComment(commentId);
+
+      result.fold(
+        (error) {
+          debugPrint('🔴 Error deleting comment: $error');
+          Get.snackbar(
+            'Error',
+            'Failed to delete comment',
+            snackPosition: SnackPosition.TOP,
+          );
+        },
+        (_) {
+          debugPrint('✅ Comment deleted successfully');
+          // Try to remove from top-level comments first
+          final index = _comments.indexWhere((c) => c.id == commentId);
+          if (index != -1) {
+            _comments.removeAt(index);
+          } else {
+            // It might be a reply, search in replies
+            for (int i = 0; i < _comments.length; i++) {
+              if (_comments[i].replies != null) {
+                final replyIndex = _comments[i].replies!.indexWhere((r) => r.id == commentId);
+                if (replyIndex != -1) {
+                  final updatedReplies = List<CommentModel>.from(_comments[i].replies!);
+                  updatedReplies.removeAt(replyIndex);
+                  _comments[i] = _comments[i].copyWith(replies: updatedReplies);
+                  break;
+                }
+              }
+            }
+          }
+          update();
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 Exception deleting comment: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred while deleting comment',
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      _isLoading = false;
+      update();
+    }
+  }
+
+  void startEdit(String commentId, String currentContent) {
+    _editingCommentId = commentId;
+    editController.text = currentContent;
+    update();
+  }
+
+  void cancelEdit() {
+    _editingCommentId = null;
+    editController.clear();
+    update();
+  }
+
+  Future<String?> getCurrentUserId() async {
+    return await _authService.getUserId();
   }
 }
 

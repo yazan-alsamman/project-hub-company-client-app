@@ -23,6 +23,7 @@ class TaskModel {
   final List<dynamic>? assignments;
   final bool? isDelayed;
   final int? delayDays;
+  final List<Map<String, dynamic>>? delayRequests;
   TaskModel({
     required this.id,
     required this.title,
@@ -48,6 +49,7 @@ class TaskModel {
     this.assignments,
     this.isDelayed,
     this.delayDays,
+    this.delayRequests,
   });
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     final projectIdObj = json['projectId'];
@@ -126,6 +128,14 @@ class TaskModel {
           : json['delayDays'] is num
           ? (json['delayDays'] as num).toInt()
           : 0,
+      delayRequests: json['delayRequests'] != null && json['delayRequests'] is List
+          ? (json['delayRequests'] as List).map((item) {
+              if (item is Map<String, dynamic>) {
+                return item;
+              }
+              return <String, dynamic>{};
+            }).toList()
+          : null,
     );
   }
   static String _mapTaskStatusToUI(String taskStatus) {

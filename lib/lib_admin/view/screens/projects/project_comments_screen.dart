@@ -5,6 +5,7 @@ import '../../../controller/project/project_comments_controller.dart';
 import '../../../core/class/statusrequest.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/constant/responsive.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../data/Models/project_model.dart';
 import '../../../data/Models/comment_model.dart';
 import '../../widgets/common/custom_app_bar.dart';
@@ -338,10 +339,29 @@ class _CommentItemWidget extends StatefulWidget {
 }
 
 class _CommentItemWidgetState extends State<_CommentItemWidget> {
+  final AuthService _authService = AuthService();
+  bool _isOwner = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserId();
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final userId = await _authService.getUserId();
+    setState(() {
+      _isOwner = widget.comment.userId != null && 
+                  widget.comment.userId == userId;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isReplyingToThis =
         widget.controller.replyingToCommentId == widget.comment.id;
+    final isEditingThis =
+        widget.controller.editingCommentId == widget.comment.id;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,20 +378,53 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.comment.text,
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        color: AppColor.textColor,
+              if (isEditingThis)
+                _buildEditInput(context, widget.controller)
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.comment.text,
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          color: AppColor.textColor,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    if (_isOwner)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              widget.controller.startEdit(
+                                widget.comment.id!,
+                                widget.comment.text,
+                              );
+                            },
+                            child: Icon(
+                              Icons.edit,
+                              size: Responsive.iconSize(context, mobile: 18),
+                              color: AppColor.primaryColor,
+                            ),
+                          ),
+                          SizedBox(width: Responsive.spacing(context, mobile: 12)),
+                          GestureDetector(
+                            onTap: () {
+                              _showDeleteConfirmation(context, widget.comment.id!);
+                            },
+                            child: Icon(
+                              Icons.delete,
+                              size: Responsive.iconSize(context, mobile: 18),
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               SizedBox(height: Responsive.spacing(context, mobile: 12)),
               Row(
                 children: [
@@ -416,50 +469,51 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
-                    onTap: () {
-                      if (widget.controller.replyingToCommentId ==
-                          widget.comment.id) {
-                        widget.controller.cancelReply();
-                      } else {
-                        widget.controller.startReply(widget.comment.id!);
-                      }
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: Responsive.spacing(context, mobile: 8),
-                        vertical: Responsive.spacing(context, mobile: 4),
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColor.backgroundColor,
-                        borderRadius: BorderRadius.circular(
-                          Responsive.borderRadius(context, mobile: 6),
+                  if (!isEditingThis)
+                    GestureDetector(
+                      onTap: () {
+                        if (widget.controller.replyingToCommentId ==
+                            widget.comment.id) {
+                          widget.controller.cancelReply();
+                        } else {
+                          widget.controller.startReply(widget.comment.id!);
+                        }
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: Responsive.spacing(context, mobile: 8),
+                          vertical: Responsive.spacing(context, mobile: 4),
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColor.backgroundColor,
+                          borderRadius: BorderRadius.circular(
+                            Responsive.borderRadius(context, mobile: 6),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.reply,
+                              size: Responsive.iconSize(context, mobile: 16),
+                              color: AppColor.primaryColor,
+                            ),
+                            SizedBox(
+                              width: Responsive.spacing(context, mobile: 4),
+                            ),
+                            Text(
+                              'Reply',
+                              style: TextStyle(
+                                fontSize:
+                                    Responsive.fontSize(context, mobile: 12),
+                                color: AppColor.primaryColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.reply,
-                            size: Responsive.iconSize(context, mobile: 16),
-                            color: AppColor.primaryColor,
-                          ),
-                          SizedBox(
-                            width: Responsive.spacing(context, mobile: 4),
-                          ),
-                          Text(
-                            'Reply',
-                            style: TextStyle(
-                              fontSize:
-                                  Responsive.fontSize(context, mobile: 12),
-                              color: AppColor.primaryColor,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
-                  ),
                 ],
               ),
             ],
@@ -479,12 +533,148 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
                   padding: EdgeInsets.only(
                     bottom: Responsive.spacing(context, mobile: 12),
                   ),
-                  child: _buildReplyItem(context, reply),
+                  child: _ReplyItemWidget(
+                    reply: reply,
+                    controller: widget.controller,
+                    parentCommentId: widget.comment.id!,
+                  ),
                 );
               }).toList(),
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildEditInput(
+    BuildContext context,
+    ProjectCommentsController controller,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 12)),
+      decoration: BoxDecoration(
+        color: AppColor.backgroundColor,
+        borderRadius: BorderRadius.circular(
+          Responsive.borderRadius(context, mobile: 8),
+        ),
+        border: Border.all(color: AppColor.primaryColor.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller.editController,
+            maxLines: 3,
+            style: TextStyle(
+              color: AppColor.textColor,
+              fontSize: Responsive.fontSize(context, mobile: 14),
+            ),
+            decoration: InputDecoration(
+              hintText: 'Edit your comment...',
+              hintStyle: TextStyle(
+                color: AppColor.textSecondaryColor,
+                fontSize: Responsive.fontSize(context, mobile: 14),
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {
+                  controller.cancelEdit();
+                },
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, mobile: 12),
+                    color: AppColor.textSecondaryColor,
+                  ),
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 8)),
+              ElevatedButton(
+                onPressed: () {
+                  if (controller.editController.text.trim().isNotEmpty &&
+                      widget.comment.id != null) {
+                    controller.updateComment(
+                      widget.comment.id!,
+                      controller.editController.text,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.primaryColor,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Responsive.spacing(context, mobile: 16),
+                    vertical: Responsive.spacing(context, mobile: 8),
+                  ),
+                ),
+                child: Text(
+                  'Save',
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, mobile: 12),
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String commentId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Delete Comment',
+            style: TextStyle(
+              fontSize: Responsive.fontSize(context, mobile: 18),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete this comment? This action cannot be undone.',
+            style: TextStyle(
+              fontSize: Responsive.fontSize(context, mobile: 14),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.controller.deleteComment(commentId);
+              },
+              child: Text(
+                'Delete',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -634,6 +824,294 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
         ],
       ),
     );
+  }
+}
+
+class _ReplyItemWidget extends StatefulWidget {
+  final CommentModel reply;
+  final ProjectCommentsController controller;
+  final String parentCommentId;
+
+  const _ReplyItemWidget({
+    required this.reply,
+    required this.controller,
+    required this.parentCommentId,
+  });
+
+  @override
+  State<_ReplyItemWidget> createState() => _ReplyItemWidgetState();
+}
+
+class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
+  final AuthService _authService = AuthService();
+  bool _isOwner = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserId();
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final userId = await _authService.getUserId();
+    setState(() {
+      _isOwner = widget.reply.userId != null && 
+                  widget.reply.userId == userId;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditingThis =
+        widget.controller.editingCommentId == widget.reply.id;
+
+    return Container(
+      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 12)),
+      decoration: BoxDecoration(
+        color: AppColor.backgroundColor,
+        borderRadius: BorderRadius.circular(
+          Responsive.borderRadius(context, mobile: 8),
+        ),
+        border: Border.all(color: AppColor.borderColor, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isEditingThis)
+            _buildEditInput(context, widget.controller)
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.reply.text,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, mobile: 14),
+                      color: AppColor.textColor,
+                    ),
+                  ),
+                ),
+                if (_isOwner)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          widget.controller.startEdit(
+                            widget.reply.id!,
+                            widget.reply.text,
+                          );
+                        },
+                        child: Icon(
+                          Icons.edit,
+                          size: Responsive.iconSize(context, mobile: 16),
+                          color: AppColor.primaryColor,
+                        ),
+                      ),
+                      SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                      GestureDetector(
+                        onTap: () {
+                          _showDeleteConfirmation(context, widget.reply.id!);
+                        },
+                        child: Icon(
+                          Icons.delete,
+                          size: Responsive.iconSize(context, mobile: 16),
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: Responsive.size(context, mobile: 12),
+                backgroundColor: Color(widget.reply.authorColor).withOpacity(0.2),
+                child: Text(
+                  widget.reply.author.isNotEmpty
+                      ? widget.reply.author.substring(0, 1).toUpperCase()
+                      : 'U',
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, mobile: 10),
+                    color: Color(widget.reply.authorColor),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 8)),
+              Text(
+                widget.reply.author,
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 12),
+                  color: AppColor.textSecondaryColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 8)),
+              Text(
+                '•',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 12),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 8)),
+              Text(
+                widget.reply.date,
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 12),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditInput(
+    BuildContext context,
+    ProjectCommentsController controller,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 8)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          Responsive.borderRadius(context, mobile: 6),
+        ),
+        border: Border.all(color: AppColor.primaryColor.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller.editController,
+            maxLines: 2,
+            style: TextStyle(
+              color: AppColor.textColor,
+              fontSize: Responsive.fontSize(context, mobile: 14),
+            ),
+            decoration: InputDecoration(
+              hintText: 'Edit your reply...',
+              hintStyle: TextStyle(
+                color: AppColor.textSecondaryColor,
+                fontSize: Responsive.fontSize(context, mobile: 14),
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 6)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {
+                  controller.cancelEdit();
+                },
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, mobile: 12),
+                    color: AppColor.textSecondaryColor,
+                  ),
+                ),
+              ),
+              SizedBox(width: Responsive.spacing(context, mobile: 6)),
+              ElevatedButton(
+                onPressed: () {
+                  if (controller.editController.text.trim().isNotEmpty &&
+                      widget.reply.id != null) {
+                    controller.updateComment(
+                      widget.reply.id!,
+                      controller.editController.text,
+                    );
+                    // Refresh the parent comment's replies after update
+                    _refreshParentComment();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.primaryColor,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Responsive.spacing(context, mobile: 12),
+                    vertical: Responsive.spacing(context, mobile: 6),
+                  ),
+                ),
+                child: Text(
+                  'Save',
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, mobile: 12),
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String replyId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Delete Reply',
+            style: TextStyle(
+              fontSize: Responsive.fontSize(context, mobile: 18),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete this reply? This action cannot be undone.',
+            style: TextStyle(
+              fontSize: Responsive.fontSize(context, mobile: 14),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.controller.deleteComment(replyId);
+                // Refresh the parent comment's replies after delete
+                _refreshParentComment();
+              },
+              child: Text(
+                'Delete',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _refreshParentComment() {
+    // Reload comments to refresh the replies list
+    widget.controller.loadComments();
   }
 }
 

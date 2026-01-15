@@ -238,4 +238,90 @@ class CommentRepository {
       return const Left(StatusRequest.serverException);
     }
   }
+
+  Future<Either<StatusRequest, CommentModel>> updateComment({
+    required String commentId,
+    required String content,
+  }) async {
+    try {
+      debugPrint('🔵 CommentRepository: Updating comment $commentId');
+      final body = <String, dynamic>{
+        'content': content,
+      };
+
+      final result = await _apiService.put(
+        '/comment/$commentId',
+        body: body,
+        requiresAuth: true,
+      );
+
+      return result.fold(
+        (error) {
+          debugPrint('🔴 CommentRepository error updating comment: $error');
+          return Left(error);
+        },
+        (response) {
+          try {
+            debugPrint('🟢 CommentRepository update comment response received');
+            if (response['success'] == true && response['data'] != null) {
+              final comment = CommentModel.fromJson(
+                response['data'] as Map<String, dynamic>,
+              );
+              debugPrint('✅ Comment updated successfully');
+              return Right(comment);
+            } else {
+              final errorMessage = response['message']?.toString() ?? 'Failed to update comment';
+              debugPrint('🔴 Failed to update comment: $errorMessage');
+              return const Left(StatusRequest.serverFailure);
+            }
+          } catch (e, stackTrace) {
+            debugPrint('🔴 CommentRepository parsing error: $e');
+            debugPrint('Stack trace: $stackTrace');
+            return const Left(StatusRequest.serverException);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 CommentRepository exception updating comment: $e');
+      return const Left(StatusRequest.serverException);
+    }
+  }
+
+  Future<Either<StatusRequest, void>> deleteComment(String commentId) async {
+    try {
+      debugPrint('🔵 CommentRepository: Deleting comment $commentId');
+
+      final result = await _apiService.delete(
+        '/comment/$commentId',
+        requiresAuth: true,
+      );
+
+      return result.fold(
+        (error) {
+          debugPrint('🔴 CommentRepository error deleting comment: $error');
+          return Left(error);
+        },
+        (response) {
+          try {
+            debugPrint('🟢 CommentRepository delete comment response received');
+            if (response['success'] == true) {
+              debugPrint('✅ Comment deleted successfully');
+              return const Right(null);
+            } else {
+              final errorMessage = response['message']?.toString() ?? 'Failed to delete comment';
+              debugPrint('🔴 Failed to delete comment: $errorMessage');
+              return const Left(StatusRequest.serverFailure);
+            }
+          } catch (e, stackTrace) {
+            debugPrint('🔴 CommentRepository parsing error: $e');
+            debugPrint('Stack trace: $stackTrace');
+            return const Left(StatusRequest.serverException);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 CommentRepository exception deleting comment: $e');
+      return const Left(StatusRequest.serverException);
+    }
+  }
 }
