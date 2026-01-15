@@ -53,8 +53,8 @@ class _DelaysScreenState extends State<DelaysScreen>
           future: AuthService().getUserRole(),
           builder: (context, snapshot) {
             final role = snapshot.data?.toLowerCase() ?? '';
-            final isPm = role == 'pm';
-            final tabCount = isPm ? 2 : 4;
+            final isPm = role == 'pm' || role == 'project manager';
+            final tabCount = isPm ? 3 : 4;
 
             // Initialize or update TabController when tab count changes
             _initializeTabController(tabCount);
@@ -73,6 +73,7 @@ class _DelaysScreenState extends State<DelaysScreen>
                         ? const [
                             Tab(text: 'Project Delay Status'),
                             Tab(text: 'Project Task Delays'),
+                            Tab(text: 'View Requested Delays'),
                           ]
                         : const [
                             Tab(text: 'Delay Summary'),
@@ -89,6 +90,7 @@ class _DelaysScreenState extends State<DelaysScreen>
                         ? [
                             _buildProjectDelayStatusTab(context),
                             _buildProjectTaskDelaysTab(context),
+                            _buildViewRequestedDelaysTab(context),
                           ]
                         : [
                             _buildDelaySummaryTab(context),
@@ -952,7 +954,7 @@ class _DelaysScreenState extends State<DelaysScreen>
               padding: EdgeInsets.only(
                 bottom: Responsive.spacing(context, mobile: 12),
               ),
-              child: _buildTaskDelayCard(context, taskData),
+              child: _buildTaskDelayCard(context, taskData, controller),
             );
           }),
         ],
@@ -960,9 +962,21 @@ class _DelaysScreenState extends State<DelaysScreen>
     );
   }
 
-  Widget _buildTaskDelayCard(BuildContext context, dynamic taskData) {
+  Widget _buildTaskDelayCard(
+    BuildContext context,
+    dynamic taskData,
+    DelaysController controller,
+  ) {
     Map<String, dynamic>? taskMap;
+    String? delayRequestId;
+
     if (taskData is Map<String, dynamic>) {
+      // Extract delayRequestId if available
+      delayRequestId =
+          taskData['_id']?.toString() ??
+          taskData['id']?.toString() ??
+          taskData['delayRequestId']?.toString();
+
       if (taskData['task'] != null) {
         taskMap = taskData['task'] as Map<String, dynamic>?;
       } else {
@@ -986,60 +1000,295 @@ class _DelaysScreenState extends State<DelaysScreen>
     }
 
     final task = taskMap;
-    final taskName = task['taskName']?.toString() ?? 'N/A';
+    final taskName =
+        task['taskName']?.toString() ?? task['title']?.toString() ?? 'N/A';
     final delayDays = task['delayDays']?.toString() ?? '0';
 
-    return Container(
-      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 16)),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColor.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return FutureBuilder<String?>(
+      future: AuthService().getUserRole(),
+      builder: (context, roleSnapshot) {
+        final userRole = roleSnapshot.data?.toLowerCase() ?? '';
+        final isPm = userRole == 'pm' || userRole == 'project manager';
+        final hasDelayRequestId =
+            delayRequestId != null && delayRequestId.isNotEmpty;
+
+        return Container(
+          padding: EdgeInsets.all(Responsive.spacing(context, mobile: 16)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColor.borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  taskName,
-                  style: TextStyle(
-                    fontSize: Responsive.fontSize(context, mobile: 16),
-                    fontWeight: FontWeight.bold,
-                    color: AppColor.textColor,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      taskName,
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 16),
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.textColor,
+                      ),
+                    ),
                   ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: Responsive.spacing(context, mobile: 12),
+                      vertical: Responsive.spacing(context, mobile: 6),
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColor.errorColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$delayDays days',
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 12),
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.errorColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (isPm && hasDelayRequestId) ...[
+                SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _showAcceptDelayDialog(
+                            context,
+                            controller,
+                            delayRequestId!,
+                          );
+                        },
+                        icon: Icon(
+                          Icons.check_circle,
+                          size: Responsive.iconSize(context, mobile: 16),
+                        ),
+                        label: Text(
+                          'Accept Delay',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, mobile: 12),
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.successColor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            vertical: Responsive.spacing(context, mobile: 8),
+                            horizontal: Responsive.spacing(context, mobile: 8),
+                          ),
+                          minimumSize: Size(
+                            0,
+                            Responsive.size(context, mobile: 36),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _showRejectDelayDialog(
+                            context,
+                            controller,
+                            delayRequestId!,
+                          );
+                        },
+                        icon: Icon(
+                          Icons.cancel,
+                          size: Responsive.iconSize(context, mobile: 16),
+                        ),
+                        label: Text(
+                          'Reject Delay',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, mobile: 12),
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.errorColor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            vertical: Responsive.spacing(context, mobile: 8),
+                            horizontal: Responsive.spacing(context, mobile: 8),
+                          ),
+                          minimumSize: Size(
+                            0,
+                            Responsive.size(context, mobile: 36),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAcceptDelayDialog(
+    BuildContext context,
+    DelaysController controller,
+    String delayRequestId,
+  ) {
+    final reviewNoteController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Accept Delay Request',
+            style: TextStyle(
+              fontSize: Responsive.fontSize(context, mobile: 18),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please enter a review note:',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: Responsive.spacing(context, mobile: 12),
-                  vertical: Responsive.spacing(context, mobile: 6),
-                ),
-                decoration: BoxDecoration(
-                  color: AppColor.errorColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$delayDays days',
-                  style: TextStyle(
-                    fontSize: Responsive.fontSize(context, mobile: 12),
-                    fontWeight: FontWeight.bold,
-                    color: AppColor.errorColor,
+              SizedBox(height: Responsive.spacing(context, mobile: 12)),
+              TextField(
+                controller: reviewNoteController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText:
+                      'e.g., Approved. Please ensure the new deadline is met.',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
             ],
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColor.textSecondaryColor),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                var reviewNote = reviewNoteController.text.trim();
+                if (reviewNote.isEmpty) {
+                  reviewNote =
+                      'Approved. Please ensure the new deadline is met.';
+                }
+                Navigator.of(dialogContext).pop();
+                controller.acceptDelayRequest(
+                  delayRequestId: delayRequestId,
+                  reviewNote: reviewNote,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.successColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Accept'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRejectDelayDialog(
+    BuildContext context,
+    DelaysController controller,
+    String delayRequestId,
+  ) {
+    final reviewNoteController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Reject Delay Request',
+            style: TextStyle(
+              fontSize: Responsive.fontSize(context, mobile: 18),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please enter a review note:',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                ),
+              ),
+              SizedBox(height: Responsive.spacing(context, mobile: 12)),
+              TextField(
+                controller: reviewNoteController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText:
+                      'e.g., The original deadline must be maintained due to project constraints.',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColor.textSecondaryColor),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                var reviewNote = reviewNoteController.text.trim();
+                if (reviewNote.isEmpty) {
+                  reviewNote =
+                      'The original deadline must be maintained due to project constraints.';
+                }
+                Navigator.of(dialogContext).pop();
+                controller.rejectDelayRequest(
+                  delayRequestId: delayRequestId,
+                  reviewNote: reviewNote,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.errorColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Reject'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1555,5 +1804,377 @@ class _DelaysScreenState extends State<DelaysScreen>
       default:
         return AppColor.textSecondaryColor;
     }
+  }
+
+  Widget _buildViewRequestedDelaysTab(BuildContext context) {
+    return GetBuilder<DelaysController>(
+      init: Get.isRegistered<DelaysController>()
+          ? Get.find<DelaysController>()
+          : Get.put(DelaysController()),
+      builder: (controller) {
+        return RefreshIndicator(
+          onRefresh: () => controller.loadRequestedDelays(),
+          color: AppColor.primaryColor,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                Container(
+                  color: AppColor.backgroundColor,
+                  child: Padding(
+                    padding: Responsive.padding(context),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Header(
+                          title: "View Requested Delays",
+                          subtitle: "View all delay requests",
+                          haveButton: false,
+                        ),
+                        SizedBox(
+                          height: Responsive.spacing(context, mobile: 30),
+                        ),
+                        MainButton(
+                          onPressed: () {
+                            controller.loadRequestedDelays();
+                          },
+                          text: "Load Requested Delays",
+                          icon: Icons.refresh,
+                          width: double.infinity,
+                          height: Responsive.size(context, mobile: 50),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildRequestedDelaysContent(context, controller),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRequestedDelaysContent(
+    BuildContext context,
+    DelaysController controller,
+  ) {
+    if (controller.isLoadingRequestedDelays &&
+        controller.requestedDelays.isEmpty) {
+      return Padding(
+        padding: Responsive.padding(context),
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColor.primaryColor),
+        ),
+      );
+    }
+
+    if (controller.requestedDelays.isEmpty) {
+      return Padding(
+        padding: Responsive.padding(context),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.pending_outlined,
+                size: 64,
+                color: AppColor.textSecondaryColor,
+              ),
+              SizedBox(height: Responsive.spacing(context, mobile: 16)),
+              Text(
+                'No delay requests found',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 18),
+                  fontWeight: FontWeight.bold,
+                  color: AppColor.textColor,
+                ),
+              ),
+              SizedBox(height: Responsive.spacing(context, mobile: 8)),
+              Text(
+                'Click "Load Requested Delays" to fetch delay requests',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: Responsive.padding(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (controller.requestedDelaysPagination != null)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: Responsive.spacing(context, mobile: 16),
+              ),
+              child: Text(
+                'Total: ${controller.requestedDelaysPagination!['total'] ?? 0} delay requests',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+            ),
+          ...controller.requestedDelays.map((delayRequest) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: Responsive.spacing(context, mobile: 12),
+              ),
+              child: _buildRequestedDelayCard(
+                context,
+                delayRequest,
+                controller,
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequestedDelayCard(
+    BuildContext context,
+    dynamic delayRequest,
+    DelaysController controller,
+  ) {
+    if (delayRequest is! Map<String, dynamic>) {
+      return Container(
+        padding: EdgeInsets.all(Responsive.spacing(context, mobile: 16)),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColor.borderColor),
+        ),
+        child: Text(
+          'Invalid delay request data',
+          style: TextStyle(color: AppColor.textColor),
+        ),
+      );
+    }
+
+    // Extract taskId (not task) from the response
+    final taskId = delayRequest['taskId'] as Map<String, dynamic>?;
+    final task = delayRequest['task'] as Map<String, dynamic>?;
+
+    // Try taskId first, then fallback to task
+    final taskData = taskId ?? task;
+
+    // Extract project information
+    final projectId = taskData?['projectId'] as Map<String, dynamic>?;
+    final projectName = projectId?['name']?.toString() ?? 'N/A';
+    final projectCode = projectId?['code']?.toString() ?? '';
+    final projectInfo = projectCode.isNotEmpty
+        ? '$projectName ($projectCode)'
+        : projectName;
+
+    // Extract task information
+    final taskName =
+        taskData?['taskName']?.toString() ??
+        taskData?['title']?.toString() ??
+        'N/A';
+
+    final status = delayRequest['status']?.toString() ?? 'pending';
+    final delayRequestId =
+        delayRequest['_id']?.toString() ?? delayRequest['id']?.toString() ?? '';
+    final requestedDate = delayRequest['createdAt']?.toString() ?? 'N/A';
+    final newDueDate =
+        delayRequest['requestedDueDate']?.toString() ??
+        delayRequest['newDueDate']?.toString() ??
+        'N/A';
+    final originalDueDate =
+        delayRequest['originalDueDate']?.toString() ?? 'N/A';
+    final reason = delayRequest['reason']?.toString() ?? 'No reason provided';
+    final requestedBy = delayRequest['requestedBy'] as Map<String, dynamic>?;
+    final requestedByName =
+        requestedBy?['name']?.toString() ??
+        requestedBy?['username']?.toString() ??
+        'Unknown';
+    final isPending = status.toLowerCase() == 'pending';
+
+    return Container(
+      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColor.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      taskName,
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 18),
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.textColor,
+                      ),
+                    ),
+                    SizedBox(height: Responsive.spacing(context, mobile: 4)),
+                    Text(
+                      projectInfo,
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 14),
+                        color: AppColor.textSecondaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: Responsive.spacing(context, mobile: 12),
+                  vertical: Responsive.spacing(context, mobile: 6),
+                ),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(status).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _getStatusColor(status), width: 1),
+                ),
+                child: Text(
+                  status.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, mobile: 12),
+                    fontWeight: FontWeight.bold,
+                    color: _getStatusColor(status),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 12)),
+          _buildInfoRow(
+            context,
+            'Project',
+            projectInfo,
+            Icons.business_outlined,
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+          _buildInfoRow(
+            context,
+            'Requested by',
+            requestedByName,
+            Icons.person_outline,
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+          _buildInfoRow(
+            context,
+            'Requested date',
+            _formatDate(requestedDate) ?? 'N/A',
+            Icons.calendar_today_outlined,
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+          _buildInfoRow(
+            context,
+            'Original due date',
+            _formatDate(originalDueDate) ?? 'N/A',
+            Icons.event_busy_outlined,
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+          _buildInfoRow(
+            context,
+            'New due date',
+            _formatDate(newDueDate) ?? 'N/A',
+            Icons.event_outlined,
+          ),
+          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+          _buildInfoRow(context, 'Reason', reason, Icons.info_outline),
+          if (isPending && delayRequestId.isNotEmpty) ...[
+            SizedBox(height: Responsive.spacing(context, mobile: 16)),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _showAcceptDelayDialog(
+                        context,
+                        controller,
+                        delayRequestId,
+                      );
+                    },
+                    icon: Icon(
+                      Icons.check_circle,
+                      size: Responsive.iconSize(context, mobile: 16),
+                    ),
+                    label: Text(
+                      'Accept Delay',
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 12),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColor.successColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        vertical: Responsive.spacing(context, mobile: 8),
+                        horizontal: Responsive.spacing(context, mobile: 8),
+                      ),
+                      minimumSize: Size(
+                        0,
+                        Responsive.size(context, mobile: 36),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _showRejectDelayDialog(
+                        context,
+                        controller,
+                        delayRequestId,
+                      );
+                    },
+                    icon: Icon(
+                      Icons.cancel,
+                      size: Responsive.iconSize(context, mobile: 16),
+                    ),
+                    label: Text(
+                      'Reject Delay',
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 12),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColor.errorColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        vertical: Responsive.spacing(context, mobile: 8),
+                        horizontal: Responsive.spacing(context, mobile: 8),
+                      ),
+                      minimumSize: Size(
+                        0,
+                        Responsive.size(context, mobile: 36),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

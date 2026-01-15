@@ -73,6 +73,9 @@ class ApiConstant {
   static const String updateTask = '/task/{id}';
   static const String deleteTask = '/task/{id}';
   static const String requestTaskDelay = '/task/{id}/request-delay';
+  static const String delayRequests = '/task/delay-requests';
+  static const String acceptDelayRequest = '/task/delay-requests/{delayRequestId}/accept';
+  static const String rejectDelayRequest = '/task/delay-requests/{delayRequestId}/reject';
   static const String taskByProject = '/projects/{projectId}/tasks';
   static const String tasksByProject = '/task/project/{projectId}';
   static const String bulkCreateTasks = '/task/bulk/create';

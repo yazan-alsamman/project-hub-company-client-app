@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
+import '../../core/constant/color.dart';
 import '../../core/services/auth_service.dart';
 import '../../data/Models/project_model.dart';
 import '../../data/repository/delays_repository.dart';
@@ -31,6 +33,12 @@ class DelaysController extends GetxController {
   StatusRequest _projectTaskDelaysStatusRequest = StatusRequest.none;
   bool _isLoadingProjectTaskDelays = false;
 
+  // Requested Delays (for PM)
+  List<dynamic> _requestedDelays = [];
+  StatusRequest _requestedDelaysStatusRequest = StatusRequest.none;
+  bool _isLoadingRequestedDelays = false;
+  Map<String, dynamic>? _requestedDelaysPagination;
+
   // Projects list for dropdowns
   List<ProjectModel> _projects = [];
   String? _selectedProjectId;
@@ -56,6 +64,11 @@ class DelaysController extends GetxController {
   List<ProjectModel> get projects => _projects;
   String? get selectedProjectId => _selectedProjectId;
   bool get isLoadingProjects => _isLoadingProjects;
+
+  List<dynamic> get requestedDelays => _requestedDelays;
+  StatusRequest get requestedDelaysStatusRequest => _requestedDelaysStatusRequest;
+  bool get isLoadingRequestedDelays => _isLoadingRequestedDelays;
+  Map<String, dynamic>? get requestedDelaysPagination => _requestedDelaysPagination;
 
   @override
   void onInit() {
@@ -253,6 +266,172 @@ class DelaysController extends GetxController {
       _projectTaskDelays = [];
     } finally {
       _isLoadingProjectTaskDelays = false;
+      update();
+    }
+  }
+
+  // Accept Delay Request
+  Future<void> acceptDelayRequest({
+    required String delayRequestId,
+    required String reviewNote,
+  }) async {
+    debugPrint('🔵 DelaysController: Accepting delay request...');
+    try {
+      final result = await _delaysRepository.acceptDelayRequest(
+        delayRequestId: delayRequestId,
+        reviewNote: reviewNote,
+      );
+
+      result.fold(
+        (error) {
+          debugPrint('🔴 Error accepting delay request: $error');
+          Get.snackbar(
+            'Error',
+            'Failed to accept delay request',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.errorColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+        },
+        (success) {
+          debugPrint('✅ Delay request accepted successfully');
+          Get.snackbar(
+            'Success',
+            'Delay request accepted successfully',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.successColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 2),
+          );
+          // Reload project task delays to refresh the list
+          if (_selectedProjectId != null) {
+            loadProjectTaskDelays();
+          }
+          // Reload requested delays to refresh the list
+          loadRequestedDelays();
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 Exception accepting delay request: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred while accepting delay request',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
+  // Reject Delay Request
+  Future<void> rejectDelayRequest({
+    required String delayRequestId,
+    required String reviewNote,
+  }) async {
+    debugPrint('🔵 DelaysController: Rejecting delay request...');
+    try {
+      final result = await _delaysRepository.rejectDelayRequest(
+        delayRequestId: delayRequestId,
+        reviewNote: reviewNote,
+      );
+
+      result.fold(
+        (error) {
+          debugPrint('🔴 Error rejecting delay request: $error');
+          Get.snackbar(
+            'Error',
+            'Failed to reject delay request',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.errorColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+        },
+        (success) {
+          debugPrint('✅ Delay request rejected successfully');
+          Get.snackbar(
+            'Success',
+            'Delay request rejected successfully',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.successColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 2),
+          );
+          // Reload project task delays to refresh the list
+          if (_selectedProjectId != null) {
+            loadProjectTaskDelays();
+          }
+          // Reload requested delays to refresh the list
+          loadRequestedDelays();
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 Exception rejecting delay request: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred while rejecting delay request',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
+  // Load Requested Delays (for PM)
+  Future<void> loadRequestedDelays({
+    int page = 1,
+    int limit = 10,
+    String? status,
+    String? taskID,
+    String? requestedBy,
+  }) async {
+    _isLoadingRequestedDelays = true;
+    _requestedDelaysStatusRequest = StatusRequest.loading;
+    update();
+
+    try {
+      final result = await _delaysRepository.getDelayRequests(
+        page: page,
+        limit: limit,
+        status: status,
+        taskID: taskID,
+        requestedBy: requestedBy,
+      );
+
+      result.fold(
+        (error) {
+          debugPrint('🔴 Error loading requested delays: $error');
+          _requestedDelaysStatusRequest = error;
+          _requestedDelays = [];
+          _requestedDelaysPagination = null;
+        },
+        (data) {
+          debugPrint('✅ Requested delays loaded successfully');
+          // Extract delay requests list from response
+          if (data['delayRequests'] != null && data['delayRequests'] is List) {
+            _requestedDelays = data['delayRequests'] as List<dynamic>;
+          } else {
+            _requestedDelays = [];
+          }
+          // Extract pagination info
+          if (data['pagination'] != null && data['pagination'] is Map) {
+            _requestedDelaysPagination = data['pagination'] as Map<String, dynamic>;
+          } else {
+            _requestedDelaysPagination = null;
+          }
+          _requestedDelaysStatusRequest = StatusRequest.success;
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 Exception loading requested delays: $e');
+      _requestedDelaysStatusRequest = StatusRequest.serverException;
+      _requestedDelays = [];
+      _requestedDelaysPagination = null;
+    } finally {
+      _isLoadingRequestedDelays = false;
       update();
     }
   }

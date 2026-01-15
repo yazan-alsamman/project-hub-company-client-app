@@ -184,5 +184,160 @@ class DelaysRepository {
       return const Left(StatusRequest.serverException);
     }
   }
+
+  // POST /task/delay-requests/{delayRequestId}/accept
+  Future<Either<StatusRequest, bool>> acceptDelayRequest({
+    required String delayRequestId,
+    required String reviewNote,
+  }) async {
+    debugPrint('🔵 DelaysRepository: Accepting delay request...');
+    debugPrint('DelayRequestId: $delayRequestId');
+    try {
+      final body = <String, dynamic>{
+        'reviewNote': reviewNote,
+      };
+
+      final result = await _apiService.post(
+        ApiConstant.acceptDelayRequest,
+        pathParams: {'delayRequestId': delayRequestId},
+        body: body,
+        requiresAuth: true,
+      );
+
+      return result.fold(
+        (error) {
+          debugPrint('🔴 DelaysRepository error accepting delay request: $error');
+          return Left(error);
+        },
+        (response) {
+          try {
+            debugPrint('🟢 DelaysRepository accept delay request response received');
+            if (response['success'] == true) {
+              debugPrint('✅ Delay request accepted successfully');
+              return const Right(true);
+            } else {
+              debugPrint('🔴 Failed to accept delay request');
+              return const Left(StatusRequest.serverFailure);
+            }
+          } catch (e, stackTrace) {
+            debugPrint('🔴 DelaysRepository parsing error: $e');
+            debugPrint('Stack trace: $stackTrace');
+            return const Left(StatusRequest.serverException);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 DelaysRepository exception accepting delay request: $e');
+      return const Left(StatusRequest.serverException);
+    }
+  }
+
+  // POST /task/delay-requests/{delayRequestId}/reject
+  Future<Either<StatusRequest, bool>> rejectDelayRequest({
+    required String delayRequestId,
+    required String reviewNote,
+  }) async {
+    debugPrint('🔵 DelaysRepository: Rejecting delay request...');
+    debugPrint('DelayRequestId: $delayRequestId');
+    try {
+      final body = <String, dynamic>{
+        'reviewNote': reviewNote,
+      };
+
+      final result = await _apiService.post(
+        ApiConstant.rejectDelayRequest,
+        pathParams: {'delayRequestId': delayRequestId},
+        body: body,
+        requiresAuth: true,
+      );
+
+      return result.fold(
+        (error) {
+          debugPrint('🔴 DelaysRepository error rejecting delay request: $error');
+          return Left(error);
+        },
+        (response) {
+          try {
+            debugPrint('🟢 DelaysRepository reject delay request response received');
+            if (response['success'] == true) {
+              debugPrint('✅ Delay request rejected successfully');
+              return const Right(true);
+            } else {
+              debugPrint('🔴 Failed to reject delay request');
+              return const Left(StatusRequest.serverFailure);
+            }
+          } catch (e, stackTrace) {
+            debugPrint('🔴 DelaysRepository parsing error: $e');
+            debugPrint('Stack trace: $stackTrace');
+            return const Left(StatusRequest.serverException);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 DelaysRepository exception rejecting delay request: $e');
+      return const Left(StatusRequest.serverException);
+    }
+  }
+
+  // GET /task/delay-requests?page=1&limit=10&status=pending
+  Future<Either<StatusRequest, Map<String, dynamic>>> getDelayRequests({
+    int page = 1,
+    int limit = 10,
+    String? status,
+    String? taskID,
+    String? requestedBy,
+  }) async {
+    debugPrint('🔵 DelaysRepository: Getting delay requests...');
+    debugPrint('Page: $page, Limit: $limit, Status: $status');
+    try {
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
+      }
+      if (taskID != null && taskID.isNotEmpty) {
+        queryParams['taskID'] = taskID;
+      }
+      if (requestedBy != null && requestedBy.isNotEmpty) {
+        queryParams['requestedBy'] = requestedBy;
+      }
+
+      final result = await _apiService.get(
+        ApiConstant.delayRequests,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      return result.fold(
+        (error) {
+          debugPrint('🔴 DelaysRepository error getting delay requests: $error');
+          return Left(error);
+        },
+        (response) {
+          try {
+            debugPrint('🟢 DelaysRepository delay requests response received');
+            if (response['success'] == true && response['data'] != null) {
+              final data = response['data'] as Map<String, dynamic>;
+              debugPrint('✅ Delay requests retrieved successfully');
+              return Right(data);
+            } else {
+              debugPrint('🔴 Failed to get delay requests');
+              return const Left(StatusRequest.serverFailure);
+            }
+          } catch (e, stackTrace) {
+            debugPrint('🔴 DelaysRepository parsing error: $e');
+            debugPrint('Stack trace: $stackTrace');
+            return const Left(StatusRequest.serverException);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('🔴 DelaysRepository exception getting delay requests: $e');
+      return const Left(StatusRequest.serverException);
+    }
+  }
 }
 
