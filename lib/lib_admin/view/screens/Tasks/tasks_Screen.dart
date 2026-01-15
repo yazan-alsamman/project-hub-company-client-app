@@ -304,7 +304,8 @@ class TasksScreen extends StatelessWidget {
                                 final userRole = roleSnapshot.data?.toLowerCase() ?? '';
                                 final isDeveloper = userRole == 'developer';
                                 final isPM = userRole == 'pm';
-                                final canViewTaskDetail = isDeveloper || isPM;
+                                final isAdmin = userRole == 'admin';
+                                final canViewTaskDetail = isDeveloper || isPM || isAdmin;
                                 if (filteredTasks.isEmpty &&
                                     !controller.isLoading &&
                                     controller.statusRequest ==
@@ -380,10 +381,20 @@ class TasksScreen extends StatelessWidget {
                                       delayRequests: task.delayRequests,
                                       onTap: canViewTaskDetail
                                           ? () {
-                                              Get.toNamed(
-                                                AppRoute.taskDetail,
-                                                arguments: task,
-                                              );
+                                              // Check if user is admin - go to comments page
+                                              // Otherwise go to task detail page
+                                              final userRole = roleSnapshot.data?.toLowerCase() ?? '';
+                                              if (userRole == 'admin') {
+                                                Get.toNamed(
+                                                  AppRoute.taskComments,
+                                                  arguments: task,
+                                                );
+                                              } else {
+                                                Get.toNamed(
+                                                  AppRoute.taskDetail,
+                                                  arguments: task,
+                                                );
+                                              }
                                             }
                                           : null,
                                       onEdit: isDeveloper

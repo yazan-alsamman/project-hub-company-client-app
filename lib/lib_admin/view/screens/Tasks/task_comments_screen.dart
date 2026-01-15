@@ -11,20 +11,15 @@ import '../../../data/Models/comment_model.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/custom_drawer.dart';
 
-class TaskDetailScreen extends StatelessWidget {
-  const TaskDetailScreen({super.key});
-
-  Future<String?> _getUserRole() async {
-    final authService = AuthService();
-    return await authService.getUserRole();
-  }
+class TaskCommentsScreen extends StatelessWidget {
+  const TaskCommentsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final task = Get.arguments as TaskModel?;
     if (task == null) {
       return Scaffold(
-        appBar: const CustomAppBar(title: 'Task Detail', showBackButton: true),
+        appBar: const CustomAppBar(title: 'Task Comments', showBackButton: true),
         body: const Center(
           child: Text('Task not found'),
         ),
@@ -44,7 +39,7 @@ class TaskDetailScreen extends StatelessWidget {
           customDrawerController.onMenuItemTap(item);
         },
       ),
-      appBar: const CustomAppBar(title: 'Task Detail', showBackButton: true),
+      appBar: const CustomAppBar(title: 'Task Comments', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<TaskDetailController>(
           builder: (controller) {
@@ -113,6 +108,11 @@ class TaskDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<String?> _getUserRole() async {
+    final authService = AuthService();
+    return await authService.getUserRole();
   }
 
   Widget _buildTaskHeader(BuildContext context, TaskModel task) {
@@ -252,6 +252,18 @@ class TaskDetailScreen extends StatelessWidget {
     );
   }
 
+  IconData _getPriorityIcon(String priority) {
+    final p = priority.toLowerCase();
+    if (p.contains('critical') || p.contains('high')) {
+      return Icons.flag;
+    } else if (p.contains('medium')) {
+      return Icons.flag_outlined;
+    } else if (p.contains('low')) {
+      return Icons.flag_outlined;
+    }
+    return Icons.flag_outlined;
+  }
+
   Widget _buildAddCommentInput(
     BuildContext context,
     TaskDetailController controller,
@@ -369,18 +381,6 @@ class TaskDetailScreen extends StatelessWidget {
       comment: comment,
       controller: controller,
     );
-  }
-
-  IconData _getPriorityIcon(String priority) {
-    final p = priority.toLowerCase();
-    if (p.contains('critical') || p.contains('high')) {
-      return Icons.flag;
-    } else if (p.contains('medium')) {
-      return Icons.flag_outlined;
-    } else if (p.contains('low')) {
-      return Icons.flag_outlined;
-    }
-    return Icons.flag_outlined;
   }
 }
 
@@ -694,56 +694,6 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, String commentId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Delete Comment',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, mobile: 18),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'Are you sure you want to delete this comment? This action cannot be undone.',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, mobile: 14),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, mobile: 14),
-                  color: AppColor.textSecondaryColor,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                widget.controller.deleteComment(commentId);
-              },
-              child: Text(
-                'Delete',
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, mobile: 14),
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildReplyInput(
     BuildContext context,
     TaskDetailController controller,
@@ -823,6 +773,55 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
     );
   }
 
+  void _showDeleteConfirmation(BuildContext context, String commentId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Delete Comment',
+            style: TextStyle(
+              fontSize: Responsive.fontSize(context, mobile: 18),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete this comment? This action cannot be undone.',
+            style: TextStyle(
+              fontSize: Responsive.fontSize(context, mobile: 14),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                  color: AppColor.textSecondaryColor,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.controller.deleteComment(commentId);
+              },
+              child: Text(
+                'Delete',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, mobile: 14),
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _ReplyItemWidget extends StatefulWidget {
@@ -1035,7 +1034,6 @@ class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
                       widget.reply.id!,
                       controller.editController.text,
                     );
-                    // Refresh the parent comment's replies after update
                     _refreshParentComment();
                   }
                 },
@@ -1096,7 +1094,6 @@ class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
               onPressed: () {
                 Navigator.of(context).pop();
                 widget.controller.deleteComment(replyId);
-                // Refresh the parent comment's replies after delete
                 _refreshParentComment();
               },
               child: Text(
@@ -1114,7 +1111,7 @@ class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
   }
 
   void _refreshParentComment() {
-    // Reload comments to refresh the replies list
     widget.controller.loadComments();
   }
 }
+

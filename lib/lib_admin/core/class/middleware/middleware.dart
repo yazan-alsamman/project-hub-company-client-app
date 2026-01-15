@@ -22,6 +22,7 @@ class MyMiddleWare extends GetMiddleware {
         route == AppRoute.addTask ||
         route == AppRoute.editTask ||
         route == AppRoute.taskDetail ||
+        route == AppRoute.taskComments ||
         route == AppRoute.requestDelay ||
         route == AppRoute.addProject ||
         route == AppRoute.editProject ||

@@ -335,7 +335,8 @@ class ProjectScreen extends StatelessWidget {
                                   final userRole = roleSnapshot.data?.toLowerCase() ?? '';
                                   final isDeveloper = userRole == 'developer';
                                   final isPM = userRole == 'pm';
-                                  final canViewComments = isDeveloper || isPM;
+                                  final isAdmin = userRole == 'admin';
+                                  final canViewComments = isDeveloper || isPM || isAdmin;
                                   
                                   return ProjectCard(
                                     title: project.title,

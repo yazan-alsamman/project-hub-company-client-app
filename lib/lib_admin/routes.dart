@@ -16,6 +16,7 @@ import 'view/screens/team/edit_employee_screen.dart';
 import 'view/screens/Tasks/add_task_screen.dart';
 import 'view/screens/Tasks/edit_task_screen.dart';
 import 'view/screens/Tasks/task_detail_screen.dart';
+import 'view/screens/Tasks/task_comments_screen.dart';
 import 'view/screens/Tasks/request_delay_screen.dart';
 import 'view/screens/projects/add_project_screen.dart';
 import 'view/screens/projects/edit_project_screen.dart';
@@ -86,6 +87,12 @@ List<GetPage<dynamic>>? routes = [
     name: AppRoute.taskDetail,
     page: () {
       return const TaskDetailScreen();
+    },
+  ),
+  GetPage(
+    name: AppRoute.taskComments,
+    page: () {
+      return const TaskCommentsScreen();
     },
   ),
   GetPage(

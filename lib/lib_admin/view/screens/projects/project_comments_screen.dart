@@ -14,6 +14,11 @@ import '../../widgets/common/custom_drawer.dart';
 class ProjectCommentsScreen extends StatelessWidget {
   const ProjectCommentsScreen({super.key});
 
+  Future<String?> _getUserRole() async {
+    final authService = AuthService();
+    return await authService.getUserRole();
+  }
+
   @override
   Widget build(BuildContext context) {
     final project = Get.arguments as ProjectModel?;
@@ -78,9 +83,24 @@ class ProjectCommentsScreen extends StatelessWidget {
                         SizedBox(
                           height: Responsive.spacing(context, mobile: 24),
                         ),
-                        _buildAddCommentInput(context, controller),
-                        SizedBox(
-                          height: Responsive.spacing(context, mobile: 24),
+                        FutureBuilder<String?>(
+                          future: _getUserRole(),
+                          builder: (context, snapshot) {
+                            final userRole = snapshot.data?.toLowerCase() ?? '';
+                            final isAdmin = userRole == 'admin';
+                            
+                            if (!isAdmin) {
+                              return Column(
+                                children: [
+                                  _buildAddCommentInput(context, controller),
+                                  SizedBox(
+                                    height: Responsive.spacing(context, mobile: 24),
+                                  ),
+                                ],
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
                         ),
                         _buildCommentsList(context, controller),
                       ],
@@ -341,18 +361,21 @@ class _CommentItemWidget extends StatefulWidget {
 class _CommentItemWidgetState extends State<_CommentItemWidget> {
   final AuthService _authService = AuthService();
   bool _isOwner = false;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentUserId();
+    _loadUserInfo();
   }
 
-  Future<void> _loadCurrentUserId() async {
+  Future<void> _loadUserInfo() async {
     final userId = await _authService.getUserId();
+    final userRole = await _authService.getUserRole();
     setState(() {
       _isOwner = widget.comment.userId != null && 
                   widget.comment.userId == userId;
+      _isAdmin = userRole?.toLowerCase() == 'admin';
     });
   }
 
@@ -393,34 +416,37 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
                         ),
                       ),
                     ),
-                    if (_isOwner)
+                    if ((_isOwner && !_isAdmin) || _isAdmin)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              widget.controller.startEdit(
-                                widget.comment.id!,
-                                widget.comment.text,
-                              );
-                            },
-                            child: Icon(
-                              Icons.edit,
-                              size: Responsive.iconSize(context, mobile: 18),
-                              color: AppColor.primaryColor,
+                          if (_isOwner && !_isAdmin)
+                            GestureDetector(
+                              onTap: () {
+                                widget.controller.startEdit(
+                                  widget.comment.id!,
+                                  widget.comment.text,
+                                );
+                              },
+                              child: Icon(
+                                Icons.edit,
+                                size: Responsive.iconSize(context, mobile: 18),
+                                color: AppColor.primaryColor,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: Responsive.spacing(context, mobile: 12)),
-                          GestureDetector(
-                            onTap: () {
-                              _showDeleteConfirmation(context, widget.comment.id!);
-                            },
-                            child: Icon(
-                              Icons.delete,
-                              size: Responsive.iconSize(context, mobile: 18),
-                              color: Colors.red,
+                          if (_isOwner && !_isAdmin)
+                            SizedBox(width: Responsive.spacing(context, mobile: 12)),
+                          if (_isAdmin || _isOwner)
+                            GestureDetector(
+                              onTap: () {
+                                _showDeleteConfirmation(context, widget.comment.id!);
+                              },
+                              child: Icon(
+                                Icons.delete,
+                                size: Responsive.iconSize(context, mobile: 18),
+                                color: Colors.red,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                   ],
@@ -469,7 +495,7 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
                     ),
                   ),
                   const Spacer(),
-                  if (!isEditingThis)
+                  if (!isEditingThis && !_isAdmin)
                     GestureDetector(
                       onTap: () {
                         if (widget.controller.replyingToCommentId ==
@@ -519,7 +545,7 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
             ],
           ),
         ),
-        if (isReplyingToThis) _buildReplyInput(context, widget.controller),
+        if (isReplyingToThis && !_isAdmin) _buildReplyInput(context, widget.controller),
         if (widget.comment.replies != null &&
             widget.comment.replies!.isNotEmpty)
           Padding(
@@ -757,74 +783,6 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
     );
   }
 
-  Widget _buildReplyItem(BuildContext context, CommentModel reply) {
-    return Container(
-      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 12)),
-      decoration: BoxDecoration(
-        color: AppColor.backgroundColor,
-        borderRadius: BorderRadius.circular(
-          Responsive.borderRadius(context, mobile: 8),
-        ),
-        border: Border.all(color: AppColor.borderColor, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            reply.text,
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, mobile: 14),
-              color: AppColor.textColor,
-            ),
-          ),
-          SizedBox(height: Responsive.spacing(context, mobile: 8)),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: Responsive.size(context, mobile: 12),
-                backgroundColor: Color(reply.authorColor).withOpacity(0.2),
-                child: Text(
-                  reply.author.isNotEmpty
-                      ? reply.author.substring(0, 1).toUpperCase()
-                      : 'U',
-                  style: TextStyle(
-                    fontSize: Responsive.fontSize(context, mobile: 10),
-                    color: Color(reply.authorColor),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              SizedBox(width: Responsive.spacing(context, mobile: 8)),
-              Text(
-                reply.author,
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, mobile: 12),
-                  color: AppColor.textSecondaryColor,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(width: Responsive.spacing(context, mobile: 8)),
-              Text(
-                '•',
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, mobile: 12),
-                  color: AppColor.textSecondaryColor,
-                ),
-              ),
-              SizedBox(width: Responsive.spacing(context, mobile: 8)),
-              Text(
-                reply.date,
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, mobile: 12),
-                  color: AppColor.textSecondaryColor,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ReplyItemWidget extends StatefulWidget {
@@ -845,18 +803,21 @@ class _ReplyItemWidget extends StatefulWidget {
 class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
   final AuthService _authService = AuthService();
   bool _isOwner = false;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentUserId();
+    _loadUserInfo();
   }
 
-  Future<void> _loadCurrentUserId() async {
+  Future<void> _loadUserInfo() async {
     final userId = await _authService.getUserId();
+    final userRole = await _authService.getUserRole();
     setState(() {
       _isOwner = widget.reply.userId != null && 
                   widget.reply.userId == userId;
+      _isAdmin = userRole?.toLowerCase() == 'admin';
     });
   }
 
@@ -892,34 +853,37 @@ class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
                     ),
                   ),
                 ),
-                if (_isOwner)
+                if ((_isOwner && !_isAdmin) || _isAdmin)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          widget.controller.startEdit(
-                            widget.reply.id!,
-                            widget.reply.text,
-                          );
-                        },
-                        child: Icon(
-                          Icons.edit,
-                          size: Responsive.iconSize(context, mobile: 16),
-                          color: AppColor.primaryColor,
+                      if (_isOwner && !_isAdmin)
+                        GestureDetector(
+                          onTap: () {
+                            widget.controller.startEdit(
+                              widget.reply.id!,
+                              widget.reply.text,
+                            );
+                          },
+                          child: Icon(
+                            Icons.edit,
+                            size: Responsive.iconSize(context, mobile: 16),
+                            color: AppColor.primaryColor,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: Responsive.spacing(context, mobile: 8)),
-                      GestureDetector(
-                        onTap: () {
-                          _showDeleteConfirmation(context, widget.reply.id!);
-                        },
-                        child: Icon(
-                          Icons.delete,
-                          size: Responsive.iconSize(context, mobile: 16),
-                          color: Colors.red,
+                      if (_isOwner && !_isAdmin)
+                        SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                      if (_isAdmin || _isOwner)
+                        GestureDetector(
+                          onTap: () {
+                            _showDeleteConfirmation(context, widget.reply.id!);
+                          },
+                          child: Icon(
+                            Icons.delete,
+                            size: Responsive.iconSize(context, mobile: 16),
+                            color: Colors.red,
+                          ),
                         ),
-                      ),
                     ],
                   ),
               ],
