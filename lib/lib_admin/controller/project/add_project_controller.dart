@@ -34,38 +34,26 @@ class AddProjectControllerImp extends AddProjectController {
     safeDelayController.text = '7'; // Default safe delay
   }
   Future<void> loadClients() async {
-    debugPrint('🔵 AddProjectController: Loading clients...');
     isLoadingClients = true;
     update();
     try {
       final result = await _projectsRepository.getClients(page: 1, limit: 10);
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading clients: $error');
-          debugPrint('🔴 Error type: ${error.runtimeType}');
           isLoadingClients = false;
           errorMessage = 'Failed to load clients. Please try again.';
           update();
         },
         (clientsList) {
-          debugPrint('✅ Loaded ${clientsList.length} clients');
-          debugPrint(
-            '✅ Clients: ${clientsList.map((c) => c.displayName).join(", ")}',
-          );
           clients = clientsList;
           if (clients.isNotEmpty && selectedClientId == null) {
             selectedClientId = clients.first.id;
-            debugPrint(
-              '✅ Selected default client: ${clients.first.displayName} ($selectedClientId)',
-            );
           }
           isLoadingClients = false;
           update();
         },
       );
     } catch (e, stackTrace) {
-      debugPrint('🔴 Exception loading clients: $e');
-      debugPrint('🔴 Stack trace: $stackTrace');
       isLoadingClients = false;
       errorMessage =
           'An error occurred while loading clients. Please try again.';
@@ -74,7 +62,6 @@ class AddProjectControllerImp extends AddProjectController {
   }
   @override
   void createProject() async {
-    debugPrint('🔵 Creating project...');
     if (!_validateForm()) {
       return;
     }
@@ -84,7 +71,6 @@ class AddProjectControllerImp extends AddProjectController {
     try {
       // جلب companyId من AuthService مباشرة في كل مرة (من response الـ login)
       final finalCompanyId = await _authService.getCompanyId();
-      debugPrint('🔵 Got companyId from AuthService (from login response): $finalCompanyId');
       // التحقق من وجود companyId قبل الإرسال
       if (finalCompanyId == null || finalCompanyId.isEmpty) {
         Get.snackbar(
@@ -101,7 +87,6 @@ class AddProjectControllerImp extends AddProjectController {
         update();
         return;
       }
-      debugPrint('✅ Sending companyId with request: $finalCompanyId');
       final safeDelay = int.tryParse(safeDelayController.text.trim()) ?? 7;
       String formattedStartDate = startDateController.text.trim();
       if (!formattedStartDate.contains('T')) {
@@ -125,7 +110,6 @@ class AddProjectControllerImp extends AddProjectController {
       );
       result.fold(
         (error) {
-          debugPrint('🔴 Error creating project: $error');
           String errorMsg = 'Failed to create project';
           StatusRequest errorStatus = StatusRequest.serverFailure;
           if (error is Map<String, dynamic>) {
@@ -133,7 +117,6 @@ class AddProjectControllerImp extends AddProjectController {
                 error['error'] as StatusRequest? ?? StatusRequest.serverFailure;
             errorMsg =
                 error['message']?.toString() ?? 'Failed to create project';
-            debugPrint('🔴 Error message from backend: $errorMsg');
           } else if (error is StatusRequest) {
             errorStatus = error;
             if (error == StatusRequest.serverFailure) {
@@ -167,7 +150,6 @@ class AddProjectControllerImp extends AddProjectController {
           );
         },
         (project) {
-          debugPrint('✅ Project created successfully: ${project.title}');
           errorMessage = null;
           isLoading = false;
           statusRequest = StatusRequest.success;
@@ -175,9 +157,8 @@ class AddProjectControllerImp extends AddProjectController {
           try {
             final projectsController = Get.find<ProjectsControllerImp>();
             projectsController.refreshProjects();
-            debugPrint('✅ Projects list refresh initiated');
           } catch (e) {
-            debugPrint('⚠️ Could not refresh projects: $e');
+            // Could not refresh projects
           }
           Get.snackbar(
             'Success',
@@ -200,7 +181,6 @@ class AddProjectControllerImp extends AddProjectController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception creating project: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();

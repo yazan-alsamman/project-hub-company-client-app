@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:project_hub/core/services/services.dart';
+import 'package:project_hub/core/config/app_config.dart';
 
 class ApiConstant {
-  static const String _customBaseUrl =
-      'http://72.62.52.238:5020'; // السيرفر الجديد
+  static const String _customBaseUrl = AppConfig.productionApiUrl;
   static const String _baseUrlKey = 'api_base_url';
   static String get baseUrl {
     if (_customBaseUrl.isNotEmpty) {
@@ -19,9 +19,9 @@ class ApiConstant {
       }
     } catch (e) {}
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5000';
+      return AppConfig.androidEmulatorApiUrl;
     }
-    return 'http://localhost:5000';
+    return AppConfig.localhostApiUrl;
   }
 
   static Future<void> setBaseUrl(String url) async {
@@ -43,10 +43,10 @@ class ApiConstant {
     }
   }
 
-  static const Duration connectTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
-  static const String contentType = 'application/json';
-  static const String accept = 'application/json';
+  static const Duration connectTimeout = AppConfig.connectTimeout;
+  static const Duration receiveTimeout = AppConfig.receiveTimeout;
+  static const String contentType = AppConfig.contentTypeJson;
+  static const String accept = AppConfig.acceptJson;
   static const String login = '/user/login';
   static const String register = '/auth/register';
   static const String logout = '/user/logout';

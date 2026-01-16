@@ -1,7 +1,10 @@
 # Miscellaneous
 *.class
-*.log
 *.pyc
+
+# Logging - log files are ignored but directory is kept via .gitkeep
+*.log
+logging/*.log
 *.swp
 .DS_Store
 .atom/

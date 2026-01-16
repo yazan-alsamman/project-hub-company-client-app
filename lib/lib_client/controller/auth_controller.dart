@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project_hub/lib_client/data/repository/auth_repository.dart';
@@ -48,7 +47,7 @@ class AuthController extends GetxController {
         user.value = userData;
       }
     } catch (e) {
-      debugPrint('Error loading stored auth: $e');
+      // Error loading stored auth
     }
   }
 
@@ -58,7 +57,6 @@ class AuthController extends GetxController {
 
       return result.fold(
         (error) {
-          debugPrint('Login error: $error');
           return false;
         },
         (loginData) {
@@ -75,7 +73,6 @@ class AuthController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('Login exception: $e');
       return false;
     }
   }
@@ -104,7 +101,7 @@ class AuthController extends GetxController {
         }
       }
     } catch (e) {
-      debugPrint('Error storing auth: $e');
+      // Error storing auth
     }
   }
 
@@ -120,9 +117,8 @@ class AuthController extends GetxController {
         refreshToken.value = newRefreshToken;
       }
       await _storeAuth();
-      debugPrint('✅ Tokens updated and persisted after refresh');
     } catch (e) {
-      debugPrint('Error updating tokens from refresh: $e');
+      // Error updating tokens from refresh
     }
   }
 
@@ -130,7 +126,7 @@ class AuthController extends GetxController {
     try {
       await _authRepository.logout();
     } catch (e) {
-      debugPrint('Logout error: $e');
+      // Logout error
     } finally {
       token.value = '';
       refreshToken.value = '';
@@ -158,7 +154,7 @@ class AuthController extends GetxController {
         Get.delete<dynamic>(tag: 'AnalyticsControllerImp');
       }
     } catch (e) {
-      debugPrint('Could not delete AnalyticsControllerImp: $e');
+      // Could not delete AnalyticsControllerImp
     }
 
     try {
@@ -166,7 +162,7 @@ class AuthController extends GetxController {
         Get.delete<dynamic>(tag: 'ProjectsControllerImp');
       }
     } catch (e) {
-      debugPrint('Could not delete ProjectsControllerImp: $e');
+      // Could not delete ProjectsControllerImp
     }
 
     try {
@@ -174,7 +170,7 @@ class AuthController extends GetxController {
         Get.delete<dynamic>(tag: 'ProjectAnalyticsController');
       }
     } catch (e) {
-      debugPrint('Could not delete ProjectAnalyticsController: $e');
+      // Could not delete ProjectAnalyticsController
     }
 
     try {
@@ -182,7 +178,7 @@ class AuthController extends GetxController {
         Get.delete<dynamic>(tag: 'FilterButtonController');
       }
     } catch (e) {
-      debugPrint('Could not delete FilterButtonController: $e');
+      // Could not delete FilterButtonController
     }
 
     try {
@@ -190,7 +186,7 @@ class AuthController extends GetxController {
         Get.delete<dynamic>(tag: 'CustomDrawerControllerImp');
       }
     } catch (e) {
-      debugPrint('Could not delete CustomDrawerControllerImp: $e');
+      // Could not delete CustomDrawerControllerImp
     }
   }
 

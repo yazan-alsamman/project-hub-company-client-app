@@ -1,5 +1,4 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
 import '../../core/services/auth_service.dart';
@@ -49,14 +48,12 @@ class TasksControllerImp extends TasksController {
   @override
   void onInit() {
     super.onInit();
-    debugPrint('🔵 TasksControllerImp.onInit() called');
     loadProjects();
     loadTasks();
   }
   @override
   Future<void> loadTasks({bool refresh = false}) async {
     if (_isLoading && !refresh) {
-      debugPrint('🟡 Already loading, returning.');
       return;
     }
     _isLoading = true;
@@ -65,37 +62,25 @@ class TasksControllerImp extends TasksController {
       _hasMore = true;
       _allTasks.clear();
       _statusRequest = StatusRequest.loading;
-      debugPrint('🔄 Refreshing tasks...');
     } else if (_allTasks.isEmpty) {
       _statusRequest = StatusRequest.loading;
-      debugPrint('⏳ Initial load of tasks...');
     }
     update();
-    debugPrint('🔵 Loading tasks...');
-    debugPrint('Page: $_currentPage, Limit: $_limit');
-    debugPrint('Selected Project ID: $_selectedProjectId');
-    
+
     final result = _selectedProjectId != null && _selectedProjectId!.isNotEmpty
         ? await _loadAllTasksForProject(_selectedProjectId!)
         : await _tasksRepository.getTasks(
             page: _currentPage,
             limit: _limit,
           );
-    
+
     _isLoading = false;
     result.fold(
       (error) async {
-        debugPrint('🔴 Error loading tasks: $error');
         _statusRequest = error;
         update();
       },
       (tasks) {
-        debugPrint('✅ Loaded ${tasks.length} tasks');
-        for (var task in tasks) {
-          debugPrint(
-            '  - Task: ${task.title}, Status: ${task.status}, Priority: ${task.priority}',
-          );
-        }
         // If project is selected, show all tasks without pagination
         if (_selectedProjectId != null && _selectedProjectId!.isNotEmpty) {
           _allTasks = tasks; // Replace all tasks (no pagination)
@@ -113,7 +98,6 @@ class TasksControllerImp extends TasksController {
         }
         _statusRequest = StatusRequest.success;
         update();
-        debugPrint('✅ Total tasks: ${_allTasks.length}');
       },
     );
   }
@@ -126,13 +110,11 @@ class TasksControllerImp extends TasksController {
   Future<void> loadProjects() async {
     _isLoadingProjects = true;
     update();
-    debugPrint('🔵 Loading projects for task filtering...');
     try {
       final authService = AuthService();
       final companyId = await authService.getCompanyId();
-      
+
       if (companyId == null || companyId.isEmpty) {
-        debugPrint('🔴 CompanyId not found');
         _projects = [];
         _isLoadingProjects = false;
         update();
@@ -147,16 +129,13 @@ class TasksControllerImp extends TasksController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Failed to load projects: $error');
           _projects = [];
         },
         (loadedProjects) {
           _projects = loadedProjects;
-          debugPrint('✅ Loaded ${_projects.length} projects');
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading projects: $e');
       _projects = [];
     }
     _isLoadingProjects = false;

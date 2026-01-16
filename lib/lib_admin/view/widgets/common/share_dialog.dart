@@ -6,6 +6,7 @@ import '../../../data/Models/project_model.dart';
 import '../../../core/services/pdf_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_file/open_file.dart';
+import 'package:project_hub/core/config/app_config.dart';
 class ShareDialog extends StatefulWidget {
   final ProjectModel project;
   const ShareDialog({super.key, required this.project});
@@ -202,9 +203,9 @@ class _ShareDialogState extends State<ShareDialog> {
     try {
       print('Starting PDF generation...');
       final file = await PDFService.generateProjectPDF(widget.project).timeout(
-        const Duration(seconds: 30),
+        AppConfig.pdfGenerationTimeout,
         onTimeout: () {
-          print('PDF generation timed out after 30 seconds');
+          print('PDF generation timed out after ${AppConfig.pdfGenerationTimeout.inSeconds} seconds');
           return null;
         },
       );
@@ -350,7 +351,7 @@ class _ShareDialogState extends State<ShareDialog> {
     Get.back();
   }
   Future<void> _copyProjectLink() async {
-    final projectLink = 'https://projecthub.app/project/${widget.project.id}';
+    final projectLink = AppConfig.getProjectShareUrl(widget.project.id);
     Get.back();
     Get.snackbar(
       'Copied',

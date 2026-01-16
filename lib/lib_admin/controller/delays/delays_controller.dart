@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
@@ -91,16 +90,13 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading projects: $error');
           _projects = [];
         },
         (projectsList) {
-          debugPrint('✅ Loaded ${projectsList.length} projects for dropdown');
           _projects = projectsList;
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading projects: $e');
       _projects = [];
     } finally {
       _isLoadingProjects = false;
@@ -130,18 +126,15 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading delay summary: $error');
           _summaryStatusRequest = error;
           _delaySummary = null;
         },
         (summary) {
-          debugPrint('✅ Delay summary loaded successfully');
           _delaySummary = summary;
           _summaryStatusRequest = StatusRequest.success;
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading delay summary: $e');
       _summaryStatusRequest = StatusRequest.serverException;
       _delaySummary = null;
     } finally {
@@ -164,12 +157,10 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading all projects delay status: $error');
           _allProjectsStatusRequest = error;
           _allProjectsDelayStatus = [];
         },
         (data) {
-          debugPrint('✅ All projects delay status loaded successfully');
           // Extract projects list from response
           if (data['projects'] != null && data['projects'] is List) {
             _allProjectsDelayStatus = data['projects'] as List<dynamic>;
@@ -180,7 +171,6 @@ class DelaysController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading all projects delay status: $e');
       _allProjectsStatusRequest = StatusRequest.serverException;
       _allProjectsDelayStatus = [];
     } finally {
@@ -192,7 +182,6 @@ class DelaysController extends GetxController {
   // Load Project Delay Status (Single Project)
   Future<void> loadProjectDelayStatus() async {
     if (_selectedProjectId == null || _selectedProjectId!.isEmpty) {
-      debugPrint('⚠️ No project selected');
       return;
     }
 
@@ -205,18 +194,15 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading project delay status: $error');
           _projectDelayStatusRequest = error;
           _projectDelayStatus = null;
         },
         (status) {
-          debugPrint('✅ Project delay status loaded successfully');
           _projectDelayStatus = status;
           _projectDelayStatusRequest = StatusRequest.success;
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading project delay status: $e');
       _projectDelayStatusRequest = StatusRequest.serverException;
       _projectDelayStatus = null;
     } finally {
@@ -228,7 +214,6 @@ class DelaysController extends GetxController {
   // Load Project Task Delays
   Future<void> loadProjectTaskDelays({int page = 1, int limit = 10}) async {
     if (_selectedProjectId == null || _selectedProjectId!.isEmpty) {
-      debugPrint('⚠️ No project selected');
       return;
     }
 
@@ -245,12 +230,10 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading project task delays: $error');
           _projectTaskDelaysStatusRequest = error;
           _projectTaskDelays = [];
         },
         (data) {
-          debugPrint('✅ Project task delays loaded successfully');
           // Extract tasks list from response
           if (data['tasks'] != null && data['tasks'] is List) {
             _projectTaskDelays = data['tasks'] as List<dynamic>;
@@ -261,7 +244,6 @@ class DelaysController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading project task delays: $e');
       _projectTaskDelaysStatusRequest = StatusRequest.serverException;
       _projectTaskDelays = [];
     } finally {
@@ -275,7 +257,6 @@ class DelaysController extends GetxController {
     required String delayRequestId,
     required String reviewNote,
   }) async {
-    debugPrint('🔵 DelaysController: Accepting delay request...');
     try {
       final result = await _delaysRepository.acceptDelayRequest(
         delayRequestId: delayRequestId,
@@ -284,7 +265,6 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error accepting delay request: $error');
           Get.snackbar(
             'Error',
             'Failed to accept delay request',
@@ -295,7 +275,6 @@ class DelaysController extends GetxController {
           );
         },
         (success) {
-          debugPrint('✅ Delay request accepted successfully');
           Get.snackbar(
             'Success',
             'Delay request accepted successfully',
@@ -313,7 +292,6 @@ class DelaysController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception accepting delay request: $e');
       Get.snackbar(
         'Error',
         'An error occurred while accepting delay request',
@@ -330,7 +308,6 @@ class DelaysController extends GetxController {
     required String delayRequestId,
     required String reviewNote,
   }) async {
-    debugPrint('🔵 DelaysController: Rejecting delay request...');
     try {
       final result = await _delaysRepository.rejectDelayRequest(
         delayRequestId: delayRequestId,
@@ -339,7 +316,6 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error rejecting delay request: $error');
           Get.snackbar(
             'Error',
             'Failed to reject delay request',
@@ -350,7 +326,6 @@ class DelaysController extends GetxController {
           );
         },
         (success) {
-          debugPrint('✅ Delay request rejected successfully');
           Get.snackbar(
             'Success',
             'Delay request rejected successfully',
@@ -368,7 +343,6 @@ class DelaysController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception rejecting delay request: $e');
       Get.snackbar(
         'Error',
         'An error occurred while rejecting delay request',
@@ -403,13 +377,11 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading requested delays: $error');
           _requestedDelaysStatusRequest = error;
           _requestedDelays = [];
           _requestedDelaysPagination = null;
         },
         (data) {
-          debugPrint('✅ Requested delays loaded successfully');
           // Extract delay requests list from response
           if (data['delayRequests'] != null && data['delayRequests'] is List) {
             _requestedDelays = data['delayRequests'] as List<dynamic>;
@@ -426,7 +398,6 @@ class DelaysController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading requested delays: $e');
       _requestedDelaysStatusRequest = StatusRequest.serverException;
       _requestedDelays = [];
       _requestedDelaysPagination = null;

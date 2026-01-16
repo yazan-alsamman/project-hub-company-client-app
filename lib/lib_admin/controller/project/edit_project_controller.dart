@@ -66,13 +66,12 @@ class EditProjectControllerImp extends EditProjectController {
         update();
         return;
       } catch (e) {
-        debugPrint('⚠️ Project not found in list, will fetch from API: $e');
+        // Project not found in list, will fetch from API
       }
       isLoadingProject = false;
       errorMessage = 'Project not found';
       update();
     } catch (e) {
-      debugPrint('🔴 Exception loading project: $e');
       isLoadingProject = false;
       errorMessage = 'An error occurred while loading project data.';
       update();
@@ -80,7 +79,6 @@ class EditProjectControllerImp extends EditProjectController {
   }
   @override
   void updateProject() async {
-    debugPrint('🔵 Updating project...');
     if (!_validateForm()) {
       return;
     }
@@ -127,7 +125,6 @@ class EditProjectControllerImp extends EditProjectController {
       );
       result.fold(
         (error) {
-          debugPrint('🔴 Error updating project: $error');
           String errorMsg = 'Failed to update project';
           if (error == StatusRequest.serverFailure) {
             errorMsg = 'Server error. Please try again.';
@@ -159,7 +156,6 @@ class EditProjectControllerImp extends EditProjectController {
           );
         },
         (updatedProject) {
-          debugPrint('✅ Project updated successfully: ${updatedProject.title}');
           errorMessage = null;
           isLoading = false;
           statusRequest = StatusRequest.success;
@@ -167,9 +163,8 @@ class EditProjectControllerImp extends EditProjectController {
           try {
             final projectsController = Get.find<ProjectsControllerImp>();
             projectsController.refreshProjects();
-            debugPrint('✅ Projects list refresh initiated');
           } catch (e) {
-            debugPrint('⚠️ Could not refresh projects: $e');
+            // Could not refresh projects
           }
           Get.snackbar(
             'Success',
@@ -192,7 +187,6 @@ class EditProjectControllerImp extends EditProjectController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception updating project: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();
@@ -211,7 +205,6 @@ class EditProjectControllerImp extends EditProjectController {
   }
   @override
   void deleteProject() async {
-    debugPrint('🔵 Deleting project...');
     final confirm = await Get.dialog<bool>(
       AlertDialog(
         title: const Text('Delete Project'),
@@ -244,7 +237,6 @@ class EditProjectControllerImp extends EditProjectController {
       final result = await _projectsRepository.deleteProject(projectId);
       result.fold(
         (error) {
-          debugPrint('🔴 Error deleting project: $error');
           String errorMsg = 'Failed to delete project';
           if (error == StatusRequest.serverFailure) {
             errorMsg = 'Server error. Please try again.';
@@ -275,16 +267,14 @@ class EditProjectControllerImp extends EditProjectController {
           );
         },
         (success) {
-          debugPrint('✅ Project deleted successfully');
           isLoading = false;
           statusRequest = StatusRequest.success;
           update();
           try {
             final projectsController = Get.find<ProjectsControllerImp>();
             projectsController.refreshProjects();
-            debugPrint('✅ Projects list refresh initiated');
           } catch (e) {
-            debugPrint('⚠️ Could not refresh projects: $e');
+            // Could not refresh projects
           }
           Get.snackbar(
             'Success',
@@ -307,7 +297,6 @@ class EditProjectControllerImp extends EditProjectController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception deleting project: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();

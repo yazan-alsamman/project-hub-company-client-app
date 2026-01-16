@@ -1,19 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../class/statusrequest.dart';
 import '../constant/api_constant.dart';
 import 'auth_service.dart';
 import '../functions/checkinternet.dart';
+import '../../../core/services/logging_service.dart';
+
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
+
   final AuthService _authService = AuthService();
+  final LoggingService _logger = LoggingService();
   bool _isRefreshing = false;
   final List<Completer<void>> _refreshCompleters = [];
+
   Future<Either<StatusRequest, Map<String, dynamic>>> get(
     String endpoint, {
     Map<String, String>? queryParams,
@@ -38,70 +42,82 @@ class ApiService {
     bool requiresAuth = true,
     int retryCount = 0,
   }) async {
+    final stopwatch = Stopwatch()..start();
+
     try {
       if (!await checkInternet()) {
+        await _logger.logWarning('API', 'No internet connection');
         return const Left(StatusRequest.offlineFailure);
       }
+
       String url = pathParams != null
           ? ApiConstant.buildUrlWithParams(endpoint, pathParams)
           : ApiConstant.buildUrl(endpoint);
+
       if (queryParams != null && queryParams.isNotEmpty) {
         final uri = Uri.parse(url);
         url = uri
             .replace(queryParameters: {...uri.queryParameters, ...queryParams})
             .toString();
       }
+
       final headers = await _buildHeaders(requiresAuth);
       http.Response response;
-      
+
+      await _logger.logRequest(
+        method: method,
+        url: url,
+        headers: headers,
+        body: body,
+      );
+
       switch (method.toUpperCase()) {
         case 'GET':
-          debugPrint('🔵 GET Request URL: $url');
-          debugPrint('🔵 Query params: $queryParams');
-          debugPrint('🔵 Headers: $headers');
           response = await http
               .get(Uri.parse(url), headers: headers)
               .timeout(ApiConstant.connectTimeout);
           break;
         case 'POST':
-          debugPrint('🔵 POST Request URL: $url');
           final bodyJson = body != null ? jsonEncode(body) : null;
-          debugPrint('🔵 Headers: $headers');
-          debugPrint('🔵 Body: $bodyJson');
           response = await http
               .post(Uri.parse(url), headers: headers, body: bodyJson)
               .timeout(ApiConstant.connectTimeout);
           break;
         case 'PUT':
-          debugPrint('🔵 PUT Request URL: $url');
           final bodyJson = body != null ? jsonEncode(body) : null;
-          debugPrint('🔵 Headers: $headers');
-          debugPrint('🔵 Body: $bodyJson');
           response = await http
               .put(Uri.parse(url), headers: headers, body: bodyJson)
               .timeout(ApiConstant.connectTimeout);
           break;
         case 'DELETE':
-          debugPrint('🔵 DELETE Request URL: $url');
-          debugPrint('🔵 Headers: $headers');
           response = await http
               .delete(Uri.parse(url), headers: headers)
               .timeout(ApiConstant.connectTimeout);
           break;
         default:
+          await _logger.logError(
+            tag: 'API',
+            message: 'Unknown HTTP method: $method',
+          );
           return const Left(StatusRequest.serverException);
       }
-      
-      debugPrint('🔵 Response status: ${response.statusCode}');
-      debugPrint('🔵 Response body: ${response.body}');
-      
+
+      stopwatch.stop();
+
+      await _logger.logResponse(
+        method: method,
+        url: url,
+        statusCode: response.statusCode,
+        body: response.body,
+        duration: stopwatch.elapsed,
+      );
+
       // Handle 401 Unauthorized - Try to refresh token
       if (response.statusCode == 401 && requiresAuth && retryCount == 0) {
-        debugPrint('🔴 Unauthorized (401) - Attempting to refresh token...');
+        await _logger.logWarning('API', 'Unauthorized (401) - Attempting token refresh');
         final refreshSuccess = await _refreshToken();
         if (refreshSuccess) {
-          debugPrint('✅ Token refreshed successfully, retrying original request...');
-          // Retry the original request with new token
+          await _logger.logInfo('API', 'Token refreshed, retrying request');
           return await _makeRequestWithRetry(
             method,
             endpoint,
@@ -112,39 +128,40 @@ class ApiService {
             retryCount: retryCount + 1,
           );
         } else {
-          debugPrint('🔴 Failed to refresh token, logging out...');
+          await _logger.logWarning('AUTH', 'Token refresh failed, logging out');
           await _authService.logout();
         }
       }
-      
+
       return _handleResponse(response);
     } catch (e, stackTrace) {
-      debugPrint('🔴 Request exception: $e');
-      debugPrint('🔴 Exception type: ${e.runtimeType}');
-      debugPrint('🔴 Stack trace: $stackTrace');
+      stopwatch.stop();
+
+      await _logger.logError(
+        tag: 'API',
+        message: '$method $endpoint failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
       if (e.toString().contains('TimeoutException')) {
-        debugPrint('🔴 Timeout exception detected');
         return const Left(StatusRequest.timeoutException);
       }
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup') ||
           e.toString().contains('Network is unreachable')) {
-        debugPrint('🔴 Network exception detected');
         return const Left(StatusRequest.offlineFailure);
       }
-      debugPrint('🔴 Server exception detected');
       return const Left(StatusRequest.serverException);
     }
   }
+
   Future<Either<StatusRequest, Map<String, dynamic>>> post(
     String endpoint, {
     Map<String, dynamic>? body,
     Map<String, String>? pathParams,
     bool requiresAuth = true,
   }) async {
-    print('🔵 ====== API SERVICE POST CALLED ======');
-    debugPrint('🔵 API SERVICE POST CALLED');
-    print('Endpoint: $endpoint');
     try {
       return await _makeRequestWithRetry(
         'POST',
@@ -154,32 +171,26 @@ class ApiService {
         requiresAuth: requiresAuth,
       );
     } catch (e, stackTrace) {
-      debugPrint('🔴 API Error occurred:');
-      debugPrint('Error type: ${e.runtimeType}');
-      debugPrint('Error message: $e');
-      debugPrint('Stack trace: $stackTrace');
+      await _logger.logError(
+        tag: 'API',
+        message: 'POST $endpoint failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
       if (e is TimeoutException) {
-        debugPrint(
-          '⏰ TIMEOUT ERROR: Request took longer than ${ApiConstant.connectTimeout.inSeconds} seconds',
-        );
         return const Left(StatusRequest.timeoutException);
       }
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup') ||
-          e.toString().contains('Network is unreachable')) {
-        debugPrint('🌐 NETWORK ERROR: Cannot reach server');
+          e.toString().contains('Network is unreachable') ||
+          e.toString().contains('Connection refused')) {
         return const Left(StatusRequest.offlineFailure);
       }
-      if (e.toString().contains('Connection refused')) {
-        debugPrint(
-          '🚫 CONNECTION REFUSED: Server is not listening or firewall blocked',
-        );
-        return const Left(StatusRequest.offlineFailure);
-      }
-      debugPrint('❌ UNKNOWN ERROR: $e');
       return const Left(StatusRequest.serverException);
     }
   }
+
   Future<Either<StatusRequest, Map<String, dynamic>>> put(
     String endpoint, {
     Map<String, dynamic>? body,
@@ -194,13 +205,21 @@ class ApiService {
         body: body,
         requiresAuth: requiresAuth,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _logger.logError(
+        tag: 'API',
+        message: 'PUT $endpoint failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
       if (e.toString().contains('TimeoutException')) {
         return const Left(StatusRequest.timeoutException);
       }
       return const Left(StatusRequest.serverException);
     }
   }
+
   Future<Either<StatusRequest, Map<String, dynamic>>> delete(
     String endpoint, {
     Map<String, String>? pathParams,
@@ -213,13 +232,21 @@ class ApiService {
         pathParams: pathParams,
         requiresAuth: requiresAuth,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _logger.logError(
+        tag: 'API',
+        message: 'DELETE $endpoint failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
       if (e.toString().contains('TimeoutException')) {
         return const Left(StatusRequest.timeoutException);
       }
       return const Left(StatusRequest.serverException);
     }
   }
+
   Future<Map<String, String>> _buildHeaders(bool requiresAuth) async {
     final headers = <String, String>{
       'Content-Type': ApiConstant.contentType,
@@ -238,57 +265,34 @@ class ApiService {
     http.Response response,
   ) {
     try {
-      debugPrint('📥 Handling response with status: ${response.statusCode}');
       if (response.body.isEmpty) {
-        debugPrint('🔴 Empty response body');
+        _logger.logWarning('API', 'Empty response body received');
         return const Left(StatusRequest.serverException);
       }
+
       final Map<String, dynamic> responseBody = jsonDecode(response.body);
-      debugPrint('📦 Parsed response body successfully');
+
       switch (response.statusCode) {
         case 200:
         case 201:
-          debugPrint('✅ Success status code: ${response.statusCode}');
           return Right(responseBody);
         case 400:
-          debugPrint('🔴 Bad Request (400)');
-          debugPrint('Response: ${response.body}');
-          return Right(responseBody);
         case 401:
-          debugPrint('🔴 Unauthorized (401)');
-          return Right(responseBody);
         case 403:
-          debugPrint('🔴 Forbidden (403) - Insufficient permissions/role');
-          debugPrint('Response: ${response.body}');
-          if (responseBody['message'] != null) {
-            final message = responseBody['message'].toString();
-            debugPrint('Error message: $message');
-            if (message.contains('insufficient role') ||
-                message.contains('Forbidden') ||
-                message.contains('permission')) {
-              debugPrint('⚠️ User does not have required permissions');
-            }
-          }
-          return Right(responseBody);
         case 404:
-          debugPrint('🔴 Not Found (404)');
-          debugPrint('Response: ${response.body}');
-          return Right(responseBody);
         case 500:
         case 502:
         case 503:
-          debugPrint('🔴 Server Error (${response.statusCode})');
-          debugPrint('Response: ${response.body}');
-          return Right(responseBody);
         default:
-          debugPrint('🔴 Unknown status code: ${response.statusCode}');
-          debugPrint('Response: ${response.body}');
           return Right(responseBody);
       }
     } catch (e, stackTrace) {
-      debugPrint('🔴 Error parsing response: $e');
-      debugPrint('Response body: ${response.body}');
-      debugPrint('Stack trace: $stackTrace');
+      _logger.logError(
+        tag: 'API',
+        message: 'Failed to parse response',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return const Left(StatusRequest.serverException);
     }
   }
@@ -296,26 +300,25 @@ class ApiService {
   Future<bool> _refreshToken() async {
     // Prevent multiple simultaneous refresh attempts
     if (_isRefreshing) {
-      debugPrint('⏳ Token refresh already in progress, waiting...');
+      await _logger.logInfo('AUTH', 'Token refresh already in progress, waiting');
       final completer = Completer<void>();
       _refreshCompleters.add(completer);
       await completer.future;
-      return true; // Assume success if another refresh succeeded
+      return true;
     }
 
     _isRefreshing = true;
-    debugPrint('🔄 Starting token refresh...');
+    await _logger.logInfo('AUTH', 'Starting token refresh');
 
     try {
       final refreshTokenValue = await _authService.getRefreshToken();
       if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
-        debugPrint('🔴 No refresh token found');
+        await _logger.logWarning('AUTH', 'No refresh token found');
         _isRefreshing = false;
         _completeRefreshCompleters(false);
         return false;
       }
 
-      debugPrint('🔵 Calling refresh token API...');
       final url = ApiConstant.buildUrl(ApiConstant.refreshToken);
       final headers = <String, String>{
         'Content-Type': ApiConstant.contentType,
@@ -323,12 +326,23 @@ class ApiService {
       };
       final body = jsonEncode({'refreshToken': refreshTokenValue});
 
+      await _logger.logRequest(
+        method: 'POST',
+        url: url,
+        headers: headers,
+        body: {'refreshToken': '[REDACTED]'},
+      );
+
       final response = await http
           .post(Uri.parse(url), headers: headers, body: body)
           .timeout(ApiConstant.connectTimeout);
 
-      debugPrint('🟢 Refresh token response status: ${response.statusCode}');
-      debugPrint('🟢 Refresh token response body: ${response.body}');
+      await _logger.logResponse(
+        method: 'POST',
+        url: url,
+        statusCode: response.statusCode,
+        body: 'Token refresh response',
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
@@ -339,7 +353,7 @@ class ApiService {
             final newRefreshToken = data['refreshToken']?.toString() ?? '';
 
             if (newToken.isEmpty) {
-              debugPrint('🔴 New token is empty');
+              await _logger.logWarning('AUTH', 'Received empty token');
               _isRefreshing = false;
               _completeRefreshCompleters(false);
               return false;
@@ -350,30 +364,46 @@ class ApiService {
               await _authService.saveRefreshToken(newRefreshToken);
             }
 
-            debugPrint('✅ Token refreshed successfully');
+            await _logger.logAuthEvent(
+              event: 'TOKEN_REFRESH',
+              success: true,
+            );
+
             _isRefreshing = false;
             _completeRefreshCompleters(true);
             return true;
           } else {
-            debugPrint('🔴 Refresh token failed: ${responseBody['message']}');
+            await _logger.logWarning('AUTH', 'Token refresh response invalid');
             _isRefreshing = false;
             _completeRefreshCompleters(false);
             return false;
           }
         } catch (e) {
-          debugPrint('🔴 Error parsing refresh token response: $e');
+          await _logger.logError(
+            tag: 'AUTH',
+            message: 'Failed to parse token refresh response',
+            error: e,
+          );
           _isRefreshing = false;
           _completeRefreshCompleters(false);
           return false;
         }
       } else {
-        debugPrint('🔴 Refresh token failed with status: ${response.statusCode}');
+        await _logger.logWarning(
+          'AUTH',
+          'Token refresh failed with status: ${response.statusCode}',
+        );
         _isRefreshing = false;
         _completeRefreshCompleters(false);
         return false;
       }
-    } catch (e) {
-      debugPrint('🔴 Exception refreshing token: $e');
+    } catch (e, stackTrace) {
+      await _logger.logError(
+        tag: 'AUTH',
+        message: 'Token refresh exception',
+        error: e,
+        stackTrace: stackTrace,
+      );
       _isRefreshing = false;
       _completeRefreshCompleters(false);
       return false;

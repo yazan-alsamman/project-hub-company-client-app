@@ -51,7 +51,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
   }
   Future<void> loadUserData() async {
     selectedCompanyId = await authService.getCompanyId();
-    debugPrint('✅ Loaded companyId from AuthService: $selectedCompanyId');
     update();
   }
   Future<void> loadRoles() async {
@@ -61,42 +60,38 @@ class AddEmployeeControllerImp extends AddEmployeeController {
       // Get current user role
       final currentUserRole = await authService.getUserRole();
       final currentUserRoleLower = currentUserRole?.toLowerCase() ?? '';
-      debugPrint('🔵 Current user role: $currentUserRoleLower');
-      
+
       final result = await _teamRepository.getRoles();
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading roles: $error');
           isLoadingRoles = false;
           update();
         },
         (rolesList) {
-          debugPrint('✅ Loaded ${rolesList.length} roles');
           // Filter roles based on current user role
           roles = rolesList.where((role) {
             final roleNameLower = role.name.toLowerCase();
-            
+
             // Always exclude "client" role
             if (roleNameLower == 'client') {
               return false;
             }
-            
+
             // If current user is admin: show only "project manager" and "developer"
             if (currentUserRoleLower == 'admin') {
-              return roleNameLower == 'project manager' || 
+              return roleNameLower == 'project manager' ||
                      roleNameLower == 'pm' ||
                      roleNameLower == 'developer';
             }
-            
+
             // If current user is PM: show only "developer"
             if (currentUserRoleLower == 'pm' || currentUserRoleLower == 'project manager') {
               return roleNameLower == 'developer';
             }
-            
+
             // For other roles (like superadmin), show all roles except client
             return true;
           }).toList();
-          debugPrint('✅ Filtered roles: ${roles.length} roles for user role: $currentUserRoleLower');
           if (roles.isNotEmpty && selectedRoleId == null) {
             selectedRoleId = roles.first.id;
           }
@@ -105,7 +100,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading roles: $e');
       isLoadingRoles = false;
       update();
     }
@@ -117,12 +111,10 @@ class AddEmployeeControllerImp extends AddEmployeeController {
       final result = await _teamRepository.getPositions(page: 1, limit: 10);
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading positions: $error');
           isLoadingPositions = false;
           update();
         },
         (positionsList) {
-          debugPrint('✅ Loaded ${positionsList.length} positions');
           positions = positionsList;
           if (positions.isNotEmpty && selectedPositionId == null) {
             selectedPositionId = positions.first.id;
@@ -132,7 +124,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading positions: $e');
       isLoadingPositions = false;
       update();
     }
@@ -144,12 +135,10 @@ class AddEmployeeControllerImp extends AddEmployeeController {
       final result = await _teamRepository.getDepartments(page: 1, limit: 10);
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading departments: $error');
           isLoadingDepartments = false;
           update();
         },
         (departmentsList) {
-          debugPrint('✅ Loaded ${departmentsList.length} departments');
           departments = departmentsList;
           if (departments.isNotEmpty && selectedDepartmentId == null) {
             selectedDepartmentId = departments.first.id;
@@ -159,14 +148,12 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading departments: $e');
       isLoadingDepartments = false;
       update();
     }
   }
   @override
   void createEmployee() async {
-    debugPrint('🔵 Creating employee with user...');
     if (!_validateForm()) {
       return;
     }
@@ -221,7 +208,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
       final departmentId = selectedDepartmentId ?? departments.first.id;
       // جلب companyId من AuthService في كل مرة قبل الإرسال
       String? finalCompanyId = await authService.getCompanyId();
-      debugPrint('🔵 Got companyId from AuthService: $finalCompanyId');
       // التأكد من وجود companyId قبل الإرسال
       if (finalCompanyId == null || finalCompanyId.isEmpty) {
         Get.snackbar(
@@ -238,7 +224,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         update();
         return;
       }
-      debugPrint('✅ Sending companyId with request: $finalCompanyId');
       final result = await _teamRepository.createEmployeeWithUser(
         companyId: finalCompanyId,
         employeeCode: employeeCodeController.text.trim(),
@@ -258,7 +243,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
       );
       result.fold(
         (error) {
-          debugPrint('🔴 Error creating employee: $error');
           String errorMsg = 'Failed to create employee';
           StatusRequest errorStatus = StatusRequest.serverFailure;
           if (error is Map<String, dynamic>) {
@@ -266,7 +250,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
                 error['error'] as StatusRequest? ?? StatusRequest.serverFailure;
             errorMsg =
                 error['message']?.toString() ?? 'Failed to create employee';
-            debugPrint('🔴 Error message from backend: $errorMsg');
           } else if (error is StatusRequest) {
             errorStatus = error;
             if (error == StatusRequest.serverFailure) {
@@ -313,7 +296,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
           );
         },
         (employee) {
-          debugPrint('✅ Employee created successfully: ${employee.username}');
           errorMessage = null;
           isLoading = false;
           statusRequest = StatusRequest.success;
@@ -325,10 +307,9 @@ class AddEmployeeControllerImp extends AddEmployeeController {
                 companyId: refreshCompanyId,
                 status: null,
               );
-              debugPrint('✅ Team members list refresh initiated');
             });
           } catch (e) {
-            debugPrint('⚠️ Could not refresh team members: $e');
+            // Could not refresh team members
           }
           Get.snackbar(
             'Success',
@@ -361,19 +342,14 @@ class AddEmployeeControllerImp extends AddEmployeeController {
           Future.delayed(const Duration(milliseconds: 300), () {
             try {
               Get.offNamed(AppRoute.team);
-              debugPrint('✅ Navigated to team screen using Get.offNamed()');
             } catch (e) {
-              debugPrint('🔴 Error navigating to team screen: $e');
               try {
                 Get.back();
-                debugPrint('✅ Navigated back using Get.back() as fallback');
               } catch (e2) {
-                debugPrint('🔴 All navigation attempts failed: $e2');
                 try {
                   Get.until((route) => route.settings.name == AppRoute.team);
-                  debugPrint('✅ Navigated using Get.until()');
                 } catch (e3) {
-                  debugPrint('🔴 Final navigation attempt failed: $e3');
+                  // Final navigation attempt failed
                 }
               }
             }
@@ -381,7 +357,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception creating employee: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();

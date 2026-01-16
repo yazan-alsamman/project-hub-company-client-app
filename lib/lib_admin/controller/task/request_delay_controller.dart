@@ -106,10 +106,6 @@ class RequestDelayController extends GetxController {
     try {
       // Format date as ISO 8601 string
       final formattedDate = selectedDate!.toUtc().toIso8601String();
-      debugPrint('🔵 Requesting task delay...');
-      debugPrint('TaskId: $taskId');
-      debugPrint('NewDueDate: $formattedDate');
-      debugPrint('Reason: $reason');
 
       final result = await _tasksRepository.requestTaskDelay(
         taskId: taskId,
@@ -119,7 +115,6 @@ class RequestDelayController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error requesting task delay: $error');
           _isLoading = false;
           _statusRequest = error;
           _errorMessage = 'Failed to request task delay';
@@ -151,7 +146,6 @@ class RequestDelayController extends GetxController {
           );
         },
         (success) {
-          debugPrint('✅ Task delay requested successfully');
           _isLoading = false;
           _statusRequest = StatusRequest.success;
           update();
@@ -174,10 +168,9 @@ class RequestDelayController extends GetxController {
           try {
             if (Get.isRegistered<TasksControllerImp>()) {
               Get.find<TasksControllerImp>().refreshTasks();
-              debugPrint('✅ Tasks list refresh initiated');
             }
           } catch (e) {
-            debugPrint('⚠️ Could not refresh tasks: $e');
+            // Could not refresh tasks
           }
           Future.delayed(const Duration(milliseconds: 300), () {
             Get.back();
@@ -185,7 +178,6 @@ class RequestDelayController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception requesting task delay: $e');
       _isLoading = false;
       _statusRequest = StatusRequest.serverException;
       _errorMessage = 'An unexpected error occurred';

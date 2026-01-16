@@ -1,27 +1,30 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import 'package:project_hub/lib_client/controller/auth_controller.dart';
+import 'package:project_hub/core/services/logging_service.dart';
+import 'package:project_hub/core/config/app_config.dart';
 
 class ApiService {
-  // Base URL
-  static const String baseUrl = 'http://72.62.52.238:5020';
+  // Base URL - using centralized config
+  static const String baseUrl = AppConfig.productionApiUrl;
 
-  static const Duration timeoutDuration = Duration(seconds: 30);
+  static const Duration timeoutDuration = AppConfig.connectTimeout;
 
   // Token refresh state to prevent multiple simultaneous refresh attempts
   static bool _isRefreshing = false;
   static Completer<String>? _refreshCompleter;
+
+  final LoggingService _logger = LoggingService();
 
   Future<bool> testConnection() async {
     try {
       final response = await http
           .get(Uri.parse(baseUrl), headers: {'Accept': 'application/json'})
           .timeout(
-            const Duration(seconds: 5),
+            AppConfig.connectionTestTimeout,
             onTimeout: () {
               throw TimeoutException('Connection test timeout');
             },
@@ -29,27 +32,18 @@ class ApiService {
 
       return response.statusCode < 500;
     } on SocketException {
-      debugPrint('Connection test: SocketException - Server unreachable');
       return false;
     } on TimeoutException {
-      debugPrint('Connection test: TimeoutException - Server not responding');
       return false;
-    } on HttpException catch (e) {
-      debugPrint('Connection test: HttpException - ${e.message}');
-      // HTTP exception means we connected but got an error - server is reachable
+    } on HttpException {
       return true;
     } catch (e) {
       final errorStr = e.toString();
 
       if (errorStr.contains('Failed to fetch') ||
           errorStr.contains('ClientException')) {
-        debugPrint(
-          'Connection test: CORS error detected - Browser blocking request (server is reachable)',
-        );
-
         return true;
       }
-      debugPrint('Connection test: Unknown error - $e');
 
       return false;
     }
@@ -60,9 +54,7 @@ class ApiService {
     try {
       // If another request is already refreshing, wait for it to complete
       if (_isRefreshing && _refreshCompleter != null) {
-        debugPrint(
-          '🔄 Token refresh already in progress, waiting for completion',
-        );
+        await _logger.logInfo('AUTH', 'Token refresh already in progress, waiting');
         return await _refreshCompleter!.future;
       }
 
@@ -70,7 +62,7 @@ class ApiService {
       _refreshCompleter = Completer<String>();
 
       if (!Get.isRegistered<AuthController>()) {
-        debugPrint('🔴 AuthController not available, cannot refresh token');
+        await _logger.logWarning('AUTH', 'AuthController not available');
         _isRefreshing = false;
         _refreshCompleter = null;
         return null;
@@ -80,13 +72,13 @@ class ApiService {
       final currentRefreshToken = authController.refreshToken.value;
 
       if (currentRefreshToken.isEmpty) {
-        debugPrint('🔴 No refresh token available');
+        await _logger.logWarning('AUTH', 'No refresh token available');
         _isRefreshing = false;
         _refreshCompleter = null;
         return null;
       }
 
-      debugPrint('🔄 Attempting to refresh access token...');
+      await _logger.logInfo('AUTH', 'Attempting to refresh access token');
 
       final response = await http
           .post(
@@ -98,11 +90,18 @@ class ApiService {
             body: jsonEncode({'refreshToken': currentRefreshToken}),
           )
           .timeout(
-            const Duration(seconds: 15),
+            AppConfig.tokenRefreshTimeout,
             onTimeout: () {
               throw Exception('Token refresh timeout');
             },
           );
+
+      await _logger.logResponse(
+        method: 'POST',
+        url: '$baseUrl/user/refresh',
+        statusCode: response.statusCode,
+        body: 'Token refresh response',
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -119,7 +118,7 @@ class ApiService {
               newRefreshToken,
             );
 
-            debugPrint('✅ Token refreshed successfully');
+            await _logger.logAuthEvent(event: 'TOKEN_REFRESH', success: true);
             _refreshCompleter?.complete(newToken);
 
             _isRefreshing = false;
@@ -129,20 +128,24 @@ class ApiService {
           }
         }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        debugPrint('🔴 Refresh token is invalid or expired, logging out');
-        // Refresh token is invalid, log out the user
+        await _logger.logWarning('AUTH', 'Refresh token invalid, logging out');
         await authController.logout();
       }
 
-      debugPrint('🔴 Token refresh failed: ${response.statusCode}');
+      await _logger.logWarning('AUTH', 'Token refresh failed: ${response.statusCode}');
       _refreshCompleter?.completeError('Token refresh failed');
 
       _isRefreshing = false;
       _refreshCompleter = null;
 
       return null;
-    } catch (e) {
-      debugPrint('🔴 Token refresh error: $e');
+    } catch (e, stackTrace) {
+      await _logger.logError(
+        tag: 'AUTH',
+        message: 'Token refresh error',
+        error: e,
+        stackTrace: stackTrace,
+      );
       _refreshCompleter?.completeError(e);
 
       _isRefreshing = false;
@@ -189,6 +192,12 @@ class ApiService {
         uri = uri.replace(queryParameters: queryParameters);
       }
 
+      await _logger.logRequest(
+        method: 'GET',
+        url: uri.toString(),
+        headers: getHeaders(additionalHeaders: headers),
+      );
+
       final response = await http
           .get(uri, headers: getHeaders(additionalHeaders: headers))
           .timeout(
@@ -198,13 +207,18 @@ class ApiService {
             },
           );
 
+      await _logger.logResponse(
+        method: 'GET',
+        url: uri.toString(),
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+
       // Handle 401 Unauthorized - try to refresh token and retry
       if (response.statusCode == 401) {
-        debugPrint('🔴 GET $endpoint returned 401, attempting token refresh');
         final newToken = await _refreshAccessToken();
 
         if (newToken != null && newToken.isNotEmpty) {
-          debugPrint('🔄 Retrying GET request after token refresh');
           // Retry the request with the new token
           return await http
               .get(uri, headers: getHeaders(additionalHeaders: headers))
@@ -240,9 +254,18 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     try {
+      final url = '$baseUrl$endpoint';
+
+      await _logger.logRequest(
+        method: 'POST',
+        url: url,
+        headers: getHeaders(additionalHeaders: headers),
+        body: body,
+      );
+
       final response = await http
           .post(
-            Uri.parse('$baseUrl$endpoint'),
+            Uri.parse(url),
             headers: getHeaders(additionalHeaders: headers),
             body: body != null ? jsonEncode(body) : null,
           )
@@ -253,17 +276,22 @@ class ApiService {
             },
           );
 
+      await _logger.logResponse(
+        method: 'POST',
+        url: url,
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+
       // Handle 401 Unauthorized - try to refresh token and retry
       if (response.statusCode == 401) {
-        debugPrint('🔴 POST $endpoint returned 401, attempting token refresh');
         final newToken = await _refreshAccessToken();
 
         if (newToken != null && newToken.isNotEmpty) {
-          debugPrint('🔄 Retrying POST request after token refresh');
           // Retry the request with the new token
           return await http
               .post(
-                Uri.parse('$baseUrl$endpoint'),
+                Uri.parse(url),
                 headers: getHeaders(additionalHeaders: headers),
                 body: body != null ? jsonEncode(body) : null,
               )
@@ -299,9 +327,18 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     try {
+      final url = '$baseUrl$endpoint';
+
+      await _logger.logRequest(
+        method: 'PUT',
+        url: url,
+        headers: getHeaders(additionalHeaders: headers),
+        body: body,
+      );
+
       final response = await http
           .put(
-            Uri.parse('$baseUrl$endpoint'),
+            Uri.parse(url),
             headers: getHeaders(additionalHeaders: headers),
             body: body != null ? jsonEncode(body) : null,
           )
@@ -312,17 +349,22 @@ class ApiService {
             },
           );
 
+      await _logger.logResponse(
+        method: 'PUT',
+        url: url,
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+
       // Handle 401 Unauthorized - try to refresh token and retry
       if (response.statusCode == 401) {
-        debugPrint('🔴 PUT $endpoint returned 401, attempting token refresh');
         final newToken = await _refreshAccessToken();
 
         if (newToken != null && newToken.isNotEmpty) {
-          debugPrint('🔄 Retrying PUT request after token refresh');
           // Retry the request with the new token
           return await http
               .put(
-                Uri.parse('$baseUrl$endpoint'),
+                Uri.parse(url),
                 headers: getHeaders(additionalHeaders: headers),
                 body: body != null ? jsonEncode(body) : null,
               )
@@ -358,9 +400,18 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     try {
+      final url = '$baseUrl$endpoint';
+
+      await _logger.logRequest(
+        method: 'PATCH',
+        url: url,
+        headers: getHeaders(additionalHeaders: headers),
+        body: body,
+      );
+
       final response = await http
           .patch(
-            Uri.parse('$baseUrl$endpoint'),
+            Uri.parse(url),
             headers: getHeaders(additionalHeaders: headers),
             body: body != null ? jsonEncode(body) : null,
           )
@@ -371,17 +422,22 @@ class ApiService {
             },
           );
 
+      await _logger.logResponse(
+        method: 'PATCH',
+        url: url,
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+
       // Handle 401 Unauthorized - try to refresh token and retry
       if (response.statusCode == 401) {
-        debugPrint('🔴 PATCH $endpoint returned 401, attempting token refresh');
         final newToken = await _refreshAccessToken();
 
         if (newToken != null && newToken.isNotEmpty) {
-          debugPrint('🔄 Retrying PATCH request after token refresh');
           // Retry the request with the new token
           return await http
               .patch(
-                Uri.parse('$baseUrl$endpoint'),
+                Uri.parse(url),
                 headers: getHeaders(additionalHeaders: headers),
                 body: body != null ? jsonEncode(body) : null,
               )
@@ -416,9 +472,17 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     try {
+      final url = '$baseUrl$endpoint';
+
+      await _logger.logRequest(
+        method: 'DELETE',
+        url: url,
+        headers: getHeaders(additionalHeaders: headers),
+      );
+
       final response = await http
           .delete(
-            Uri.parse('$baseUrl$endpoint'),
+            Uri.parse(url),
             headers: getHeaders(additionalHeaders: headers),
           )
           .timeout(
@@ -428,19 +492,22 @@ class ApiService {
             },
           );
 
+      await _logger.logResponse(
+        method: 'DELETE',
+        url: url,
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+
       // Handle 401 Unauthorized - try to refresh token and retry
       if (response.statusCode == 401) {
-        debugPrint(
-          '🔴 DELETE $endpoint returned 401, attempting token refresh',
-        );
         final newToken = await _refreshAccessToken();
 
         if (newToken != null && newToken.isNotEmpty) {
-          debugPrint('🔄 Retrying DELETE request after token refresh');
           // Retry the request with the new token
           return await http
               .delete(
-                Uri.parse('$baseUrl$endpoint'),
+                Uri.parse(url),
                 headers: getHeaders(additionalHeaders: headers),
               )
               .timeout(

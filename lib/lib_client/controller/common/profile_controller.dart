@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:project_hub/lib_client/core/services/auth_service.dart';
 
@@ -24,13 +23,8 @@ class ProfileController extends GetxController {
       email = await _authService.getUserEmail();
       userId = await _authService.getUserId();
       role = await _authService.getUserRole();
-      debugPrint('📋 Profile data loaded:');
-      debugPrint('Username: $username');
-      debugPrint('Email: $email');
-      debugPrint('User ID: $userId');
-      debugPrint('Role: $role');
     } catch (e) {
-      debugPrint('🔴 Error loading profile data: $e');
+      // Error loading profile data
     } finally {
       isLoading = false;
       update();

@@ -63,19 +63,16 @@ class ProjectCommentsController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading comments: $error');
           _statusRequest = error;
           _errorMessage = 'Failed to load comments';
           _comments = [];
         },
         (comments) {
-          debugPrint('✅ Loaded ${comments.length} comments');
           _comments = comments;
           _statusRequest = StatusRequest.success;
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading comments: $e');
       _statusRequest = StatusRequest.serverException;
       _errorMessage = 'An error occurred while loading comments';
       _comments = [];
@@ -100,7 +97,6 @@ class ProjectCommentsController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error adding comment: $error');
           Get.snackbar(
             'Error',
             'Failed to add comment',
@@ -108,14 +104,12 @@ class ProjectCommentsController extends GetxController {
           );
         },
         (comment) {
-          debugPrint('✅ Comment added successfully');
           _comments.add(comment);
           commentController.clear();
           update();
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception adding comment: $e');
       Get.snackbar(
         'Error',
         'An error occurred while adding comment',
@@ -155,7 +149,6 @@ class ProjectCommentsController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error adding reply: $error');
           Get.snackbar(
             'Error',
             'Failed to add reply',
@@ -163,7 +156,6 @@ class ProjectCommentsController extends GetxController {
           );
         },
         (reply) {
-          debugPrint('✅ Reply added successfully');
           // Find the parent comment and add the reply
           final parentIndex = _comments.indexWhere((c) => c.id == parentCommentId);
           if (parentIndex != -1) {
@@ -183,7 +175,6 @@ class ProjectCommentsController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception adding reply: $e');
       Get.snackbar(
         'Error',
         'An error occurred while adding reply',
@@ -209,7 +200,6 @@ class ProjectCommentsController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error updating comment: $error');
           Get.snackbar(
             'Error',
             'Failed to update comment',
@@ -217,7 +207,6 @@ class ProjectCommentsController extends GetxController {
           );
         },
         (updatedComment) {
-          debugPrint('✅ Comment updated successfully');
           final index = _comments.indexWhere((c) => c.id == commentId);
           if (index != -1) {
             // It's a top-level comment
@@ -242,7 +231,6 @@ class ProjectCommentsController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception updating comment: $e');
       Get.snackbar(
         'Error',
         'An error occurred while updating comment',
@@ -263,7 +251,6 @@ class ProjectCommentsController extends GetxController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error deleting comment: $error');
           Get.snackbar(
             'Error',
             'Failed to delete comment',
@@ -271,7 +258,6 @@ class ProjectCommentsController extends GetxController {
           );
         },
         (_) {
-          debugPrint('✅ Comment deleted successfully');
           // Try to remove from top-level comments first
           final index = _comments.indexWhere((c) => c.id == commentId);
           if (index != -1) {
@@ -294,7 +280,6 @@ class ProjectCommentsController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception deleting comment: $e');
       Get.snackbar(
         'Error',
         'An error occurred while deleting comment',

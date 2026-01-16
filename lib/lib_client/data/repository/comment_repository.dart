@@ -1,5 +1,4 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 import 'package:project_hub/lib_client/core/services/api_service.dart';
 import 'package:project_hub/lib_client/data/Models/comment_model.dart';
 
@@ -10,7 +9,6 @@ class CommentRepository {
     String taskId,
   ) async {
     try {
-      debugPrint('🔵 CommentRepository: Getting comments for task $taskId');
       final response = await _apiService.get('/comment/task/$taskId');
       final data = _apiService.handleResponse(response);
 
@@ -22,7 +20,6 @@ class CommentRepository {
                 (item) => CommentModel.fromJson(item as Map<String, dynamic>),
               )
               .toList();
-          debugPrint('✅ Found ${comments.length} comments');
           return Right(comments);
         }
         if (dataObj is List) {
@@ -31,15 +28,12 @@ class CommentRepository {
                 (item) => CommentModel.fromJson(item as Map<String, dynamic>),
               )
               .toList();
-          debugPrint('✅ Found ${comments.length} comments');
           return Right(comments);
         }
       }
 
-      debugPrint('⚠️ No comments found');
       return const Right([]);
     } catch (e) {
-      debugPrint('🔴 Exception loading comments: $e');
       return Left(e.toString());
     }
   }
@@ -48,7 +42,6 @@ class CommentRepository {
     CommentModel comment,
   ) async {
     try {
-      debugPrint('🔵 CommentRepository: Creating comment');
       // Determine refType and refId from comment
       String refType = 'Task';
       String? refId = comment.taskId;
@@ -69,13 +62,11 @@ class CommentRepository {
         final createdComment = CommentModel.fromJson(
           data['data'] as Map<String, dynamic>,
         );
-        debugPrint('✅ Comment created successfully');
         return Right(createdComment);
       }
 
       return const Left('Failed to create comment');
     } catch (e) {
-      debugPrint('🔴 Exception creating comment: $e');
       return Left(e.toString());
     }
   }
@@ -85,7 +76,6 @@ class CommentRepository {
     String text,
   ) async {
     try {
-      debugPrint('🔵 CommentRepository: Adding comment to task');
       final commentData = {'content': text, 'refType': 'Task', 'refId': taskId};
 
       final response = await _apiService.post('/comment', body: commentData);
@@ -96,13 +86,11 @@ class CommentRepository {
         final createdComment = CommentModel.fromJson(
           data['data'] as Map<String, dynamic>,
         );
-        debugPrint('✅ Comment added successfully');
         return Right(createdComment);
       }
 
       return const Left('Failed to create comment');
     } catch (e) {
-      debugPrint('🔴 Exception adding comment: $e');
       return Left(e.toString());
     }
   }

@@ -11,6 +11,7 @@ import 'package:project_hub/lib_client/controller/common/analytics_controller.da
 import 'package:project_hub/lib_client/controller/common/custom_drawer_controller.dart';
 import 'package:project_hub/lib_client/controller/project/projects_controller.dart';
 import 'package:project_hub/lib_client/controller/common/filter_button_controller.dart';
+import 'package:project_hub/core/services/logging_service.dart';
 
 abstract class LoginController extends GetxController {
   login();
@@ -18,12 +19,14 @@ abstract class LoginController extends GetxController {
 
 class LoginControllerImpl extends LoginController {
   final AuthRepository _authRepository = AuthRepository();
+  final LoggingService _logger = LoggingService();
   bool isPasswordVisible = false;
   bool rememberMe = false;
   bool isLoading = false;
   StatusRequest statusRequest = StatusRequest.none;
   late TextEditingController usernameController = TextEditingController();
   late TextEditingController passwordController = TextEditingController();
+
   @override
   void onInit() {
     super.onInit();
@@ -40,9 +43,6 @@ class LoginControllerImpl extends LoginController {
 
   @override
   login() async {
-    print('🔵 ====== LOGIN FUNCTION CALLED ======');
-    debugPrint('🔵 Login started');
-    print('🔵 Login started - PRINT VERSION');
     if (usernameController.text.isEmpty || passwordController.text.isEmpty) {
       Get.snackbar(
         'Error',
@@ -55,21 +55,20 @@ class LoginControllerImpl extends LoginController {
       );
       return;
     }
+
     isLoading = true;
     statusRequest = StatusRequest.loading;
     update();
-    print('🔵 Calling repository login...');
-    debugPrint('Username: ${usernameController.text}');
-    debugPrint('Password length: ${passwordController.text.length}');
+
     final result = await _authRepository.login(
       username: usernameController.text.trim(),
       password: passwordController.text,
     );
+
     isLoading = false;
+
     result.fold(
       (error) {
-        print('🔴 Login error: $error');
-        debugPrint('🔴 Login error: $error');
         String errorMsg = 'Login failed. Please try again.';
         if (error == StatusRequest.serverFailure) {
           errorMsg = 'Invalid username or password.';
@@ -80,8 +79,10 @@ class LoginControllerImpl extends LoginController {
         } else if (error == StatusRequest.serverException) {
           errorMsg = 'An unexpected server error occurred.';
         }
+
         statusRequest = error;
         update();
+
         Get.snackbar(
           'Error',
           errorMsg,
@@ -99,25 +100,25 @@ class LoginControllerImpl extends LoginController {
         );
       },
       (response) async {
-        print('✅ Login successful');
-        debugPrint('✅ Login successful');
-        debugPrint('Response: $response');
         statusRequest = StatusRequest.success;
         update();
 
         // Get user role from auth service
         final authService = Get.find<Myservices>();
-        final userRole = authService.sharedPreferences.getString(
-          'user_role',
-        );
-        debugPrint('🔵 User role: $userRole');
+        final userRole = authService.sharedPreferences.getString('user_role');
 
         // Check if user is superadmin and block login
         if (userRole?.toLowerCase() == 'superadmin' ||
             userRole?.toLowerCase() == 'super admin') {
-          debugPrint('🔴 Superadmin login blocked');
+          await _logger.logAuthEvent(
+            event: 'SUPERADMIN_LOGIN_BLOCKED',
+            role: userRole,
+            success: false,
+          );
+
           statusRequest = StatusRequest.serverFailure;
           update();
+
           Get.snackbar(
             'Access Denied',
             'Super admin accounts are not allowed to access this application.',
@@ -133,6 +134,7 @@ class LoginControllerImpl extends LoginController {
             borderRadius: 12,
             margin: const EdgeInsets.all(16),
           );
+
           // Clear any saved auth data
           await authService.sharedPreferences.remove('user_role');
           await authService.sharedPreferences.remove('auth_token');
@@ -146,7 +148,8 @@ class LoginControllerImpl extends LoginController {
         // Route based on user role
         if (userRole?.toLowerCase() == 'client') {
           // Route to client app
-          debugPrint('🔵 Routing to client app');
+          await _logger.logInfo('NAV', 'Routing to client app');
+
           // Initialize client controllers
           if (!Get.isRegistered<AuthController>()) {
             Get.put(AuthController(), permanent: true);
@@ -163,17 +166,17 @@ class LoginControllerImpl extends LoginController {
           if (!Get.isRegistered<FilterButtonController>()) {
             Get.put(FilterButtonController());
           }
+
           Get.offAllNamed('/client/tasks-page');
         } else {
           // Route to admin app (developer, admin, pm)
-          debugPrint('🔵 Routing to admin app');
+          await _logger.logInfo('NAV', 'Routing to admin app');
+
           // Initialize all controllers after successful login
-          debugPrint('🔄 Initializing all controllers after login...');
           ControllersInitializer.initializeControllers();
-          debugPrint('✅ All controllers initialized');
+
           // Route developer to tasks page, others to team page
           if (userRole?.toLowerCase() == 'developer') {
-            debugPrint('🔵 Routing developer to tasks page');
             Get.offAllNamed(AppRoute.tasks);
           } else {
             Get.offAllNamed(AppRoute.team);

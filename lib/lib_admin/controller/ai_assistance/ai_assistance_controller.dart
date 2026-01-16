@@ -14,6 +14,7 @@ import '../../core/services/pdf_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_file/open_file.dart';
 import 'package:flutter/services.dart';
+import 'package:project_hub/core/config/app_config.dart';
 
 abstract class AiAssistanceController extends GetxController {
   void generateTasks(String projectDescription, int numTasks);
@@ -57,9 +58,8 @@ class AiAssistanceControllerImp extends AiAssistanceController {
   List<Map<String, dynamic>> aiAssignments = [];
   bool showAiAssignments = false;
 
-  static const String aiApiUrl = 'https://daliliai.com/api/ai/generate';
-  static const String assignTasksApiUrl =
-      'https://daliliai.com/api/assignment/api/assign-tasks';
+  static const String aiApiUrl = AppConfig.aiApiUrl;
+  static const String assignTasksApiUrl = AppConfig.aiAssignTasksApiUrl;
 
   final ApiService _apiService = ApiService();
 
@@ -96,10 +96,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     update();
 
     try {
-      debugPrint('🔵 Generating tasks with AI...');
-      debugPrint('Project Description: $projectDescription');
-      debugPrint('Number of Tasks: $numTasks');
-
       final body = {
         'project_description': projectDescription,
         'num_tasks': numTasks,
@@ -121,9 +117,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             },
           );
 
-      debugPrint('🟢 AI API Response Status: ${response.statusCode}');
-      debugPrint('🟢 AI API Response Body: ${response.body}');
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -140,8 +133,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
 
         if (tasksList.isEmpty) {
           // If no tasks array, try to parse as single task or different structure
-          debugPrint('⚠️ No tasks array found, trying alternative parsing...');
-          // You might need to adjust this based on actual API response structure
         }
 
         generatedTasks = tasksList.asMap().entries.map((entry) {
@@ -227,8 +218,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
               maxEstimatedHour: maxEstimatedHour,
             );
           } catch (e) {
-            debugPrint('🔴 Error parsing task: $e');
-            debugPrint('🔴 Task data: $taskJson');
             // Return a default task if parsing fails
             return TaskModel(
               id: 'ai_task_error_${DateTime.now().millisecondsSinceEpoch}_$index',
@@ -257,8 +246,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
               : null;
         }
 
-        debugPrint('✅ Successfully generated ${generatedTasks.length} tasks');
-        debugPrint('⏱️ Generation time: ${generationTime ?? 'N/A'} seconds');
         statusRequest = StatusRequest.success;
 
         Get.snackbar(
@@ -308,11 +295,9 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             errorMessage = errorResponse['error'].toString();
           }
         } catch (e) {
-          debugPrint('🔴 Error parsing error response: $e');
           errorMessage = 'Failed to generate tasks';
         }
 
-        debugPrint('🔴 AI API Error: $errorMessage');
         statusRequest = StatusRequest.serverFailure;
 
         Get.snackbar(
@@ -327,8 +312,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         );
       }
     } catch (e, stackTrace) {
-      debugPrint('🔴 Exception generating tasks: $e');
-      debugPrint('🔴 Stack trace: $stackTrace');
       statusRequest = StatusRequest.serverException;
 
       String errorMessage = 'Failed to generate tasks';
@@ -655,7 +638,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Error showing project selection dialog: $e');
       Get.snackbar(
         'Error',
         'An error occurred while loading projects',
@@ -735,11 +717,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         };
       }).toList();
 
-      debugPrint(
-        '🔵 Sending ${tasksForApi.length} tasks to project: $projectTitle',
-      );
-      debugPrint('🔵 Project ID: $projectId');
-
       // Send to API
       final tasksRepository = TasksRepository();
       final result = await tasksRepository.bulkCreateTasks(
@@ -781,11 +758,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           final message =
               response['message']?.toString() ?? 'Tasks created successfully';
 
-          debugPrint('✅ Bulk create result:');
-          debugPrint('  Total: $total');
-          debugPrint('  Success: $successCount');
-          debugPrint('  Failed: $failureCount');
-
           if (failureCount > 0) {
             // Partial success
             Get.snackbar(
@@ -826,7 +798,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       );
     } catch (e) {
       Get.back(); // Close loading dialog
-      debugPrint('🔴 Exception accepting tasks: $e');
       Get.snackbar(
         'Error',
         'An unexpected error occurred: ${e.toString()}',
@@ -894,10 +865,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       // Step 1: Fetch employees from API - Fresh request every time (no caching)
       // This ensures we always get the latest employee data
       final employeesEndpoint = '/employee/roles';
-      debugPrint(
-        '🔵 Fetching employees from: ${ApiConstant.baseUrl}$employeesEndpoint',
-      );
-      debugPrint('🔄 Making fresh API request (no caching) for employees...');
 
       final employeesResult = await _apiService.get(
         employeesEndpoint,
@@ -905,7 +872,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       );
 
       final employeesData = employeesResult.fold((error) {
-        debugPrint('🔴 Failed to fetch employees: $error');
         String errorMsg = 'Failed to fetch employees';
         if (error == StatusRequest.serverFailure) {
           errorMsg = 'Server error. Please try again.';
@@ -919,43 +885,26 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         throw Exception(errorMsg);
       }, (response) => response);
 
-      debugPrint('🟢 Employees response: $employeesData');
-
       // Parse employees list - Creating fresh list for this request only
       // This list is local to this method and not stored in the controller
       List<dynamic> employeesList = [];
       if (employeesData['data'] != null && employeesData['data'] is List) {
         employeesList = employeesData['data'] as List<dynamic>;
-        debugPrint('🟢 Found ${employeesList.length} employees in data field');
       } else if (employeesData['employees'] != null &&
           employeesData['employees'] is List) {
         employeesList = employeesData['employees'] as List<dynamic>;
-        debugPrint(
-          '🟢 Found ${employeesList.length} employees in employees field',
-        );
       } else {
         // Try to find any list in the response
         employeesData.forEach((key, value) {
           if (value is List && value.isNotEmpty && employeesList.isEmpty) {
             employeesList = value;
-            debugPrint(
-              '🟢 Found ${employeesList.length} employees in $key field',
-            );
           }
         });
       }
 
       if (employeesList.isEmpty) {
-        debugPrint(
-          '🔴 No employees found in response. Available keys: ${employeesData.keys}',
-        );
         throw Exception('No employees found in response');
       }
-
-      debugPrint('🔵 Processing ${employeesList.length} employees...');
-      debugPrint(
-        '📝 Note: Employees are fetched fresh from API in each request (no caching)',
-      );
 
       // Define allowed roles for task assignment (development-related roles only)
       // Based on backend validation: "Only development-related roles can be assigned tasks"
@@ -988,7 +937,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           final employeeName = empMap['employeeName']?.toString() ?? '';
 
           if (employeeId.isEmpty) {
-            debugPrint('  ⚠️ Skipping employee with empty ID: $empMap');
             continue;
           }
 
@@ -996,13 +944,8 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           final roleLower = role.toLowerCase();
           if (!allowedRoles.contains(roleLower)) {
             filteredCount++;
-            debugPrint(
-              '  ⏭️ Skipping employee "$employeeName" with role "$role" (not a development role)',
-            );
             continue;
           }
-
-          debugPrint('  ✅ Employee: $employeeName ($employeeId) - Role: $role');
 
           employeesForAI.add({
             'employeeId': employeeId,
@@ -1010,20 +953,9 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             'employeeName': employeeName,
           });
         } catch (e) {
-          debugPrint('🔴 Error processing employee: $e');
-          debugPrint('🔴 Employee data: $emp');
           continue;
         }
       }
-
-      debugPrint(
-        '📊 Filtered $filteredCount employee(s) with non-development roles',
-      );
-
-      debugPrint('✅ Parsed ${employeesForAI.length} employees for AI');
-      debugPrint(
-        '📊 Total employees: ${employeesList.length}, Valid (dev roles): ${employeesForAI.length}, Filtered: $filteredCount',
-      );
 
       if (employeesForAI.isEmpty) {
         throw Exception(
@@ -1034,7 +966,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       // Step 2: Format tasks from accepted response
       // Use the response from "Accept Tasks" button directly
       final responseData = acceptedTasksResponse!;
-      debugPrint('🔵 Accepted tasks response structure: ${responseData.keys}');
 
       // Extract tasks data from acceptedTasksResponse
       // The structure should be: {success, message, data: {results: {successful: [...]}}}
@@ -1053,16 +984,11 @@ class AiAssistanceControllerImp extends AiAssistanceController {
                 'results': {'successful': results['successful']},
               },
             };
-            debugPrint(
-              '✅ Found ${(results['successful'] as List).length} successful tasks',
-            );
           }
         }
       }
 
       if (tasksDataForAI == null) {
-        debugPrint('🔴 Could not find tasks in expected structure');
-        debugPrint('🔴 Available keys in data: ${responseData['data']?.keys}');
         throw Exception(
           'No tasks found in expected structure. Please try accepting tasks again.',
         );
@@ -1072,13 +998,10 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       final tasksForAI = tasksDataForAI;
 
       // Step 3: Call AI assignment API
-      debugPrint('🔵 Calling AI assignment API: $assignTasksApiUrl');
-      debugPrint('🔵 Employees count: ${employeesForAI.length}');
 
       // Count tasks from the formatted structure
       final tasksCount =
           (tasksForAI['data']?['results']?['successful'] as List?)?.length ?? 0;
-      debugPrint('🔵 Tasks count: $tasksCount');
 
       // Get authentication token
       final authService = AuthService();
@@ -1091,13 +1014,9 @@ class AiAssistanceControllerImp extends AiAssistanceController {
 
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
-        debugPrint('✅ Token added to headers');
-      } else {
-        debugPrint('⚠️ No token available');
       }
 
       final assignBody = {'employees': employeesForAI, 'tasks': tasksForAI};
-      debugPrint('🔵 Request body: ${jsonEncode(assignBody)}');
 
       final assignResponse = await http
           .post(
@@ -1106,11 +1025,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             body: jsonEncode(assignBody),
           )
           .timeout(const Duration(seconds: 60));
-
-      debugPrint(
-        '🟢 AI Assignment Response Status: ${assignResponse.statusCode}',
-      );
-      debugPrint('🟢 AI Assignment Response Body: ${assignResponse.body}');
 
       if (assignResponse.statusCode != 200 &&
           assignResponse.statusCode != 201) {
@@ -1135,8 +1049,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         throw Exception('No assignments generated');
       }
 
-      debugPrint('✅ Generated ${assignments.length} assignments');
-
       // Get total tasks count and unassigned tasks from AI response
       // Store these values to use later in the bulk create response handler
       final totalTasksSent = tasksCount; // Number of tasks sent to AI
@@ -1148,53 +1060,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
 
       // Get summary from AI response if available
       final summary = assignmentsData['summary'] as Map<String, dynamic>?;
-
-      debugPrint('');
-      debugPrint('=' * 80);
-      debugPrint('📊 AI ASSIGNMENT SUMMARY');
-      debugPrint('=' * 80);
-      debugPrint('🔵 Total tasks sent to AI: $totalTasksSent');
-      debugPrint('✅ Assignments generated by AI: $assignmentsGenerated');
-      debugPrint(
-        '❌ Unassigned tasks (from unassigned_tasks array): $unassignedCount',
-      );
-      if (summary != null) {
-        debugPrint('📋 Summary from AI response:');
-        debugPrint('   - Total assignments: ${summary['total_assignments']}');
-        debugPrint('   - Total employees: ${summary['total_employees']}');
-        debugPrint('   - Total unassigned: ${summary['total_unassigned']}');
-      }
-      debugPrint('=' * 80);
-      debugPrint('');
-
-      // Log unassigned tasks details if available
-      if (unassignedCount > 0) {
-        debugPrint('📝 Unassigned tasks details:');
-        for (var i = 0; i < unassignedTasks.length; i++) {
-          final unassignedTask = unassignedTasks[i];
-          if (unassignedTask is Map<String, dynamic>) {
-            final taskId = unassignedTask['taskId']?.toString() ?? 'Unknown';
-            final taskName =
-                unassignedTask['taskName']?.toString() ?? 'Unknown';
-            final reason =
-                unassignedTask['reason']?.toString() ?? 'No reason provided';
-            debugPrint('   ${i + 1}. Task: $taskName (ID: $taskId)');
-            debugPrint('      Reason: $reason');
-          }
-        }
-        debugPrint('');
-      }
-
-      // Warning if not all tasks were assigned
-      if (totalTasksSent > assignmentsGenerated) {
-        final missingCount = totalTasksSent - assignmentsGenerated;
-        debugPrint('⚠️ WARNING: $missingCount task(s) were not assigned by AI');
-        debugPrint('   This could be due to:');
-        debugPrint('   - Lack of suitable employees for the task role');
-        debugPrint('   - Time conflicts or workload balancing');
-        debugPrint('   - AI decision to optimize assignments');
-        debugPrint('');
-      }
 
       // Extract tasks from acceptedTasksResponse for mapping task IDs to names and roles
       // This is used later for PDF generation
@@ -1283,7 +1148,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             }
           }
         } catch (e) {
-          debugPrint('⚠️ Error formatting dates: $e');
+          // Error formatting dates
         }
 
         final estimatedHours = assignMap['estimatedHours'] is int
@@ -1325,17 +1190,17 @@ class AiAssistanceControllerImp extends AiAssistanceController {
 
       // Show success message
       String successMessage =
-          '✅ ${assignments.length} assignment(s) generated successfully!';
+          '${assignments.length} assignment(s) generated successfully!';
       if (unassignedCount > 0) {
         successMessage +=
-            '\n\n⚠️ Note: $unassignedCount task(s) were not assigned by AI';
+            '\n\nNote: $unassignedCount task(s) were not assigned by AI';
       } else if (totalTasksSent > assignmentsGenerated) {
         final missingCount = totalTasksSent - assignmentsGenerated;
         successMessage +=
-            '\n\n⚠️ Note: $missingCount task(s) were not assigned';
+            '\n\nNote: $missingCount task(s) were not assigned';
       } else if (totalTasksSent == assignmentsGenerated) {
         successMessage +=
-            '\n\n✨ All $totalTasksSent task(s) have been assigned!';
+            '\n\nAll $totalTasksSent task(s) have been assigned!';
       }
 
       assignmentStatusTitle = 'Success';
@@ -1356,8 +1221,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     } catch (e, stackTrace) {
       isAssigningTasks = false;
       update();
-      debugPrint('🔴 Exception assigning tasks by AI: $e');
-      debugPrint('🔴 Stack trace: $stackTrace');
 
       String errorMessage = 'Failed to assign tasks';
       if (e.toString().contains('timeout') ||
@@ -1404,18 +1267,12 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     update();
 
     try {
-      debugPrint(
-        '🟢 Generating PDF for ${successfulAssignments.length} assignments',
-      );
-
       final file = await PDFService.generateAssignmentsPDF(
         successfulAssignments,
       );
 
       if (file != null && await file.exists()) {
-        debugPrint('✅ PDF generated successfully at: ${file.path}');
         final fileSize = await file.length();
-        debugPrint('📄 PDF file size: $fileSize bytes');
 
         try {
           // Try to share/open the file
@@ -1425,14 +1282,11 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             subject:
                 'Task Assignments - ${DateTime.now().toString().split(' ')[0]}',
           );
-          debugPrint('✅ PDF shared successfully');
         } catch (shareError) {
-          debugPrint('⚠️ Share error: $shareError');
           // Try alternative method
           try {
             final result = await OpenFile.open(file.path);
             if (result.type == ResultType.done) {
-              debugPrint('✅ PDF opened successfully');
               Get.snackbar(
                 'PDF Opened',
                 'PDF opened successfully in default app',
@@ -1446,7 +1300,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
               throw Exception('Failed to open file: ${result.message}');
             }
           } catch (openError) {
-            debugPrint('⚠️ Open file error: $openError');
             // Show success message with file path
             Get.snackbar(
               'PDF Generated Successfully!',
@@ -1487,9 +1340,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         throw Exception('PDF file was not created successfully');
       }
     } catch (e, stackTrace) {
-      debugPrint('🔴 Error generating PDF: $e');
-      debugPrint('🔴 Stack trace: $stackTrace');
-
       String errorMessage = 'Failed to generate PDF';
       if (e.toString().contains('permission')) {
         errorMessage =

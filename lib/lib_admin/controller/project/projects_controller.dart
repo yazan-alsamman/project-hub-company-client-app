@@ -1,5 +1,4 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import '../../core/class/statusrequest.dart';
 import '../../core/services/auth_service.dart';
@@ -35,28 +34,23 @@ class ProjectsControllerImp extends ProjectsController {
   @override
   void onInit() {
     super.onInit();
-    debugPrint('🔵 ProjectsControllerImp.onInit() called');
     loadProjects();
   }
 
   @override
   Future<void> loadProjects({bool refresh = false}) async {
     if (_isLoading && !refresh) {
-      debugPrint('🟡 Already loading, returning.');
       return;
     }
     List<ProjectModel>? backupProjects;
     if (refresh && _projects.isNotEmpty) {
       backupProjects = List.from(_projects);
-      debugPrint('💾 Saved backup of ${backupProjects.length} projects');
     }
     _isLoading = true;
     if (refresh) {
       _statusRequest = StatusRequest.loading;
-      debugPrint('🔄 Refreshing projects with filter: $_selectedFilter...');
     } else if (_projects.isEmpty) {
       _statusRequest = StatusRequest.loading;
-      debugPrint('⏳ Initial load of projects...');
     }
     update();
     final authService = AuthService();
@@ -64,50 +58,34 @@ class ProjectsControllerImp extends ProjectsController {
     final isDeveloper = userRole?.toLowerCase() == 'developer';
 
     String? companyId;
-    // إذا كان المستخدم developer، لا نرسل companyID
+    // If user is developer, don't send companyID
     if (!isDeveloper) {
       companyId = await _getCompanyId();
-      // التحقق من وجود companyId قبل الإرسال
+      // Check companyId before sending
       if (companyId == null || companyId.isEmpty) {
-        debugPrint('🔴 CompanyId is required but not found');
         _isLoading = false;
         _statusRequest = StatusRequest.serverFailure;
         update();
         return;
       }
-    } else {
-      debugPrint('🔵 User is developer, not sending companyId in request');
     }
-    debugPrint('🔵 Loading projects...');
-    debugPrint(
-      'CompanyId: ${companyId ?? "not sent (developer)"}, Filter: $_selectedFilter',
-    );
     String? apiStatus;
     if (_selectedFilter != 'All') {
       switch (_selectedFilter.toLowerCase()) {
         case 'active':
           apiStatus =
               'in_progress'; // API uses 'in_progress' for active projects
-          debugPrint('🔵 Mapped filter "Active" to API status: $apiStatus');
           break;
         case 'completed':
           apiStatus = 'completed';
-          debugPrint('🔵 Mapped filter "Completed" to API status: $apiStatus');
           break;
         case 'planned':
           apiStatus = 'pending'; // API uses 'pending' for planned projects
-          debugPrint('🔵 Mapped filter "Planned" to API status: $apiStatus');
           break;
         default:
           apiStatus = null;
-          debugPrint(
-            '⚠️ Unknown filter: $_selectedFilter, not sending status parameter',
-          );
       }
-    } else {
-      debugPrint('🔵 Filter is "All", not sending status parameter');
     }
-    debugPrint('🔵 Final API status value to send: $apiStatus');
     final result = await _loadAllProjects(
       companyId: companyId,
       status: apiStatus,
@@ -115,12 +93,8 @@ class ProjectsControllerImp extends ProjectsController {
     _isLoading = false;
     result.fold(
       (error) {
-        debugPrint('🔴 Error loading projects: $error');
         _statusRequest = error;
         if (refresh && backupProjects != null) {
-          debugPrint(
-            '⚠️ Refresh failed, restoring backup of ${backupProjects.length} projects',
-          );
           _projects = List.from(backupProjects);
           _applyLocalFilter();
         } else if (!refresh) {
@@ -129,16 +103,9 @@ class ProjectsControllerImp extends ProjectsController {
         update();
       },
       (projects) {
-        debugPrint('✅ Loaded ${projects.length} projects');
-        for (var project in projects) {
-          debugPrint(
-            '  - Project: ${project.title}, Status: ${project.status}',
-          );
-        }
         _projects = projects; // Replace all projects (no pagination)
         _statusRequest = StatusRequest.success;
         update();
-        debugPrint('✅ Total projects: ${_projects.length}');
       },
     );
   }
@@ -146,49 +113,37 @@ class ProjectsControllerImp extends ProjectsController {
   Future<String?> _getCompanyId() async {
     try {
       final authService = AuthService();
-      // التحقق من role المستخدم
+      // Check user role
       final userRole = await authService.getUserRole();
       final isDeveloper = userRole?.toLowerCase() == 'developer';
 
-      // جلب companyId من AuthService مباشرة (من response الـ login)
+      // Get companyId from AuthService directly (from login response)
       final savedCompanyId = await authService.getCompanyId();
       if (savedCompanyId != null && savedCompanyId.isNotEmpty) {
-        debugPrint(
-          '✅ Got companyId from AuthService (from login response): $savedCompanyId',
-        );
         if (isDeveloper) {
-          // للمستخدم developer، نستخدم فقط companyID من response الـ login
-          debugPrint(
-            '🔵 User is developer, using companyId from login response only',
-          );
+          // For developer, use only companyID from login response
           return savedCompanyId;
         }
         return savedCompanyId;
       }
 
-      // إذا كان المستخدم ليس developer، نبحث عن companyId من مصادر أخرى
+      // If user is not developer, search for companyId from other sources
       if (!isDeveloper) {
-        // محاولة جلب companyId من بيانات employee
+        // Try to get companyId from employee data
         final userId = await authService.getUserId();
         if (userId != null && userId.isNotEmpty) {
-          debugPrint(
-            '🔵 Getting companyId from employee data for userId: $userId',
-          );
           try {
             final teamRepository = TeamRepository();
             final employeeResult = await teamRepository.getEmployeeById(userId);
             String? companyIdFromEmployee;
             employeeResult.fold(
               (error) {
-                debugPrint('⚠️ Could not get employee data: $error');
+                // Could not get employee data
               },
               (employee) {
                 if (employee.companyId != null) {
                   final companyIdStr = employee.companyId!['_id']?.toString();
                   if (companyIdStr != null && companyIdStr.isNotEmpty) {
-                    debugPrint(
-                      '✅ Got companyId from employee data: $companyIdStr',
-                    );
                     authService.saveCompanyId(companyIdStr);
                     companyIdFromEmployee = companyIdStr;
                   }
@@ -199,24 +154,19 @@ class ProjectsControllerImp extends ProjectsController {
               return companyIdFromEmployee;
             }
           } catch (e) {
-            debugPrint('⚠️ Error getting employee data: $e');
+            // Error getting employee data
           }
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Could not get companyId: $e');
+      // Could not get companyId
     }
-    debugPrint('🔴 CompanyId not found. User must login again.');
     return null;
   }
 
   @override
   void selectFilter(String filter) {
-    debugPrint(
-      '🔵 selectFilter called with: $filter (current: $_selectedFilter)',
-    );
     if (_selectedFilter == filter) {
-      debugPrint('🟡 Filter already selected, skipping');
       return;
     }
     _selectedFilter = filter;
@@ -250,9 +200,6 @@ class ProjectsControllerImp extends ProjectsController {
         .where((project) => project.status.toLowerCase() == targetStatus)
         .toList();
     _projects = filtered;
-    debugPrint(
-      '🔍 Applied local filter "$_selectedFilter": ${_projects.length} projects match',
-    );
   }
 
   // Load all projects by making multiple requests if needed

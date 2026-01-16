@@ -1,5 +1,4 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
 import '../../core/services/auth_service.dart';
@@ -31,9 +30,7 @@ class TeamControllerImp extends TeamController {
   @override
   void onInit() async {
     super.onInit();
-    debugPrint('🔵 TeamControllerImp.onInit() called');
     final companyId = await _authService.getCompanyId();
-    debugPrint('🔵 Loaded companyId from AuthService: $companyId');
     loadTeamMembers(companyId: companyId, status: null);
     loadStatistics();
   }
@@ -42,17 +39,14 @@ class TeamControllerImp extends TeamController {
     update();
     try {
       final companyId = await _authService.getCompanyId();
-      debugPrint('🔵 Loading statistics with companyId: $companyId');
       final departmentsCountResult = await _teamRepository
           .getDepartmentsCount();
       departmentsCountResult.fold(
         (error) {
-          debugPrint('🔴 Error loading departments count: $error');
           _departmentsCount = 0;
         },
         (count) {
           _departmentsCount = count;
-          debugPrint('✅ Total departments count: $count');
         },
       );
       final projectsCountResult = await _projectsRepository.getProjectsCount(
@@ -60,16 +54,13 @@ class TeamControllerImp extends TeamController {
       );
       projectsCountResult.fold(
         (error) {
-          debugPrint('🔴 Error loading projects count: $error');
           _projectsCount = 0;
         },
         (count) {
           _projectsCount = count;
-          debugPrint('✅ Total projects count: $count');
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading statistics: $e');
       _departmentsCount = 0;
       _projectsCount = 0;
     }
@@ -92,15 +83,10 @@ class TeamControllerImp extends TeamController {
     _isLoading = true;
     _statusRequest = StatusRequest.loading;
     update();
-    debugPrint('🔵 Loading team members...');
-    debugPrint('Page: $_currentPage, Limit: $_limit');
-    debugPrint('CompanyId: $companyId, Status: $status');
-    // جلب companyId من AuthService في كل مرة قبل الإرسال
+    // Get companyId from AuthService before sending
     String? finalCompanyId = await _authService.getCompanyId();
-    debugPrint('🔵 Got companyId from AuthService: $finalCompanyId');
-    // التحقق من وجود companyId قبل الإرسال
+    // Check companyId before sending
     if (finalCompanyId == null || finalCompanyId.isEmpty) {
-      debugPrint('🔴 CompanyId is required but not found');
       _isLoading = false;
       _statusRequest = StatusRequest.serverFailure;
       update();
@@ -113,33 +99,17 @@ class TeamControllerImp extends TeamController {
     _isLoading = false;
     result.fold(
       (error) {
-        debugPrint('🔴 Error loading team members: $error');
         _statusRequest = error;
         update();
       },
       (employees) {
-        debugPrint('✅ Loaded ${employees.length} employees');
-        for (var emp in employees) {
-          debugPrint(
-            '  - Employee: ${emp.username}, Position: ${emp.position}, Status: ${emp.status}',
-          );
-        }
         final newMembers = employees.map((e) {
           final member = e.toTeamMember();
-          debugPrint(
-            '  - TeamMember: ${member.name}, Position: ${member.position}, Status: ${member.status}',
-          );
           return member;
         }).toList();
         _teamMembers = newMembers; // Replace all members (no pagination)
         _statusRequest = StatusRequest.success;
         update();
-        debugPrint('✅ Total team members: ${_teamMembers.length}');
-        for (var i = 0; i < _teamMembers.length; i++) {
-          debugPrint(
-            '  ✅ Member $i: ${_teamMembers[i].name} (${_teamMembers[i].status})',
-          );
-        }
       },
     );
   }

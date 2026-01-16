@@ -29,7 +29,6 @@ class EmployeeScheduleController extends GetxController {
     isLoadingEmployees = true;
     update();
     final companyId = await _authService.getCompanyId();
-    debugPrint('🔵 Using companyId from AuthService: $companyId');
     final result = await _teamRepository.getEmployees(
       page: 1,
       limit: 100,
@@ -39,11 +38,10 @@ class EmployeeScheduleController extends GetxController {
     isLoadingEmployees = false;
     result.fold(
       (error) {
-        debugPrint('🔴 Error loading employees: $error');
+        // Error loading employees
       },
       (employeeList) {
         employees = employeeList;
-        debugPrint('✅ Loaded ${employees.length} employees.');
       },
     );
     update();
@@ -131,11 +129,10 @@ class TaskAssignmentsController extends GetxController {
     isLoadingTasks = false;
     result.fold(
       (error) {
-        debugPrint('🔴 Error loading tasks: $error');
+        // Error loading tasks
       },
       (taskList) {
         tasks = taskList;
-        debugPrint('✅ Loaded ${tasks.length} tasks.');
       },
     );
     update();
@@ -177,7 +174,7 @@ class TaskAssignmentsController extends GetxController {
             selectedTaskName = selectedTask.title;
             selectedTaskDescription = selectedTask.taskDescription;
           } catch (e) {
-            debugPrint('🔴 Task not found in list: $selectedTaskId');
+            // Task not found in list
           }
         }
         taskAssignments = assignmentsList.map((item) {

@@ -59,7 +59,6 @@ class AddAssignmentControllerImp extends AddAssignmentController {
   Future<void> loadTasks() async {
     isLoadingTasks = true;
     update();
-    debugPrint('🔵 Loading tasks for assignment...');
     final result = await _tasksRepository.getTasks(
       page: 1,
       limit: 100, // Get all tasks for dropdown
@@ -67,10 +66,9 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     isLoadingTasks = false;
     result.fold(
       (error) {
-        debugPrint('🔴 Error loading tasks: $error');
+        // Error loading tasks
       },
       (loadedTasks) {
-        debugPrint('✅ Loaded ${loadedTasks.length} tasks');
         tasks = loadedTasks;
         update();
       },
@@ -80,9 +78,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
   Future<void> loadEmployees() async {
     isLoadingEmployees = true;
     update();
-    debugPrint('🔵 Loading employees for assignment...');
     final companyId = await _authService.getCompanyId();
-    debugPrint('🔵 Using companyId from AuthService: $companyId');
     final result = await _teamRepository.getEmployees(
       page: 1,
       limit: 100, // Get all employees for dropdown
@@ -92,10 +88,9 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     isLoadingEmployees = false;
     result.fold(
       (error) {
-        debugPrint('🔴 Error loading employees: $error');
+        // Error loading employees
       },
       (loadedEmployees) {
-        debugPrint('✅ Loaded ${loadedEmployees.length} employees');
         employees = loadedEmployees;
         update();
       },
@@ -158,9 +153,6 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     isLoading = true;
     statusRequest = StatusRequest.loading;
     update();
-    debugPrint('🔵 Creating assignments...');
-    debugPrint('Selected Tasks: ${selectedTaskIds.length}');
-    debugPrint('Selected Employee: $selectedEmployeeId');
     final startDateTime = startDate != null
         ? DateTime(
             startDate!.year,

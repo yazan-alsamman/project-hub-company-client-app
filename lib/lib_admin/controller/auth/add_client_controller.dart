@@ -41,7 +41,6 @@ class AddClientControllerImp extends AddClientController {
 
   @override
   void createClient() async {
-    debugPrint('🔵 Creating client...');
     if (!_validateForm()) {
       return;
     }
@@ -58,7 +57,6 @@ class AddClientControllerImp extends AddClientController {
       );
       result.fold(
         (error) {
-          debugPrint('🔴 Error creating client: $error');
           String errorMsg = 'Failed to create client';
           StatusRequest errorStatus = StatusRequest.serverFailure;
           if (error is Map<String, dynamic>) {
@@ -66,7 +64,6 @@ class AddClientControllerImp extends AddClientController {
                 error['error'] as StatusRequest? ?? StatusRequest.serverFailure;
             errorMsg =
                 error['message']?.toString() ?? 'Failed to create client';
-            debugPrint('🔴 Error message from backend: $errorMsg');
           } else if (error is StatusRequest) {
             errorStatus = error;
             if (error == StatusRequest.serverFailure) {
@@ -113,7 +110,6 @@ class AddClientControllerImp extends AddClientController {
           );
         },
         (client) {
-          debugPrint('✅ Client created successfully: ${client.username}');
           errorMessage = null;
           isLoading = false;
           statusRequest = StatusRequest.success;
@@ -153,7 +149,6 @@ class AddClientControllerImp extends AddClientController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception creating client: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();
@@ -279,7 +274,6 @@ class AddClientControllerImp extends AddClientController {
       final result = await _loadAllClients();
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading clients: $error');
           StatusRequest errorStatus = StatusRequest.serverFailure;
           if (error is Map<String, dynamic>) {
             errorStatus =
@@ -297,9 +291,7 @@ class AddClientControllerImp extends AddClientController {
             clientsStatusRequest = StatusRequest.success;
             isLoadingClients = false;
             update();
-            debugPrint('✅ Loaded ${clients.length} clients');
           } catch (e) {
-            debugPrint('🔴 Error parsing clients data: $e');
             clientsStatusRequest = StatusRequest.serverException;
             isLoadingClients = false;
             update();
@@ -307,7 +299,6 @@ class AddClientControllerImp extends AddClientController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading clients: $e');
       clientsStatusRequest = StatusRequest.serverException;
       isLoadingClients = false;
       update();
@@ -346,7 +337,6 @@ class AddClientControllerImp extends AddClientController {
             // If we got less than maxLimit, we've reached the end
             return clientsList.length >= maxLimit; // Continue if we got full page
           } catch (e) {
-            debugPrint('🔴 Error parsing clients in loop: $e');
             return false; // Stop on parsing error
           }
         },
@@ -374,7 +364,6 @@ class AddClientControllerImp extends AddClientController {
 
   @override
   void deleteClient(String clientId) async {
-    debugPrint('🔵 Deleting client: $clientId');
     final client = clients.firstWhere(
       (c) => c.id == clientId,
       orElse: () => ClientModel(
@@ -420,7 +409,6 @@ class AddClientControllerImp extends AddClientController {
       final result = await _authRepository.deleteClient(clientId);
       result.fold(
         (error) {
-          debugPrint('🔴 Error deleting client: $error');
           String errorMsg = 'Failed to delete client';
           if (error is Map<String, dynamic>) {
             errorMsg = error['message']?.toString() ?? 'Failed to delete client';
@@ -465,7 +453,6 @@ class AddClientControllerImp extends AddClientController {
           );
         },
         (success) {
-          debugPrint('✅ Client deleted successfully');
           Get.snackbar(
             'Success',
             'Client deleted successfully',
@@ -500,7 +487,6 @@ class AddClientControllerImp extends AddClientController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception deleting client: $e');
       Get.snackbar(
         'Error',
         'An unexpected error occurred. Please try again.',

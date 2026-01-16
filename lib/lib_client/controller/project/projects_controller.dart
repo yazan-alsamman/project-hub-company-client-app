@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:project_hub/lib_client/core/class/statusrequest.dart';
 import 'package:project_hub/lib_client/core/services/auth_service.dart';
@@ -37,21 +36,18 @@ class ProjectsControllerImp extends ProjectsController {
   @override
   void onInit() {
     super.onInit();
-    debugPrint('🔵 ProjectsControllerImp.onInit() called');
     loadProjects();
   }
 
   @override
   Future<void> loadProjects({bool refresh = false}) async {
     if (_isLoading && !refresh) {
-      debugPrint('🟡 Already loading, returning.');
       return;
     }
 
     _isLoading = true;
     if (refresh || _projects.isEmpty) {
       _statusRequest = StatusRequest.loading;
-      debugPrint('⏳ Loading projects...');
     }
     update();
 
@@ -60,14 +56,11 @@ class ProjectsControllerImp extends ProjectsController {
       final clientId = await authService.getUserId();
 
       if (clientId == null || clientId.isEmpty) {
-        debugPrint('🔴 ClientId is required but not found');
         _isLoading = false;
         _statusRequest = StatusRequest.serverFailure;
         update();
         return;
       }
-
-      debugPrint('🔵 Loading projects for clientId: $clientId');
 
       final result = await _repository.getProjectsByClientId(clientId);
 
@@ -75,7 +68,6 @@ class ProjectsControllerImp extends ProjectsController {
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading projects: $error');
           _statusRequest = StatusRequest.serverFailure;
           if (refresh) {
             // Keep existing projects on refresh error
@@ -85,7 +77,6 @@ class ProjectsControllerImp extends ProjectsController {
           update();
         },
         (projects) {
-          debugPrint('✅ Loaded ${projects.length} projects');
 
           // Apply filter if not "All"
           if (_selectedFilter != 'All') {
@@ -96,11 +87,9 @@ class ProjectsControllerImp extends ProjectsController {
 
           _statusRequest = StatusRequest.success;
           update();
-          debugPrint('✅ Total projects: ${_projects.length}');
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading projects: $e');
       _isLoading = false;
       _statusRequest = StatusRequest.serverException;
       if (!refresh) {
@@ -131,11 +120,7 @@ class ProjectsControllerImp extends ProjectsController {
 
   @override
   void selectFilter(String filter) {
-    debugPrint(
-      '🔵 selectFilter called with: $filter (current: $_selectedFilter)',
-    );
     if (_selectedFilter == filter) {
-      debugPrint('🟡 Filter already selected, skipping');
       return;
     }
     _selectedFilter = filter;

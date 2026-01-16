@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
 import '../../core/services/auth_service.dart';
@@ -43,15 +42,12 @@ class AssignmentsControllerImp extends AssignmentsController {
   @override
   void onInit() {
     super.onInit();
-    debugPrint('🔵 AssignmentsControllerImp.onInit() called');
     loadEmployees();
   }
   @override
   Future<void> loadEmployees() async {
-    debugPrint('🔵 Loading employees...');
     try {
       final companyId = await _authService.getCompanyId();
-      debugPrint('🔵 Using companyId from AuthService: $companyId');
       final result = await _teamRepository.getEmployees(
         page: 1,
         limit: 100, // Get all employees for dropdown
@@ -60,36 +56,32 @@ class AssignmentsControllerImp extends AssignmentsController {
       );
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading employees: $error');
+          // Error loading employees
         },
         (employees) {
-          debugPrint('✅ Loaded ${employees.length} employees');
           _employees = employees;
           update();
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading employees: $e');
+      // Exception loading employees
     }
   }
   @override
   void selectEmployee(String? employeeId, String? employeeName) {
     _selectedEmployeeId = employeeId;
     _selectedEmployeeName = employeeName;
-    debugPrint('🔵 Selected employee: $employeeName (ID: $employeeId)');
     update();
   }
   @override
   Future<void> loadAssignments(String employeeId) async {
     if (_isLoading) {
-      debugPrint('🟡 Already loading assignments, returning.');
       return;
     }
     _isLoading = true;
     _statusRequest = StatusRequest.loading;
     _assignments = [];
     update();
-    debugPrint('🔵 Loading assignments for employee: $employeeId');
     final result = await _assignmentsRepository.getAssignmentsByEmployee(
       employeeId: employeeId,
       page: 1,
@@ -98,12 +90,10 @@ class AssignmentsControllerImp extends AssignmentsController {
     _isLoading = false;
     result.fold(
       (error) {
-        debugPrint('🔴 Error loading assignments: $error');
         _statusRequest = error;
         update();
       },
       (assignments) {
-        debugPrint('✅ Loaded ${assignments.length} assignments');
         _assignments = assignments;
         _statusRequest = StatusRequest.success;
         update();

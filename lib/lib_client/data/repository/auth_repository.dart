@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:project_hub/lib_client/core/services/api_service.dart';
+import 'package:project_hub/core/config/app_config.dart';
 
 class AuthRepository {
   final ApiService _apiService = ApiService();
@@ -11,7 +12,7 @@ class AuthRepository {
   ) async {
     await _apiService.testConnection();
 
-    int retries = 3;
+    int retries = AppConfig.maxRetryAttempts;
     Exception? lastException;
 
     while (retries > 0) {
@@ -36,11 +37,11 @@ class AuthRepository {
         lastException = e;
         retries--;
         if (retries > 0) {
-          await Future.delayed(const Duration(seconds: 2));
+          await Future.delayed(AppConfig.retryDelay);
           continue;
         }
         return Left(
-          'Network error: Unable to connect to server. Please check your internet connection and ensure the server is running at http://72.62.52.238:5020. Error: ${e.message}',
+          'Network error: Unable to connect to server. Please check your internet connection and ensure the server is running at ${AppConfig.productionApiUrl}. Error: ${e.message}',
         );
       } catch (e) {
         lastException = e is Exception ? e : Exception(e.toString());
@@ -72,11 +73,11 @@ class AuthRepository {
             errorMessage.contains('Network error')) {
           retries--;
           if (retries > 0) {
-            await Future.delayed(const Duration(seconds: 2));
+            await Future.delayed(AppConfig.retryDelay);
             continue;
           }
           return Left(
-            'Connection failed after 3 attempts. Unable to reach the server. Please check:\n1. Server is running at http://72.62.52.238:5020\n2. Your internet connection\n3. Firewall settings',
+            'Connection failed after ${AppConfig.maxRetryAttempts} attempts. Unable to reach the server. Please check:\n1. Server is running at ${AppConfig.productionApiUrl}\n2. Your internet connection\n3. Firewall settings',
           );
         }
 

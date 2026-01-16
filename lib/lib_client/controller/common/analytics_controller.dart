@@ -42,7 +42,7 @@ class AnalyticsControllerImp extends AnalyticsController {
     try {
       authController = Get.find<AuthController>();
     } catch (e) {
-      print('AuthController not found: $e');
+      // AuthController not found
     }
     loadProjects();
   }
@@ -55,7 +55,7 @@ class AnalyticsControllerImp extends AnalyticsController {
 
       result.fold(
         (error) {
-          print('Error loading projects: $error');
+          // Error loading projects
         },
         (data) {
           projects.value = data;
@@ -64,7 +64,7 @@ class AnalyticsControllerImp extends AnalyticsController {
         },
       );
     } catch (e) {
-      print('Exception in loadProjects: $e');
+      // Exception in loadProjects
     } finally {
       isLoading.value = false;
     }
@@ -137,7 +137,7 @@ class AnalyticsControllerImp extends AnalyticsController {
         ),
       ];
     } catch (e) {
-      print('Error calculating dashboard metrics: $e');
+      // Error calculating dashboard metrics
     }
   }
 
@@ -148,14 +148,14 @@ class AnalyticsControllerImp extends AnalyticsController {
 
       result.fold(
         (error) {
-          print('Error loading project tasks: $error');
+          // Error loading project tasks
         },
         (tasks) {
           _calculateProjectAnalytics(tasks);
         },
       );
     } catch (e) {
-      print('Exception in _loadProjectAnalytics: $e');
+      // Exception in _loadProjectAnalytics
     } finally {
       isLoading.value = false;
     }
@@ -254,7 +254,7 @@ class AnalyticsControllerImp extends AnalyticsController {
         'assignees': assigneesList,
       };
     } catch (e) {
-      print('Error calculating project analytics: $e');
+      // Error calculating project analytics
     }
   }
 

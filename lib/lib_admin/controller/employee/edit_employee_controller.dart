@@ -46,13 +46,11 @@ class EditEmployeeControllerImp extends EditEmployeeController {
       final result = await _teamRepository.getEmployeeById(employeeId);
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading employee: $error');
           isLoadingEmployee = false;
           errorMessage = 'Failed to load employee data. Please try again.';
           update();
         },
         (employeeData) {
-          debugPrint('✅ Loaded employee: ${employeeData.username}');
           employee = employeeData;
           salaryController.text = employeeData.salary?.toString() ?? '';
           if (employeeData.positionObj != null) {
@@ -75,11 +73,8 @@ class EditEmployeeControllerImp extends EditEmployeeController {
             selectedDepartmentId = employeeData.departmentObj!['_id']
                 ?.toString();
             departmentId = selectedDepartmentId;
-            debugPrint('✅ Set department ID from departmentObj: $departmentId');
           } else if (employeeData.department != null) {
-            debugPrint(
-              '⚠️ Department ID not found, will try to match by name: ${employeeData.department}',
-            );
+            // Department ID not found, will try to match by name
           }
           final backendStatus = employeeData.status?.toLowerCase() ?? 'active';
           switch (backendStatus) {
@@ -101,7 +96,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading employee: $e');
       isLoadingEmployee = false;
       errorMessage = 'An error occurred while loading employee data.';
       update();
@@ -114,12 +108,10 @@ class EditEmployeeControllerImp extends EditEmployeeController {
       final result = await _teamRepository.getPositions(page: 1, limit: 10);
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading positions: $error');
           isLoadingPositions = false;
           update();
         },
         (positionsList) {
-          debugPrint('✅ Loaded ${positionsList.length} positions');
           positions = positionsList;
           if (employee != null && selectedPositionId == null) {
             if (employee!.positionObj != null) {
@@ -131,7 +123,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading positions: $e');
       isLoadingPositions = false;
       update();
     }
@@ -143,12 +134,10 @@ class EditEmployeeControllerImp extends EditEmployeeController {
       final result = await _teamRepository.getDepartments(page: 1, limit: 10);
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading departments: $error');
           isLoadingDepartments = false;
           update();
         },
         (departmentsList) {
-          debugPrint('✅ Loaded ${departmentsList.length} departments');
           departments = departmentsList;
           if (employee != null &&
               (selectedDepartmentId == null || departmentId == null)) {
@@ -156,9 +145,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
               selectedDepartmentId = employee!.departmentObj!['_id']
                   ?.toString();
               departmentId = selectedDepartmentId;
-              debugPrint(
-                '✅ Set department ID after loading departments: $departmentId',
-              );
             } else if (employee!.department != null && departments.isNotEmpty) {
               try {
                 final department = departments.firstWhere(
@@ -168,18 +154,9 @@ class EditEmployeeControllerImp extends EditEmployeeController {
                 );
                 selectedDepartmentId = department.id;
                 departmentId = department.id;
-                debugPrint(
-                  '✅ Matched department by name: ${department.name} (ID: $departmentId)',
-                );
               } catch (e) {
-                debugPrint(
-                  '⚠️ Could not match department by name: ${employee!.department}',
-                );
                 if (departments.isNotEmpty) {
                   departmentId = departments.first.id;
-                  debugPrint(
-                    '⚠️ Using first department as fallback: $departmentId',
-                  );
                 }
               }
             }
@@ -189,14 +166,12 @@ class EditEmployeeControllerImp extends EditEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading departments: $e');
       isLoadingDepartments = false;
       update();
     }
   }
   @override
   void updateEmployee() async {
-    debugPrint('🔵 Updating employee...');
     if (!_validateForm()) {
       return;
     }
@@ -306,7 +281,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
       );
       result.fold(
         (error) {
-          debugPrint('🔴 Error updating employee: $error');
           String errorMsg = 'Failed to update employee';
           StatusRequest errorStatus = StatusRequest.serverFailure;
           if (error is Map<String, dynamic>) {
@@ -314,7 +288,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
                 error['error'] as StatusRequest? ?? StatusRequest.serverFailure;
             errorMsg =
                 error['message']?.toString() ?? 'Failed to update employee';
-            debugPrint('🔴 Error message from backend: $errorMsg');
           } else if (error is StatusRequest) {
             errorStatus = error;
             if (error == StatusRequest.serverFailure) {
@@ -348,9 +321,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
           );
         },
         (updatedEmployee) {
-          debugPrint(
-            '✅ Employee updated successfully: ${updatedEmployee.username}',
-          );
           errorMessage = null;
           isLoading = false;
           statusRequest = StatusRequest.success;
@@ -358,9 +328,8 @@ class EditEmployeeControllerImp extends EditEmployeeController {
           try {
             final teamController = Get.find<TeamControllerImp>();
             teamController.refreshTeamMembers();
-            debugPrint('✅ Team members list refresh initiated');
           } catch (e) {
-            debugPrint('⚠️ Could not refresh team members: $e');
+            // Could not refresh team members
           }
           Get.snackbar(
             'Success',
@@ -383,7 +352,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception updating employee: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();
@@ -402,7 +370,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
   }
   @override
   void deleteEmployee() async {
-    debugPrint('🔵 Deleting employee...');
     final confirm = await Get.dialog<bool>(
       AlertDialog(
         title: const Text('Delete Employee'),
@@ -435,7 +402,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
       final result = await _teamRepository.deleteEmployee(employeeId);
       result.fold(
         (error) {
-          debugPrint('🔴 Error deleting employee: $error');
           String errorMsg = 'Failed to delete employee';
           if (error == StatusRequest.serverFailure) {
             errorMsg = 'Server error. Please try again.';
@@ -466,16 +432,14 @@ class EditEmployeeControllerImp extends EditEmployeeController {
           );
         },
         (success) {
-          debugPrint('✅ Employee deleted successfully');
           isLoading = false;
           statusRequest = StatusRequest.success;
           update();
           try {
             final teamController = Get.find<TeamControllerImp>();
             teamController.refreshTeamMembers();
-            debugPrint('✅ Team members list refresh initiated');
           } catch (e) {
-            debugPrint('⚠️ Could not refresh team members: $e');
+            // Could not refresh team members
           }
           Get.snackbar(
             'Success',
@@ -498,7 +462,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception deleting employee: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();

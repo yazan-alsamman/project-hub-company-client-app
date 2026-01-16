@@ -67,15 +67,11 @@ class AddTaskControllerImp extends AddTaskController {
   Future<void> loadProjects() async {
     isLoadingProjects = true;
     update();
-    debugPrint('🔵 Loading projects for task creation...');
     try {
       if (Get.isRegistered<ProjectsControllerImp>()) {
         final projectsController = Get.find<ProjectsControllerImp>();
         if (projectsController.projects.isNotEmpty) {
           projects = projectsController.projects;
-          debugPrint(
-            '✅ Loaded ${projects.length} projects from ProjectsController',
-          );
           isLoadingProjects = false;
           update();
           return;
@@ -88,16 +84,13 @@ class AddTaskControllerImp extends AddTaskController {
       );
       result.fold(
         (error) {
-          debugPrint('🔴 Failed to load projects: $error');
           projects = [];
         },
         (loadedProjects) {
           projects = loadedProjects;
-          debugPrint('✅ Loaded ${projects.length} projects from API');
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading projects: $e');
       projects = [];
     }
     isLoadingProjects = false;
@@ -123,11 +116,6 @@ class AddTaskControllerImp extends AddTaskController {
     isLoading = true;
     statusRequest = StatusRequest.loading;
     update();
-    debugPrint('🔵 Creating task...');
-    debugPrint('Project ID: $selectedProjectId');
-    debugPrint('Task Name: ${taskNameController.text}');
-    debugPrint('Priority: $selectedPriority');
-    debugPrint('Status: $selectedTaskStatus');
     final result = await _tasksRepository.createTask(
       projectId: selectedProjectId!,
       taskName: taskNameController.text.trim(),
@@ -162,13 +150,10 @@ class AddTaskControllerImp extends AddTaskController {
         );
       },
       (task) {
-        debugPrint('✅ Task created successfully, navigating back...');
         statusRequest = StatusRequest.success;
         resetForm();
-        debugPrint('🔵 Navigating back to Tasks page...');
         Get.offNamed(AppRoute.tasks);
         Future.delayed(const Duration(milliseconds: 500), () {
-          debugPrint('🔵 Refreshing tasks list...');
           if (Get.isRegistered<TasksControllerImp>()) {
             Get.find<TasksControllerImp>().refreshTasks();
           }

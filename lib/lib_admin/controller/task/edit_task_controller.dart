@@ -87,13 +87,12 @@ class EditTaskControllerImp extends EditTaskController {
         update();
         return;
       } catch (e) {
-        debugPrint('⚠️ Task not found in list, will fetch from API: $e');
+        // Task not found in list, will fetch from API
       }
       isLoadingTask = false;
       errorMessage = 'Task not found';
       update();
     } catch (e) {
-      debugPrint('🔴 Exception loading task: $e');
       isLoadingTask = false;
       errorMessage = 'An error occurred while loading task data.';
       update();
@@ -101,7 +100,6 @@ class EditTaskControllerImp extends EditTaskController {
   }
   @override
   void updateTask() async {
-    debugPrint('🔵 Updating task...');
     if (!_validateForm()) {
       return;
     }
@@ -184,7 +182,6 @@ class EditTaskControllerImp extends EditTaskController {
       );
       result.fold(
         (errorMsg) {
-          debugPrint('🔴 Error updating task: $errorMsg');
           errorMessage = errorMsg;
           isLoading = false;
           statusRequest = StatusRequest.serverFailure;
@@ -206,7 +203,6 @@ class EditTaskControllerImp extends EditTaskController {
           );
         },
         (updatedTask) {
-          debugPrint('✅ Task updated successfully: ${updatedTask.title}');
           errorMessage = null;
           isLoading = false;
           statusRequest = StatusRequest.success;
@@ -214,9 +210,8 @@ class EditTaskControllerImp extends EditTaskController {
           try {
             final tasksController = Get.find<TasksControllerImp>();
             tasksController.refreshTasks();
-            debugPrint('✅ Tasks list refresh initiated');
           } catch (e) {
-            debugPrint('⚠️ Could not refresh tasks: $e');
+            // Could not refresh tasks
           }
           Get.snackbar(
             'Success',
@@ -239,7 +234,6 @@ class EditTaskControllerImp extends EditTaskController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception updating task: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();
@@ -258,7 +252,6 @@ class EditTaskControllerImp extends EditTaskController {
   }
   @override
   void deleteTask() async {
-    debugPrint('🔵 Deleting task...');
     final confirm = await Get.dialog<bool>(
       AlertDialog(
         title: const Text('Delete Task'),
@@ -291,7 +284,6 @@ class EditTaskControllerImp extends EditTaskController {
       final result = await _tasksRepository.deleteTask(taskId);
       result.fold(
         (error) {
-          debugPrint('🔴 Error deleting task: $error');
           String errorMsg = 'Failed to delete task';
           if (error == StatusRequest.serverFailure) {
             errorMsg = 'Server error. Please try again.';
@@ -322,16 +314,14 @@ class EditTaskControllerImp extends EditTaskController {
           );
         },
         (success) {
-          debugPrint('✅ Task deleted successfully');
           isLoading = false;
           statusRequest = StatusRequest.success;
           update();
           try {
             final tasksController = Get.find<TasksControllerImp>();
             tasksController.refreshTasks();
-            debugPrint('✅ Tasks list refresh initiated');
           } catch (e) {
-            debugPrint('⚠️ Could not refresh tasks: $e');
+            // Could not refresh tasks
           }
           Get.snackbar(
             'Success',
@@ -354,7 +344,6 @@ class EditTaskControllerImp extends EditTaskController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception deleting task: $e');
       isLoading = false;
       statusRequest = StatusRequest.serverException;
       update();

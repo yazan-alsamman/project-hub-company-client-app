@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import '../../core/class/statusrequest.dart';
 import '../../core/services/auth_service.dart';
@@ -52,7 +51,6 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
     try {
       final companyId = await _authService.getCompanyId();
       if (companyId == null || companyId.isEmpty) {
-        debugPrint('🔴 CompanyId is required but not found');
         _isLoading = false;
         _statusRequest = StatusRequest.serverFailure;
         update();
@@ -66,12 +64,10 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
       _isLoading = false;
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading projects: $error');
           _statusRequest = error;
           _projects = [];
         },
         (projectsList) {
-          debugPrint('✅ Loaded ${projectsList.length} projects');
           _projects = projectsList;
           _statusRequest = StatusRequest.success;
           _sortProjects();
@@ -81,7 +77,6 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading projects: $e');
       _isLoading = false;
       _statusRequest = StatusRequest.serverException;
       _projects = [];
@@ -97,26 +92,25 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
       // Stats will be calculated from _projects list
       _calculateStatsFromProjects();
     } catch (e) {
-      debugPrint('🔴 Exception calculating project stats: $e');
       _stats = {};
     }
     _isLoadingStats = false;
     update();
   }
-  
+
   void _calculateStatsFromProjects() {
     // Calculate stats from projects list
-    final activeProjects = _projects.where((p) => 
-      p.status.toLowerCase() == 'active' || 
+    final activeProjects = _projects.where((p) =>
+      p.status.toLowerCase() == 'active' ||
       p.status.toLowerCase() == 'in_progress'
     ).length;
-    
+
     // Calculate total tasks from projects
     final totalTasks = _projects.fold<int>(
-      0, 
+      0,
       (sum, project) => sum + (project.totalTasks ?? 0)
     );
-    
+
     // Calculate completion rate
     double totalProgress = 0.0;
     int projectsWithProgress = 0;
@@ -126,17 +120,16 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
         projectsWithProgress++;
       }
     }
-    final avgCompletionRate = projectsWithProgress > 0 
-        ? (totalProgress / projectsWithProgress) 
+    final avgCompletionRate = projectsWithProgress > 0
+        ? (totalProgress / projectsWithProgress)
         : 0.0;
-    
+
     _stats = {
       'activeProjects': activeProjects,
       'totalTasks': totalTasks,
       'teamMembers': _projects.fold<int>(0, (sum, p) => sum + (p.teamMembers)),
       'completionRate': avgCompletionRate,
     };
-    debugPrint('✅ Calculated stats from projects: $_stats');
   }
   @override
   void changeSortOption(SortOption option) {
@@ -171,9 +164,9 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
   }
   double get completionRate {
     if (_stats.isEmpty) return 0.0;
-    final rate = _stats['completionRate'] ?? 
-                 _stats['completion'] ?? 
-                 _stats['progress'] ?? 
+    final rate = _stats['completionRate'] ??
+                 _stats['completion'] ??
+                 _stats['progress'] ??
                  0.0;
     if (rate is num) return rate.toDouble();
     return 0.0;

@@ -27,6 +27,6 @@ class CustomappbarControllerImp extends GetxController {
     clearNotifications();
   }
   void onUserProfileTap() {
-    print('User profile tapped');
+    // User profile tapped
   }
 }

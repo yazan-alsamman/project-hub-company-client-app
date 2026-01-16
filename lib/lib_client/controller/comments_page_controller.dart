@@ -54,23 +54,19 @@ class CommentsPageController extends GetxController {
     update();
 
     try {
-      debugPrint('🔵 Loading task and comments');
       final taskResult = await _taskRepository.getTaskById(taskId!);
       taskResult.fold(
         (error) {
-          debugPrint('🔴 Error loading task: $error');
           _errorMessage = error;
           _selectedTask = null;
         },
         (task) {
-          debugPrint('✅ Task loaded');
           _selectedTask = task;
         },
       );
 
       await loadComments();
     } catch (e) {
-      debugPrint('🔴 Exception loading task and comments: $e');
       _errorMessage = e.toString();
       _selectedTask = null;
       _comments = [];
@@ -88,22 +84,18 @@ class CommentsPageController extends GetxController {
     update();
 
     try {
-      debugPrint('🔵 Loading comments for task $currentTaskId');
       final result = await _commentRepository.getTaskComments(currentTaskId);
 
       result.fold(
         (error) {
-          debugPrint('🔴 Error loading comments: $error');
           _errorMessage = error;
           _comments = [];
         },
         (commentList) {
-          debugPrint('✅ Loaded ${commentList.length} comments');
           _comments = commentList;
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading comments: $e');
       _errorMessage = e.toString();
       _comments = [];
     } finally {
@@ -123,7 +115,6 @@ class CommentsPageController extends GetxController {
     update();
 
     try {
-      debugPrint('🔵 Adding comment');
       final result = await _commentRepository.addTaskComment(
         currentTaskId,
         text,
@@ -131,7 +122,6 @@ class CommentsPageController extends GetxController {
 
       return result.fold(
         (error) {
-          debugPrint('🔴 Error adding comment: $error');
           _errorMessage = error;
           Get.snackbar(
             'Error',
@@ -143,7 +133,6 @@ class CommentsPageController extends GetxController {
           return false;
         },
         (createdComment) {
-          debugPrint('✅ Comment added successfully');
           _comments.add(createdComment);
           commentController.clear();
           update();
@@ -151,7 +140,6 @@ class CommentsPageController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception adding comment: $e');
       _errorMessage = e.toString();
       Get.snackbar(
         'Error',
@@ -175,29 +163,24 @@ class CommentsPageController extends GetxController {
     update();
 
     try {
-      debugPrint('🔵 Updating comment $commentId');
       final commentIndex = _comments.indexWhere((c) => c.id == commentId);
       if (commentIndex == -1) {
-        debugPrint('🔴 Comment not found at index');
         _errorMessage = 'Comment not found';
         update();
         return false;
       }
 
       final existingComment = _comments[commentIndex];
-      debugPrint('🔵 Found comment: ${existingComment.id}');
 
       final updatedComment = existingComment.copyWith(
         text: newText,
         updatedAt: DateTime.now(),
       );
 
-      debugPrint('🔵 Calling API to update comment');
       final result = await _commentRepository.updateComment(updatedComment);
 
       final success = result.fold(
         (error) {
-          debugPrint('🔴 API Error updating comment: $error');
           _errorMessage = error;
           Get.snackbar(
             'Error',
@@ -210,15 +193,10 @@ class CommentsPageController extends GetxController {
         },
         (updated) {
           try {
-            debugPrint('✅ API returned updated comment');
             // Verify index is still valid
             if (commentIndex >= 0 && commentIndex < _comments.length) {
               _comments[commentIndex] = updated;
-              debugPrint('✅ Comment updated in list at index $commentIndex');
             } else {
-              debugPrint(
-                '⚠️ Index out of bounds after update, searching by ID',
-              );
               final idx = _comments.indexWhere((c) => c.id == commentId);
               if (idx >= 0) {
                 _comments[idx] = updated;
@@ -226,14 +204,12 @@ class CommentsPageController extends GetxController {
             }
             return true;
           } catch (e) {
-            debugPrint('🔴 Error updating comment in list: $e');
             return false;
           }
         },
       );
       return success;
     } catch (e) {
-      debugPrint('🔴 Exception updating comment: $e');
       _errorMessage = e.toString();
       Get.snackbar(
         'Error',
@@ -254,12 +230,10 @@ class CommentsPageController extends GetxController {
     update();
 
     try {
-      debugPrint('🔵 Deleting comment $commentId');
       final result = await _commentRepository.deleteComment(commentId);
 
       return result.fold(
         (error) {
-          debugPrint('🔴 Error deleting comment: $error');
           _errorMessage = error;
           Get.snackbar(
             'Error',
@@ -271,7 +245,6 @@ class CommentsPageController extends GetxController {
           return false;
         },
         (success) {
-          debugPrint('✅ Comment deleted successfully');
           // Remove from main comments list
           _comments.removeWhere((comment) => comment.id == commentId);
           update();
@@ -286,7 +259,6 @@ class CommentsPageController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception deleting comment: $e');
       _errorMessage = e.toString();
       Get.snackbar(
         'Error',
@@ -307,12 +279,10 @@ class CommentsPageController extends GetxController {
     update();
 
     try {
-      debugPrint('🔵 Deleting reply $replyId from comment $parentCommentId');
       final result = await _commentRepository.deleteComment(replyId);
 
       return result.fold(
         (error) {
-          debugPrint('🔴 Error deleting reply: $error');
           _errorMessage = error;
           Get.snackbar(
             'Error',
@@ -324,7 +294,6 @@ class CommentsPageController extends GetxController {
           return false;
         },
         (success) {
-          debugPrint('✅ Reply deleted successfully');
           // Find the parent comment and remove the reply from its replies list
           final commentIndex = _comments.indexWhere(
             (c) => c.id == parentCommentId,
@@ -335,7 +304,6 @@ class CommentsPageController extends GetxController {
                 .where((reply) => reply.id != replyId)
                 .toList();
             _comments[commentIndex] = comment.copyWith(replies: updatedReplies);
-            debugPrint('✅ Reply removed from parent comment');
           }
           update();
           Get.snackbar(
@@ -349,7 +317,6 @@ class CommentsPageController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception deleting reply: $e');
       _errorMessage = e.toString();
       Get.snackbar(
         'Error',
@@ -388,7 +355,6 @@ class CommentsPageController extends GetxController {
     update();
 
     try {
-      debugPrint('🔵 Adding reply to comment');
       final result = await _commentRepository.addReplyToComment(
         currentTaskId,
         commentId,
@@ -397,7 +363,6 @@ class CommentsPageController extends GetxController {
 
       return result.fold(
         (error) {
-          debugPrint('🔴 Error adding reply: $error');
           _errorMessage = error;
           Get.snackbar(
             'Error',
@@ -409,7 +374,6 @@ class CommentsPageController extends GetxController {
           return false;
         },
         (createdReply) {
-          debugPrint('✅ Reply added successfully');
           // Find the parent comment and add the reply
           final commentIndex = _comments.indexWhere((c) => c.id == commentId);
           if (commentIndex != -1) {
@@ -427,7 +391,6 @@ class CommentsPageController extends GetxController {
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception adding reply: $e');
       _errorMessage = e.toString();
       Get.snackbar(
         'Error',
@@ -445,22 +408,18 @@ class CommentsPageController extends GetxController {
 
   Future<List<CommentModel>> loadRepliesForComment(String commentId) async {
     try {
-      debugPrint('🔵 Loading replies for comment $commentId');
       final result = await _commentRepository.getCommentReplies(commentId);
       return result.fold(
         (error) {
-          debugPrint('🔴 Error loading replies: $error');
           _errorMessage = error;
           update();
           return [];
         },
         (replies) {
-          debugPrint('✅ Loaded ${replies.length} replies');
           return replies;
         },
       );
     } catch (e) {
-      debugPrint('🔴 Exception loading replie: $e');
       _errorMessage = e.toString();
       update();
       return [];
