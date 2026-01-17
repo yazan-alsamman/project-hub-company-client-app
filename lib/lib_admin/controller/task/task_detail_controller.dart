@@ -156,7 +156,6 @@ class TaskDetailController extends GetxController {
           );
         },
         (reply) {
-          // Find the parent comment and add the reply
           final parentIndex = _comments.indexWhere((c) => c.id == parentCommentId);
           if (parentIndex != -1) {
           final parentComment = _comments[parentIndex];
@@ -166,7 +165,6 @@ class TaskDetailController extends GetxController {
           ];
           _comments[parentIndex] = parentComment.copyWith(replies: updatedReplies);
           } else {
-            // If parent not found, add as top-level comment (shouldn't happen)
             _comments.add(reply);
           }
           _replyingToCommentId = null;
@@ -209,10 +207,8 @@ class TaskDetailController extends GetxController {
         (updatedComment) {
           final index = _comments.indexWhere((c) => c.id == commentId);
           if (index != -1) {
-            // It's a top-level comment
             _comments[index] = updatedComment;
           } else {
-            // It might be a reply, search in replies
             for (int i = 0; i < _comments.length; i++) {
               if (_comments[i].replies != null) {
                 final replyIndex = _comments[i].replies!.indexWhere((r) => r.id == commentId);
@@ -258,12 +254,10 @@ class TaskDetailController extends GetxController {
           );
         },
         (_) {
-          // Try to remove from top-level comments first
           final index = _comments.indexWhere((c) => c.id == commentId);
           if (index != -1) {
             _comments.removeAt(index);
           } else {
-            // It might be a reply, search in replies
             for (int i = 0; i < _comments.length; i++) {
               if (_comments[i].replies != null) {
                 final replyIndex = _comments[i].replies!.indexWhere((r) => r.id == commentId);

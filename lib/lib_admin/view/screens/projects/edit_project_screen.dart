@@ -149,6 +149,17 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
                     ),
                     SizedBox(height: Responsive.spacing(context, mobile: 16)),
                     Text(
+                      "Client",
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, mobile: 14),
+                        fontWeight: FontWeight.w500,
+                        color: AppColor.textColor,
+                      ),
+                    ),
+                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                    _buildClientDropdown(context, controller),
+                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                    Text(
                       "Status",
                       style: TextStyle(
                         fontSize: Responsive.fontSize(context, mobile: 14),
@@ -324,6 +335,84 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
       ],
     );
   }
+  Widget _buildClientDropdown(
+    BuildContext context,
+    EditProjectControllerImp controller,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColor.borderColor, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: controller.isLoadingClients
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.person_outline,
+                    color: AppColor.textSecondaryColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Loading clients...',
+                    style: TextStyle(
+                      color: AppColor.textSecondaryColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : DropdownButtonFormField<String>(
+              value: controller.selectedClientId,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: InputBorder.none,
+                hintText: "Select client",
+                hintStyle: TextStyle(
+                  color: AppColor.textSecondaryColor,
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  Icons.person_outline,
+                  color: AppColor.textSecondaryColor,
+                  size: 20,
+                ),
+              ),
+              items: [
+                if (controller.clients.isEmpty)
+                  const DropdownMenuItem<String>(
+                    value: null,
+                    enabled: false,
+                    child: Text('No clients available'),
+                  )
+                else
+                  ...controller.clients.map((client) {
+                    return DropdownMenuItem<String>(
+                      value: client.id,
+                      child: Text(client.displayName),
+                    );
+                  }).toList(),
+              ],
+              onChanged: (value) {
+                controller.selectedClientId = value;
+                controller.update();
+              },
+            ),
+    );
+  }
+
   Widget _buildStatusDropdown(
     BuildContext context,
     EditProjectControllerImp controller,

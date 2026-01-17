@@ -314,7 +314,7 @@ class PDFService {
             child: pw.Stack(
               children: [
                 pw.Container(
-                  width: (progressFactor.clamp(0.0, 1.0)) * 400, // عرض نسبي
+                  width: (progressFactor.clamp(0.0, 1.0)) * 400,
                   height: 12,
                   decoration: pw.BoxDecoration(
                     gradient: const pw.LinearGradient(
@@ -811,14 +811,6 @@ class PDFService {
     );
   }
 
-  /// Generate PDF for task assignments
-  /// [assignments] should be a list of maps containing:
-  /// - taskName: String
-  /// - employeeName: String
-  /// - employeeRole: String (optional)
-  /// - startDate: String (optional)
-  /// - endDate: String (optional)
-  /// - estimatedHours: int (optional)
   static Future<File?> generateAssignmentsPDF(
     List<Map<String, dynamic>> assignments,
   ) async {

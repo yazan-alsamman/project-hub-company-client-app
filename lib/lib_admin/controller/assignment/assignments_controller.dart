@@ -50,13 +50,12 @@ class AssignmentsControllerImp extends AssignmentsController {
       final companyId = await _authService.getCompanyId();
       final result = await _teamRepository.getEmployees(
         page: 1,
-        limit: 100, // Get all employees for dropdown
+        limit: 100,
         companyId: companyId,
-        status: null, // Get all employees
+        status: null,
       );
       result.fold(
         (error) {
-          // Error loading employees
         },
         (employees) {
           _employees = employees;
@@ -64,7 +63,6 @@ class AssignmentsControllerImp extends AssignmentsController {
         },
       );
     } catch (e) {
-      // Exception loading employees
     }
   }
   @override

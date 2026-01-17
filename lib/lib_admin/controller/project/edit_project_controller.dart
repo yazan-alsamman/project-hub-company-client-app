@@ -5,6 +5,7 @@ import '../../core/constant/color.dart';
 import '../../core/constant/routes.dart';
 import 'projects_controller.dart';
 import '../../data/Models/project_model.dart';
+import '../../data/Models/client_model.dart';
 import '../../data/repository/projects_repository.dart';
 abstract class EditProjectController extends GetxController {
   void updateProject();
@@ -18,6 +19,10 @@ class EditProjectControllerImp extends EditProjectController {
   final TextEditingController codeController = TextEditingController();
   final TextEditingController safeDelayController = TextEditingController();
   String? selectedStatus;
+  String? selectedClientId;
+  List<ClientModel> clients = [];
+  bool isLoadingClients = false;
+  StatusRequest clientsStatusRequest = StatusRequest.none;
   StatusRequest statusRequest = StatusRequest.none;
   bool isLoading = false;
   bool isLoadingProject = false;
@@ -27,6 +32,7 @@ class EditProjectControllerImp extends EditProjectController {
   void onInit() {
     super.onInit();
     loadProjectData();
+    loadClients();
   }
   @override
   Future<void> loadProjectData() async {
@@ -42,6 +48,17 @@ class EditProjectControllerImp extends EditProjectController {
         project = projectInList;
         codeController.text = project!.code ?? '';
         safeDelayController.text = project!.safeDelay?.toString() ?? '7';
+        // Extract clientId from Map if it exists
+        if (project!.clientId != null) {
+          final clientIdValue = project!.clientId;
+          if (clientIdValue is Map<String, dynamic>) {
+            selectedClientId = clientIdValue['_id']?.toString() ?? 
+                              clientIdValue['id']?.toString() ?? 
+                              null;
+          } else if (clientIdValue is String) {
+            selectedClientId = clientIdValue;
+          }
+        }
         final backendStatus = project!.status.toLowerCase();
         switch (backendStatus) {
           case 'pending':
@@ -66,7 +83,6 @@ class EditProjectControllerImp extends EditProjectController {
         update();
         return;
       } catch (e) {
-        // Project not found in list, will fetch from API
       }
       isLoadingProject = false;
       errorMessage = 'Project not found';
@@ -122,6 +138,7 @@ class EditProjectControllerImp extends EditProjectController {
         status: backendStatus,
         code: code,
         safeDelay: safeDelay,
+        clientId: selectedClientId,
       );
       result.fold(
         (error) {
@@ -164,7 +181,6 @@ class EditProjectControllerImp extends EditProjectController {
             final projectsController = Get.find<ProjectsControllerImp>();
             projectsController.refreshProjects();
           } catch (e) {
-            // Could not refresh projects
           }
           Get.snackbar(
             'Success',
@@ -274,7 +290,6 @@ class EditProjectControllerImp extends EditProjectController {
             final projectsController = Get.find<ProjectsControllerImp>();
             projectsController.refreshProjects();
           } catch (e) {
-            // Could not refresh projects
           }
           Get.snackbar(
             'Success',
@@ -366,6 +381,56 @@ class EditProjectControllerImp extends EditProjectController {
     }
     return true;
   }
+
+  Future<void> loadClients() async {
+    isLoadingClients = true;
+    clientsStatusRequest = StatusRequest.loading;
+    update();
+    try {
+      List<ClientModel> allClients = [];
+      int currentPage = 1;
+      const int maxLimit = 100;
+      bool hasMore = true;
+
+      while (hasMore) {
+        final result = await _projectsRepository.getClients(
+          page: currentPage,
+          limit: maxLimit,
+        );
+
+        result.fold(
+          (error) {
+            if (allClients.isEmpty) {
+              clientsStatusRequest = error;
+              isLoadingClients = false;
+              hasMore = false;
+            } else {
+              hasMore = false;
+            }
+          },
+          (clientsList) {
+            if (clientsList.isEmpty) {
+              hasMore = false;
+            } else {
+              allClients.addAll(clientsList);
+              hasMore = clientsList.length >= maxLimit;
+              currentPage++;
+            }
+          },
+        );
+      }
+
+      clients = allClients;
+      clientsStatusRequest = StatusRequest.success;
+      isLoadingClients = false;
+      update();
+    } catch (e) {
+      clientsStatusRequest = StatusRequest.serverException;
+      isLoadingClients = false;
+      update();
+    }
+  }
+
   @override
   void onClose() {
     codeController.dispose();

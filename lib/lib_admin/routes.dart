@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'core/class/middleware/middleware.dart';
 import 'core/constant/routes.dart';
+import 'core/bindings/page_bindings.dart';
 import 'data/static/team_members_data.dart';
 import 'view/screens/Tasks/tasks_Screen.dart';
 import 'view/screens/auth/login.dart';
@@ -38,13 +39,30 @@ List<GetPage<dynamic>>? routes = [
     middlewares: [MyMiddleWare()],
   ),
   GetPage(name: AppRoute.login, page: () => const Login()),
-  GetPage(name: AppRoute.team, page: () => const TeamScreen()),
-  GetPage(name: AppRoute.tasks, page: () => const TasksScreen()),
-  GetPage(name: AppRoute.projects, page: () => const ProjectScreen()),
-  GetPage(name: AppRoute.analytics, page: () => const AnalyticsScreen()),
+  GetPage(
+    name: AppRoute.team,
+    page: () => const TeamScreen(),
+    binding: TeamScreenBinding(),
+  ),
+  GetPage(
+    name: AppRoute.tasks,
+    page: () => const TasksScreen(),
+    binding: TasksScreenBinding(),
+  ),
+  GetPage(
+    name: AppRoute.projects,
+    page: () => const ProjectScreen(),
+    binding: ProjectsScreenBinding(),
+  ),
+  GetPage(
+    name: AppRoute.analytics,
+    page: () => const AnalyticsScreen(),
+    binding: AnalyticsScreenBinding(),
+  ),
   GetPage(
     name: AppRoute.projectDashboard,
     page: () => const ProjectDashboardScreen(),
+    binding: ProjectDashboardScreenBinding(),
   ),
   GetPage(
     name: AppRoute.memberDetail,
@@ -59,62 +77,103 @@ List<GetPage<dynamic>>? routes = [
       final project = Get.arguments as ProjectModel;
       return ProjectDetailsScreen(project: project);
     },
+    binding: ProjectDetailsScreenBinding(),
   ),
   GetPage(
     name: AppRoute.projectComments,
     page: () {
       return const ProjectCommentsScreen();
     },
+    binding: ProjectCommentsScreenBinding(),
   ),
-  GetPage(name: AppRoute.profile, page: () => const ProfileScreen()),
-  GetPage(name: AppRoute.addEmployee, page: () => const AddEmployeeScreen()),
+  GetPage(
+    name: AppRoute.profile,
+    page: () => const ProfileScreen(),
+    binding: ProfileScreenBinding(),
+  ),
+  GetPage(
+    name: AppRoute.addEmployee,
+    page: () => const AddEmployeeScreen(),
+    binding: AddEmployeeScreenBinding(),
+  ),
   GetPage(
     name: AppRoute.editEmployee,
     page: () {
       final employeeId = Get.arguments as String;
       return EditEmployeeScreen(employeeId: employeeId);
     },
+    binding: EditEmployeeScreenBinding(),
   ),
-  GetPage(name: AppRoute.addTask, page: () => const AddTaskScreen()),
+  GetPage(
+    name: AppRoute.addTask,
+    page: () => const AddTaskScreen(),
+    binding: AddTaskScreenBinding(),
+  ),
   GetPage(
     name: AppRoute.editTask,
     page: () {
       final taskId = Get.arguments as String;
       return EditTaskScreen(taskId: taskId);
     },
+    binding: EditTaskScreenBinding(),
   ),
   GetPage(
     name: AppRoute.taskDetail,
     page: () {
       return const TaskDetailScreen();
     },
+    binding: TaskDetailScreenBinding(),
   ),
   GetPage(
     name: AppRoute.taskComments,
     page: () {
       return const TaskCommentsScreen();
     },
+    binding: TaskCommentsScreenBinding(),
   ),
   GetPage(
     name: AppRoute.requestDelay,
     page: () {
       return const RequestDelayScreen();
     },
+    binding: RequestDelayScreenBinding(),
   ),
-  GetPage(name: AppRoute.addProject, page: () => const AddProjectScreen()),
+  GetPage(
+    name: AppRoute.addProject,
+    page: () => const AddProjectScreen(),
+    binding: AddProjectScreenBinding(),
+  ),
   GetPage(
     name: AppRoute.editProject,
     page: () {
       final projectId = Get.arguments as String;
       return EditProjectScreen(projectId: projectId);
     },
+    binding: EditProjectScreenBinding(),
   ),
-  GetPage(name: AppRoute.assignments, page: () => const AssignmentsScreen()),
+  GetPage(
+    name: AppRoute.assignments,
+    page: () => const AssignmentsScreen(),
+    binding: AssignmentsScreenBinding(),
+  ),
   GetPage(
     name: AppRoute.addAssignment,
     page: () => const AddAssignmentScreen(),
+    binding: AddAssignmentScreenBinding(),
   ),
-  GetPage(name: AppRoute.addClient, page: () => const AddClientScreen()),
-  GetPage(name: AppRoute.aiAssistance, page: () => const AiAssistanceScreen()),
-  GetPage(name: AppRoute.delays, page: () => const DelaysScreen()),
+  GetPage(
+    name: AppRoute.addClient,
+    page: () => const AddClientScreen(),
+    binding: AddClientScreenBinding(),
+  ),
+  GetPage(
+    name: AppRoute.aiAssistance,
+    page: () => const AiAssistanceScreen(),
+    binding: AiAssistanceScreenBinding(),
+  ),
+  GetPage(
+    name: AppRoute.delays,
+    page: () => const DelaysScreen(),
+    binding: DelaysScreenBinding(),
+  ),
 ];

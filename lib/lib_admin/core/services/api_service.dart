@@ -112,7 +112,6 @@ class ApiService {
         duration: stopwatch.elapsed,
       );
 
-      // Handle 401 Unauthorized - Try to refresh token
       if (response.statusCode == 401 && requiresAuth && retryCount == 0) {
         await _logger.logWarning('API', 'Unauthorized (401) - Attempting token refresh');
         final refreshSuccess = await _refreshToken();
@@ -298,7 +297,6 @@ class ApiService {
   }
 
   Future<bool> _refreshToken() async {
-    // Prevent multiple simultaneous refresh attempts
     if (_isRefreshing) {
       await _logger.logInfo('AUTH', 'Token refresh already in progress, waiting');
       final completer = Completer<void>();

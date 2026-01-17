@@ -50,7 +50,7 @@ class AddTaskControllerImp extends AddTaskController {
     minEstimatedHourController = TextEditingController();
     maxEstimatedHourController = TextEditingController();
     targetRoleController = TextEditingController();
-    selectedPriority = 'M'; // Medium
+    selectedPriority = 'M';
     selectedTaskStatus = 'pending';
     loadProjects();
   }
@@ -79,8 +79,8 @@ class AddTaskControllerImp extends AddTaskController {
       }
       final result = await _projectsRepository.getProjects(
         page: 1,
-        limit: 100, // Get more projects for dropdown
-        companyId: null, // Will use default
+        limit: 100,
+        companyId: null,
       );
       result.fold(
         (error) {

@@ -481,7 +481,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
         }).toList(),
         onChanged: (value) {
           controller.selectedDepartmentId = value;
-          controller.departmentId = value; // Update departmentId as well
+          controller.departmentId = value;
           controller.update();
         },
       ),

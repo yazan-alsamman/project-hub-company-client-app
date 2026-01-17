@@ -381,27 +381,42 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                               ],
                             ),
                             if (controller.generationTime != null) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 16,
-                                    color: AppColor.textSecondaryColor,
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColor.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColor.primaryColor.withOpacity(0.3),
+                                    width: 1,
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Generation time: ${controller.generationTime!.toStringAsFixed(2)} seconds',
-                                    style: TextStyle(
-                                      fontSize: Responsive.fontSize(
-                                        context,
-                                        mobile: 14,
-                                      ),
-                                      color: AppColor.textSecondaryColor,
-                                      fontStyle: FontStyle.italic,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 18,
+                                      color: AppColor.primaryColor,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Generated in ${controller.generationTime!.toStringAsFixed(2)} seconds',
+                                      style: TextStyle(
+                                        fontSize: Responsive.fontSize(
+                                          context,
+                                          mobile: 14,
+                                        ),
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColor.primaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ],
@@ -420,54 +435,81 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                         const SizedBox(height: 40),
                         Container(
                           decoration: BoxDecoration(
-                            color: AppColor.successColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: AppColor.successColor.withOpacity(0.3),
-                              width: 1,
+                              width: 1.5,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColor.successColor.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                                spreadRadius: 0,
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.check_circle,
-                                color: AppColor.successColor,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Tasks Accepted Successfully!',
-                                      style: TextStyle(
-                                        fontSize: Responsive.fontSize(
-                                          context,
-                                          mobile: 16,
-                                        ),
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColor.textColor,
-                                      ),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppColor.successColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'You can now assign tasks to employees using AI',
-                                      style: TextStyle(
-                                        fontSize: Responsive.fontSize(
-                                          context,
-                                          mobile: 14,
-                                        ),
-                                        color: AppColor.textSecondaryColor,
-                                      ),
+                                    child: Icon(
+                                      Icons.check_circle,
+                                      color: AppColor.successColor,
+                                      size: 28,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Tasks Accepted Successfully!',
+                                          style: TextStyle(
+                                            fontSize: Responsive.fontSize(
+                                              context,
+                                              mobile: 18,
+                                            ),
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColor.textColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'You can now assign tasks to employees using AI',
+                                          style: TextStyle(
+                                            fontSize: Responsive.fontSize(
+                                              context,
+                                              mobile: 14,
+                                            ),
+                                            color: AppColor.textSecondaryColor,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(height: 20),
                               SizedBox(
-                                height: 40,
+                                width: double.infinity,
+                                height: 50,
                                 child: ElevatedButton.icon(
                                   onPressed: controller.isAssigningTasks
                                       ? null
@@ -476,10 +518,10 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                                         },
                                   icon: controller.isAssigningTasks
                                       ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
+                                          width: 20,
+                                          height: 20,
                                           child: CircularProgressIndicator(
-                                            strokeWidth: 2,
+                                            strokeWidth: 2.5,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
                                                   Colors.white,
@@ -488,16 +530,16 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                                         )
                                       : const Icon(
                                           Icons.auto_awesome,
-                                          size: 18,
+                                          size: 20,
                                         ),
                                   label: Text(
                                     controller.isAssigningTasks
-                                        ? 'Assigning...'
+                                        ? 'Assigning Tasks...'
                                         : 'Assign Tasks by AI',
                                     style: TextStyle(
                                       fontSize: Responsive.fontSize(
                                         context,
-                                        mobile: 14,
+                                        mobile: 16,
                                       ),
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -506,9 +548,10 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                                     backgroundColor: AppColor.successColor,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    elevation: 0,
+                                    elevation: 2,
+                                    shadowColor: AppColor.successColor.withOpacity(0.3),
                                   ),
                                 ),
                               ),
@@ -931,14 +974,12 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
         : 0;
     final notes = assignment['notes']?.toString() ?? '';
 
-    // Get initials for avatar
     final initials = employeeName
         .split(' ')
         .map((n) => n.isNotEmpty ? n[0].toUpperCase() : '')
         .take(2)
         .join();
 
-    // Determine priority color based on estimated hours
     Color priorityColor = AppColor.primaryColor;
     String priority = 'Medium';
     if (estimatedHours >= 12) {
@@ -952,7 +993,6 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
       priority = 'Low';
     }
 
-    // Determine avatar color
     Color avatarColor = AppColor.primaryColor;
     final roleLower = employeeRole.toLowerCase();
     if (roleLower.contains('backend')) {

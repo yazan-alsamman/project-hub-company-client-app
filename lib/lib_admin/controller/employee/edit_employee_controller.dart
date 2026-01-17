@@ -21,7 +21,7 @@ class EditEmployeeControllerImp extends EditEmployeeController {
   String? selectedPositionId;
   String? selectedStatus;
   String? selectedDepartmentId;
-  String? departmentId; // Store original department ID
+  String? departmentId;
   StatusRequest statusRequest = StatusRequest.none;
   bool isLoading = false;
   bool isLoadingEmployee = false;
@@ -74,7 +74,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
                 ?.toString();
             departmentId = selectedDepartmentId;
           } else if (employeeData.department != null) {
-            // Department ID not found, will try to match by name
           }
           final backendStatus = employeeData.status?.toLowerCase() ?? 'active';
           switch (backendStatus) {
@@ -329,7 +328,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
             final teamController = Get.find<TeamControllerImp>();
             teamController.refreshTeamMembers();
           } catch (e) {
-            // Could not refresh team members
           }
           Get.snackbar(
             'Success',
@@ -439,7 +437,6 @@ class EditEmployeeControllerImp extends EditEmployeeController {
             final teamController = Get.find<TeamControllerImp>();
             teamController.refreshTeamMembers();
           } catch (e) {
-            // Could not refresh team members
           }
           Get.snackbar(
             'Success',

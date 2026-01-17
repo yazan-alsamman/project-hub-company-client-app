@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/constant/imageassets.dart';
@@ -26,10 +27,8 @@ class _SplashScreenState extends State<SplashScreen> {
       final onBoardingStatus = myservices.sharedPreferences.getString("onBoarding");
       
       if (onBoardingStatus == "1") {
-        // User has seen onBoarding before, go to login
         Get.offAllNamed(AppRoute.login);
       } else {
-        // First time, go to onBoarding
         Get.offAllNamed(AppRoute.onBoarding);
       }
     });
@@ -50,29 +49,25 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo Image
-              Image.asset(
-                AppImageAsset.fullLogo,
+              SvgPicture.asset(
+                AppImageAsset.splashLogo,
                 width: MediaQuery.of(context).size.width * 0.7,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: AppColor.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.business_center,
-                      size: 80,
-                      color: AppColor.primaryColor,
-                    ),
-                  );
-                },
+                placeholderBuilder: (context) => Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: AppColor.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.business_center,
+                    size: 80,
+                    color: AppColor.primaryColor,
+                  ),
+                ),
               ),
               const SizedBox(height: 40),
-              // Loading Indicator
               const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(AppColor.primaryColor),
               ),

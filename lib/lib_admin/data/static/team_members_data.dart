@@ -18,7 +18,7 @@ class TeamMember {
   final String? github;
   final int? completedProjects;
   final double? rating;
-  final String? id; // Add ID field for API compatibility
+  final String? id;
   TeamMember({
     required this.name,
     required this.position,

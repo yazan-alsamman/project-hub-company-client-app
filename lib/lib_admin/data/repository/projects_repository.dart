@@ -286,6 +286,7 @@ class ProjectsRepository {
     required String status,
     required String code,
     required int safeDelay,
+    String? clientId,
   }) async {
     try {
       final body = <String, dynamic>{
@@ -293,6 +294,9 @@ class ProjectsRepository {
         'code': code,
         'safeDelay': safeDelay,
       };
+      if (clientId != null && clientId.isNotEmpty) {
+        body['clientId'] = clientId;
+      }
       final result = await _apiService.put(
         ApiConstant.updateProject,
         pathParams: {'id': projectId},

@@ -21,8 +21,8 @@ class Login extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [
               AppColor.gradientStart,
-              AppColor.gradientMiddle, // #8B5CF6
-              AppColor.gradientEnd, // #6B46C1
+              AppColor.gradientMiddle,
+              AppColor.gradientEnd,
             ],
           ),
         ),

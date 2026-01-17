@@ -7,15 +7,15 @@ class TaskModel {
   final String dueDate;
   final String assigneeName;
   final String assigneeInitials;
-  final String status; // 'All', 'In Progress', 'Completed', 'Pending'
+  final String status;
   final String priorityColor;
   final String avatarColor;
   final String? projectId;
   final String? projectCode;
   final String? projectStatus;
   final String? taskDescription;
-  final String? taskPriority; // H, M, L
-  final String? taskStatus; // pending, in_progress, completed
+  final String? taskPriority;
+  final String? taskStatus;
   final String? targetRole;
   final int? minEstimatedHour;
   final int? maxEstimatedHour;

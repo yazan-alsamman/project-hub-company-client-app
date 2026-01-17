@@ -29,18 +29,18 @@ class AddEmployeeControllerImp extends AddEmployeeController {
   final TextEditingController passwordController = TextEditingController();
   String? selectedStatus = 'active';
   String? selectedCompanyId;
-  String? selectedRoleId; // Selected role ID
-  String? selectedPositionId; // Selected position ID
-  String? selectedDepartmentId; // Selected department ID
+  String? selectedRoleId;
+  String? selectedPositionId;
+  String? selectedDepartmentId;
   StatusRequest statusRequest = StatusRequest.none;
   bool isLoading = false;
   bool isLoadingRoles = false;
   bool isLoadingPositions = false;
   bool isLoadingDepartments = false;
-  String? errorMessage; // Store error message from backend
-  List<RoleModel> roles = []; // List of available roles
-  List<PositionModel> positions = []; // List of available positions
-  List<DepartmentModel> departments = []; // List of available departments
+  String? errorMessage;
+  List<RoleModel> roles = [];
+  List<PositionModel> positions = [];
+  List<DepartmentModel> departments = [];
   @override
   void onInit() {
     super.onInit();
@@ -57,7 +57,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
     isLoadingRoles = true;
     update();
     try {
-      // Get current user role
       final currentUserRole = await authService.getUserRole();
       final currentUserRoleLower = currentUserRole?.toLowerCase() ?? '';
 
@@ -68,28 +67,23 @@ class AddEmployeeControllerImp extends AddEmployeeController {
           update();
         },
         (rolesList) {
-          // Filter roles based on current user role
           roles = rolesList.where((role) {
             final roleNameLower = role.name.toLowerCase();
 
-            // Always exclude "client" role
             if (roleNameLower == 'client') {
               return false;
             }
 
-            // If current user is admin: show only "project manager" and "developer"
             if (currentUserRoleLower == 'admin') {
               return roleNameLower == 'project manager' ||
                      roleNameLower == 'pm' ||
                      roleNameLower == 'developer';
             }
 
-            // If current user is PM: show only "developer"
             if (currentUserRoleLower == 'pm' || currentUserRoleLower == 'project manager') {
               return roleNameLower == 'developer';
             }
 
-            // For other roles (like superadmin), show all roles except client
             return true;
           }).toList();
           if (roles.isNotEmpty && selectedRoleId == null) {
@@ -206,9 +200,7 @@ class AddEmployeeControllerImp extends AddEmployeeController {
       }
       final positionId = selectedPositionId ?? positions.first.id;
       final departmentId = selectedDepartmentId ?? departments.first.id;
-      // جلب companyId من AuthService في كل مرة قبل الإرسال
       String? finalCompanyId = await authService.getCompanyId();
-      // التأكد من وجود companyId قبل الإرسال
       if (finalCompanyId == null || finalCompanyId.isEmpty) {
         Get.snackbar(
           'Error',
@@ -227,8 +219,8 @@ class AddEmployeeControllerImp extends AddEmployeeController {
       final result = await _teamRepository.createEmployeeWithUser(
         companyId: finalCompanyId,
         employeeCode: employeeCodeController.text.trim(),
-        position: positionId, // Use position ID
-        department: departmentId, // Use department ID
+        position: positionId,
+        department: departmentId,
         hireDate: hireDateController.text.trim(),
         salary: salary,
         status: selectedStatus ?? 'active',
@@ -309,7 +301,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
               );
             });
           } catch (e) {
-            // Could not refresh team members
           }
           Get.snackbar(
             'Success',
@@ -349,7 +340,6 @@ class AddEmployeeControllerImp extends AddEmployeeController {
                 try {
                   Get.until((route) => route.settings.name == AppRoute.team);
                 } catch (e3) {
-                  // Final navigation attempt failed
                 }
               }
             }
@@ -520,20 +510,20 @@ class AddEmployeeControllerImp extends AddEmployeeController {
     passwordController.clear();
     selectedRoleId = roles.isNotEmpty
         ? roles.first.id
-        : null; // Reset to first role
+        : null;
     selectedPositionId = positions.isNotEmpty
         ? positions.first.id
-        : null; // Reset to first position
+        : null;
     selectedDepartmentId = departments.isNotEmpty
         ? departments.first.id
-        : null; // Reset to first department
+        : null;
     selectedStatus = 'active';
     authService.getCompanyId().then((companyId) {
       selectedCompanyId = companyId;
       update();
     });
     statusRequest = StatusRequest.none;
-    errorMessage = null; // Clear error message
+    errorMessage = null;
     update();
   }
   @override

@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:project_hub/lib_admin/core/class/statusrequest.dart';
 import 'package:project_hub/lib_admin/core/constant/color.dart';
 import 'package:project_hub/lib_admin/core/constant/routes.dart';
-import 'package:project_hub/lib_admin/core/services/controllers_initializer.dart';
 import 'package:project_hub/core/services/services.dart';
 import 'package:project_hub/lib_admin/data/repository/auth_repository.dart';
 import 'package:project_hub/lib_client/controller/auth_controller.dart';
@@ -103,11 +102,9 @@ class LoginControllerImpl extends LoginController {
         statusRequest = StatusRequest.success;
         update();
 
-        // Get user role from auth service
         final authService = Get.find<Myservices>();
         final userRole = authService.sharedPreferences.getString('user_role');
 
-        // Check if user is superadmin and block login
         if (userRole?.toLowerCase() == 'superadmin' ||
             userRole?.toLowerCase() == 'super admin') {
           await _logger.logAuthEvent(
@@ -125,17 +122,12 @@ class LoginControllerImpl extends LoginController {
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppColor.errorColor,
             colorText: AppColor.white,
-            icon: const Icon(
-              Icons.block,
-              color: AppColor.white,
-              size: 28,
-            ),
+            icon: const Icon(Icons.block, color: AppColor.white, size: 28),
             duration: const Duration(seconds: 5),
             borderRadius: 12,
             margin: const EdgeInsets.all(16),
           );
 
-          // Clear any saved auth data
           await authService.sharedPreferences.remove('user_role');
           await authService.sharedPreferences.remove('auth_token');
           await authService.sharedPreferences.remove('refresh_token');
@@ -145,12 +137,9 @@ class LoginControllerImpl extends LoginController {
           return;
         }
 
-        // Route based on user role
         if (userRole?.toLowerCase() == 'client') {
-          // Route to client app
           await _logger.logInfo('NAV', 'Routing to client app');
 
-          // Initialize client controllers
           if (!Get.isRegistered<AuthController>()) {
             Get.put(AuthController(), permanent: true);
           }
@@ -169,13 +158,11 @@ class LoginControllerImpl extends LoginController {
 
           Get.offAllNamed('/client/tasks-page');
         } else {
-          // Route to admin app (developer, admin, pm)
           await _logger.logInfo('NAV', 'Routing to admin app');
 
-          // Initialize all controllers after successful login
-          ControllersInitializer.initializeControllers();
+          // Controllers will be initialized automatically via bindings when entering each page
+          // No need to initialize them here
 
-          // Route developer to tasks page, others to team page
           if (userRole?.toLowerCase() == 'developer') {
             Get.offAllNamed(AppRoute.tasks);
           } else {

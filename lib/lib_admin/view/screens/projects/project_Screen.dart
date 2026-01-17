@@ -516,7 +516,7 @@ class ProjectScreen extends StatelessWidget {
     try {
       final projectsRepository = ProjectsRepository();
       final result = await projectsRepository.deleteProject(project.id);
-      Get.back(); // Close loading dialog
+      Get.back();
       result.fold(
         (error) {
           String errorMsg = 'Failed to delete project';
@@ -565,7 +565,7 @@ class ProjectScreen extends StatelessWidget {
         },
       );
     } catch (e) {
-      Get.back(); // Close loading dialog
+      Get.back();
       Get.snackbar(
         'Error',
         'An unexpected error occurred. Please try again.',

@@ -4,6 +4,6 @@ abstract class CustomDrawerController extends GetxController {
 }
 class CustomDrawerControllerImp extends GetxController {
   void onMenuItemTap(String item) {
-    Get.back(); // إغلاق الـ drawer
+    Get.back();
   }
 }

@@ -83,9 +83,7 @@ class TeamControllerImp extends TeamController {
     _isLoading = true;
     _statusRequest = StatusRequest.loading;
     update();
-    // Get companyId from AuthService before sending
     String? finalCompanyId = await _authService.getCompanyId();
-    // Check companyId before sending
     if (finalCompanyId == null || finalCompanyId.isEmpty) {
       _isLoading = false;
       _statusRequest = StatusRequest.serverFailure;
@@ -107,7 +105,7 @@ class TeamControllerImp extends TeamController {
           final member = e.toTeamMember();
           return member;
         }).toList();
-        _teamMembers = newMembers; // Replace all members (no pagination)
+        _teamMembers = newMembers;
         _statusRequest = StatusRequest.success;
         update();
       },
@@ -122,14 +120,13 @@ class TeamControllerImp extends TeamController {
     }
     await loadTeamMembers(companyId: companyId, status: status, refresh: false);
   }
-  // Load all team members by making multiple requests if needed
   Future<Either<StatusRequest, List<EmployeeModel>>> _loadAllTeamMembers({
     required String companyId,
     String? status,
   }) async {
     List<EmployeeModel> allEmployees = [];
     int currentPage = 1;
-    const int maxLimit = 100; // API maximum limit
+    const int maxLimit = 100;
 
     while (true) {
       final result = await _teamRepository.getEmployees(
@@ -141,20 +138,17 @@ class TeamControllerImp extends TeamController {
 
       final shouldContinue = result.fold(
         (error) {
-          // If we have some employees already, return them; otherwise return error
           if (allEmployees.isNotEmpty) {
-            return false; // Stop and return what we have
+            return false;
           }
-          return false; // Stop on error
+          return false;
         },
         (employees) {
           allEmployees.addAll(employees);
-          // If we got less than maxLimit, we've reached the end
-          return employees.length >= maxLimit; // Continue if we got full page
+          return employees.length >= maxLimit;
         },
       );
 
-      // Check if we should return early (error or partial success)
       if (!shouldContinue) {
         return result.fold(
           (error) {
@@ -167,7 +161,6 @@ class TeamControllerImp extends TeamController {
         );
       }
 
-      // Continue to next page
       currentPage++;
     }
   }
@@ -184,7 +177,7 @@ class TeamControllerImp extends TeamController {
     return {
       'total': total,
       'active': active,
-      'busy': terminated, // Show terminated count in busy field
+      'busy': terminated,
       'away': away,
       'terminated': terminated,
     };

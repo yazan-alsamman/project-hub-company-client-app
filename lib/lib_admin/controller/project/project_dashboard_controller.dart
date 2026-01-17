@@ -40,7 +40,6 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
   void onInit() {
     super.onInit();
     loadProjects();
-    // Stats will be calculated from projects data instead of separate API call
   }
   @override
   Future<void> loadProjects({bool refresh = false}) async {
@@ -71,7 +70,6 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
           _projects = projectsList;
           _statusRequest = StatusRequest.success;
           _sortProjects();
-          // Calculate stats from loaded projects
           _calculateStatsFromProjects();
           _isLoadingStats = false;
         },
@@ -85,11 +83,9 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
   }
   @override
   Future<void> loadStats() async {
-    // Calculate stats from projects data instead of calling API
     _isLoadingStats = true;
     update();
     try {
-      // Stats will be calculated from _projects list
       _calculateStatsFromProjects();
     } catch (e) {
       _stats = {};
@@ -99,19 +95,16 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
   }
 
   void _calculateStatsFromProjects() {
-    // Calculate stats from projects list
     final activeProjects = _projects.where((p) =>
       p.status.toLowerCase() == 'active' ||
       p.status.toLowerCase() == 'in_progress'
     ).length;
 
-    // Calculate total tasks from projects
     final totalTasks = _projects.fold<int>(
       0,
       (sum, project) => sum + (project.totalTasks ?? 0)
     );
 
-    // Calculate completion rate
     double totalProgress = 0.0;
     int projectsWithProgress = 0;
     for (var project in _projects) {
@@ -149,7 +142,6 @@ class ProjectDashboardControllerImp extends ProjectDashboardController {
     }
     _projects = sortedProjects;
   }
-  // Helper methods to get stats values
   int get activeProjectsCount {
     if (_stats.isEmpty) return 0;
     return _stats['activeProjects'] ?? _stats['active'] ?? 0;

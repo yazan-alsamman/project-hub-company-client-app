@@ -103,7 +103,6 @@ class TasksScreen extends StatelessWidget {
                             },
                           ),
                           const SizedBox(height: 20),
-                          // Project Filter Dropdown
                           GetBuilder<TasksControllerImp>(
                             builder: (tasksController) {
                               return Container(
@@ -140,7 +139,6 @@ class TasksScreen extends StatelessWidget {
                                             ),
                                           ),
                                           items: [
-                                            // View All Tasks option
                                             DropdownMenuItem<String?>(
                                               value: null,
                                               child: Row(
@@ -162,7 +160,6 @@ class TasksScreen extends StatelessWidget {
                                                 ],
                                               ),
                                             ),
-                                            // Projects list
                                             ...tasksController.projects.map(
                                               (project) => DropdownMenuItem<String?>(
                                                 value: project.id,
@@ -381,8 +378,6 @@ class TasksScreen extends StatelessWidget {
                                       delayRequests: task.delayRequests,
                                       onTap: canViewTaskDetail
                                           ? () {
-                                              // Check if user is admin - go to comments page
-                                              // Otherwise go to task detail page
                                               final userRole = roleSnapshot.data?.toLowerCase() ?? '';
                                               if (userRole == 'admin') {
                                                 Get.toNamed(
@@ -496,7 +491,7 @@ class TasksScreen extends StatelessWidget {
     try {
       final tasksRepository = TasksRepository();
       final result = await tasksRepository.deleteTask(task.id);
-      Get.back(); // Close loading dialog
+      Get.back();
       result.fold(
         (error) {
           String errorMsg = 'Failed to delete task';
@@ -545,7 +540,7 @@ class TasksScreen extends StatelessWidget {
         },
       );
     } catch (e) {
-      Get.back(); // Close loading dialog
+      Get.back();
       Get.snackbar(
         'Error',
         'An unexpected error occurred. Please try again.',

@@ -238,7 +238,7 @@ class ProjectDashboardInformationCard extends StatelessWidget {
       ];
       return '${months[date.month - 1]} ${date.day}, ${date.year}';
     } catch (e) {
-      return dateString; // Return original string if parsing fails
+      return dateString;
     }
   }
   List<Widget> _buildTeamAvatars() {

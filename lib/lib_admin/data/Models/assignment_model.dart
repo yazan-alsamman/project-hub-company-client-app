@@ -13,7 +13,7 @@ class AssignmentModel {
   final String endDate;
   final int estimatedHours;
   final int? actualHours;
-  final String status; // active, completed, pending
+  final String status;
   final String? notes;
   final String? completedAt;
   final String createdAt;

@@ -6,7 +6,7 @@ import '../../data/static/onBoarding_data.dart';
 abstract class OnBoardingController extends GetxController {
   next();
   onPageChanged(int index);
-  resetOnBoarding(); // دالة لإعادة تعيين حالة onBoarding
+  resetOnBoarding();
 }
 class OnBoardingControllerImp extends OnBoardingController {
   late PageController pageController;

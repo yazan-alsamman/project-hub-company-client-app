@@ -37,40 +37,50 @@ class AuthRepository {
               final data = response['data'] as Map<String, dynamic>;
 
               if (data['user'] == null) {
-                await _logger.logWarning('AUTH', 'User data is null in login response');
+                await _logger.logWarning(
+                  'AUTH',
+                  'User data is null in login response',
+                );
                 return const Left(StatusRequest.serverFailure);
               }
 
               final user = data['user'] as Map<String, dynamic>;
               String? companyId;
 
-              // Search for companyId in different locations
               if (user['companyId'] != null) {
                 if (user['companyId'] is Map<String, dynamic>) {
-                  companyId = (user['companyId'] as Map<String, dynamic>)['_id']?.toString();
+                  companyId = (user['companyId'] as Map<String, dynamic>)['_id']
+                      ?.toString();
                 } else {
                   companyId = user['companyId']?.toString();
                 }
               }
 
-              if ((companyId == null || companyId.isEmpty) && data['companyId'] != null) {
+              if ((companyId == null || companyId.isEmpty) &&
+                  data['companyId'] != null) {
                 if (data['companyId'] is Map<String, dynamic>) {
-                  companyId = (data['companyId'] as Map<String, dynamic>)['_id']?.toString();
+                  companyId = (data['companyId'] as Map<String, dynamic>)['_id']
+                      ?.toString();
                 } else {
                   companyId = data['companyId']?.toString();
                 }
               }
 
-              if ((companyId == null || companyId.isEmpty) && response['companyId'] != null) {
+              if ((companyId == null || companyId.isEmpty) &&
+                  response['companyId'] != null) {
                 if (response['companyId'] is Map<String, dynamic>) {
-                  companyId = (response['companyId'] as Map<String, dynamic>)['_id']?.toString();
+                  companyId =
+                      (response['companyId'] as Map<String, dynamic>)['_id']
+                          ?.toString();
                 } else {
                   companyId = response['companyId']?.toString();
                 }
               }
 
               final userRole = user['role'] != null
-                  ? (user['role'] as Map<String, dynamic>)['name']?.toString() ?? ''
+                  ? (user['role'] as Map<String, dynamic>)['name']
+                            ?.toString() ??
+                        ''
                   : '';
 
               await _authService.saveAuthData(
@@ -154,7 +164,10 @@ class AuthRepository {
                 email: data['user']['email'] ?? email,
               );
             }
-            await _logger.logAuthEvent(event: 'REGISTER_SUCCESS', success: true);
+            await _logger.logAuthEvent(
+              event: 'REGISTER_SUCCESS',
+              success: true,
+            );
             return Right(data);
           } else {
             return const Left(StatusRequest.serverFailure);
@@ -246,7 +259,10 @@ class AuthRepository {
                 await _authService.saveRefreshToken(newRefreshToken);
               }
 
-              await _logger.logAuthEvent(event: 'TOKEN_REFRESH_SUCCESS', success: true);
+              await _logger.logAuthEvent(
+                event: 'TOKEN_REFRESH_SUCCESS',
+                success: true,
+              );
               return Right(response);
             } else {
               return const Left(StatusRequest.serverFailure);
@@ -294,60 +310,48 @@ class AuthRepository {
     }
   }
 
-  /// Fetches all roles from the API
   Future<Either<StatusRequest, List<RoleModel>>> getRoles() async {
     try {
       final result = await _apiService.get(
         ApiConstant.roles,
         requiresAuth: true,
       );
-      return result.fold(
-        (error) => Left(error),
-        (response) {
-          try {
-            if (response['success'] == true && response['data'] != null) {
-              final data = response['data'];
-              List<dynamic> rolesList;
-              if (data is List) {
-                rolesList = data;
-              } else {
-                return const Left(StatusRequest.serverFailure);
-              }
-              final roles = rolesList
-                  .map((item) => RoleModel.fromJson(item as Map<String, dynamic>))
-                  .toList();
-              return Right(roles);
+      return result.fold((error) => Left(error), (response) {
+        try {
+          if (response['success'] == true && response['data'] != null) {
+            final data = response['data'];
+            List<dynamic> rolesList;
+            if (data is List) {
+              rolesList = data;
             } else {
               return const Left(StatusRequest.serverFailure);
             }
-          } catch (e) {
-            return const Left(StatusRequest.serverException);
+            final roles = rolesList
+                .map((item) => RoleModel.fromJson(item as Map<String, dynamic>))
+                .toList();
+            return Right(roles);
+          } else {
+            return const Left(StatusRequest.serverFailure);
           }
-        },
-      );
+        } catch (e) {
+          return const Left(StatusRequest.serverException);
+        }
+      });
     } catch (e) {
       return const Left(StatusRequest.serverException);
     }
   }
 
-  /// Gets the client role ID by fetching roles and finding the "client" role
   Future<String?> _getClientRoleId() async {
     final rolesResult = await getRoles();
-    return rolesResult.fold(
-      (error) => null,
-      (roles) {
-        final clientRole = roles.firstWhere(
-          (role) => role.name.toLowerCase() == 'client',
-          orElse: () => RoleModel(
-            id: '',
-            name: '',
-            description: '',
-            isActive: false,
-          ),
-        );
-        return clientRole.id.isNotEmpty ? clientRole.id : null;
-      },
-    );
+    return rolesResult.fold((error) => null, (roles) {
+      final clientRole = roles.firstWhere(
+        (role) => role.name.toLowerCase() == 'client',
+        orElse: () =>
+            RoleModel(id: '', name: '', description: '', isActive: false),
+      );
+      return clientRole.id.isNotEmpty ? clientRole.id : null;
+    });
   }
 
   Future<Either<dynamic, ClientModel>> createClient({
@@ -357,7 +361,6 @@ class AuthRepository {
     required bool isActive,
   }) async {
     try {
-      // Fetch the client role ID dynamically
       final clientRoleId = await _getClientRoleId();
       if (clientRoleId == null || clientRoleId.isEmpty) {
         _logger.logError(
@@ -396,7 +399,8 @@ class AuthRepository {
               _logger.logInfo('CLIENT', 'Client created: ${client.username}');
               return Right(client);
             } else {
-              final errorMessage = response['message']?.toString() ??
+              final errorMessage =
+                  response['message']?.toString() ??
                   response['error']?.toString() ??
                   'Failed to create client';
               return Left({
@@ -457,12 +461,17 @@ class AuthRepository {
               final pagination = data['pagination'] as Map<String, dynamic>?;
 
               final clients = clientsList
-                  .map((clientJson) => ClientModel.fromJson(clientJson as Map<String, dynamic>))
+                  .map(
+                    (clientJson) => ClientModel.fromJson(
+                      clientJson as Map<String, dynamic>,
+                    ),
+                  )
                   .toList();
 
               return Right({'clients': clients, 'pagination': pagination});
             } else {
-              final errorMessage = response['message']?.toString() ??
+              final errorMessage =
+                  response['message']?.toString() ??
                   response['error']?.toString() ??
                   'Failed to get clients';
               return Left({
@@ -513,7 +522,8 @@ class AuthRepository {
               _logger.logInfo('CLIENT', 'Client deleted: $clientId');
               return const Right(true);
             } else {
-              final errorMessage = response['message']?.toString() ??
+              final errorMessage =
+                  response['message']?.toString() ??
                   response['error']?.toString() ??
                   'Failed to delete client';
               return Left({

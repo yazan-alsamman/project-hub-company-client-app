@@ -87,7 +87,6 @@ class EditTaskControllerImp extends EditTaskController {
         update();
         return;
       } catch (e) {
-        // Task not found in list, will fetch from API
       }
       isLoadingTask = false;
       errorMessage = 'Task not found';
@@ -211,7 +210,6 @@ class EditTaskControllerImp extends EditTaskController {
             final tasksController = Get.find<TasksControllerImp>();
             tasksController.refreshTasks();
           } catch (e) {
-            // Could not refresh tasks
           }
           Get.snackbar(
             'Success',
@@ -321,7 +319,6 @@ class EditTaskControllerImp extends EditTaskController {
             final tasksController = Get.find<TasksControllerImp>();
             tasksController.refreshTasks();
           } catch (e) {
-            // Could not refresh tasks
           }
           Get.snackbar(
             'Success',

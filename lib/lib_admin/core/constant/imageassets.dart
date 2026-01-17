@@ -5,6 +5,7 @@ class AppImageAsset {
   static const String logoSvg = "$rootImages/logo/logo.svg";
   static const String appIcon = "$rootImages/logo/projectHub_icon.png";
   static const String fullLogo = "$rootImages/logo/projectHub_full_logo.png";
+  static const String splashLogo = "$rootImages/logo/splash_logo.svg";
   static const String onBoardingImageOne = "$rootImages/onBoardingImageOne.png";
   static const String onBoardingImageTwo = "$rootImages/onBoardingImageTwo.png";
   static const String onBoardingImageThree = "$rootImages/onBoardingImageThree.png";

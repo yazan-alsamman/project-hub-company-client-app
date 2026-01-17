@@ -38,7 +38,6 @@ class EmployeeScheduleController extends GetxController {
     isLoadingEmployees = false;
     result.fold(
       (error) {
-        // Error loading employees
       },
       (employeeList) {
         employees = employeeList;
@@ -129,7 +128,6 @@ class TaskAssignmentsController extends GetxController {
     isLoadingTasks = false;
     result.fold(
       (error) {
-        // Error loading tasks
       },
       (taskList) {
         tasks = taskList;
@@ -174,7 +172,6 @@ class TaskAssignmentsController extends GetxController {
             selectedTaskName = selectedTask.title;
             selectedTaskDescription = selectedTask.taskDescription;
           } catch (e) {
-            // Task not found in list
           }
         }
         taskAssignments = assignmentsList.map((item) {
@@ -187,7 +184,7 @@ class TaskAssignmentsController extends GetxController {
             return AssignmentModel(
               id: assignment.id,
               taskId: assignment.taskId,
-              taskName: selectedTaskName, // Use selected task name
+              taskName: selectedTaskName,
               taskDescription:
                   assignment.taskDescription ?? selectedTaskDescription,
               employeeId: assignment.employeeId,

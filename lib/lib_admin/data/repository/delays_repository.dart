@@ -6,7 +6,6 @@ import '../../core/services/api_service.dart';
 class DelaysRepository {
   final ApiService _apiService = ApiService();
 
-  // GET /project-delay/summary
   Future<Either<StatusRequest, Map<String, dynamic>>> getDelaySummary() async {
     try {
       final result = await _apiService.get(
@@ -36,7 +35,6 @@ class DelaysRepository {
     }
   }
 
-  // GET /project-delay?page=1&limit=10
   Future<Either<StatusRequest, Map<String, dynamic>>> getAllProjectsDelayStatus({
     int page = 1,
     int limit = 10,
@@ -75,7 +73,6 @@ class DelaysRepository {
     }
   }
 
-  // GET /project-delay/project/:projectId
   Future<Either<StatusRequest, Map<String, dynamic>>> getProjectDelayStatus(
     String projectId,
   ) async {
@@ -108,7 +105,6 @@ class DelaysRepository {
     }
   }
 
-  // GET /project-delay/project/:projectId/tasks?page=1&limit=10
   Future<Either<StatusRequest, Map<String, dynamic>>> getProjectTaskDelays({
     required String projectId,
     int page = 1,
@@ -149,7 +145,6 @@ class DelaysRepository {
     }
   }
 
-  // POST /task/delay-requests/{delayRequestId}/accept
   Future<Either<StatusRequest, bool>> acceptDelayRequest({
     required String delayRequestId,
     required String reviewNote,
@@ -187,7 +182,6 @@ class DelaysRepository {
     }
   }
 
-  // POST /task/delay-requests/{delayRequestId}/reject
   Future<Either<StatusRequest, bool>> rejectDelayRequest({
     required String delayRequestId,
     required String reviewNote,
@@ -225,7 +219,6 @@ class DelaysRepository {
     }
   }
 
-  // GET /task/delay-requests?page=1&limit=10&status=pending
   Future<Either<StatusRequest, Map<String, dynamic>>> getDelayRequests({
     int page = 1,
     int limit = 10,

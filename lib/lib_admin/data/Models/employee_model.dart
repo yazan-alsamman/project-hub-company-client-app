@@ -9,8 +9,8 @@ class EmployeeModel {
   final String? phone;
   final String? position;
   final String? department;
-  final Map<String, dynamic>? positionObj; // Position object from API
-  final Map<String, dynamic>? departmentObj; // Department object from API
+  final Map<String, dynamic>? positionObj;
+  final Map<String, dynamic>? departmentObj;
   final String? status;
   final Map<String, dynamic>? role;
   final bool? isActive;
@@ -163,7 +163,7 @@ class EmployeeModel {
         return 'Busy';
       case 'on_leave':
       case 'on leave':
-        return 'Away'; // Map on_leave to 'Away' to match UI expectations
+        return 'Away';
       case 'terminated':
         return 'Terminated';
       default:

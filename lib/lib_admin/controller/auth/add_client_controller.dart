@@ -24,7 +24,6 @@ class AddClientControllerImp extends AddClientController {
   bool isLoading = false;
   String? errorMessage;
 
-  // Clients list properties
   List<ClientModel> clients = [];
   StatusRequest clientsStatusRequest = StatusRequest.none;
   bool isLoadingClients = false;
@@ -126,7 +125,7 @@ class AddClientControllerImp extends AddClientController {
               size: 28,
             ),
             shouldIconPulse: false,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 5),
             borderRadius: 12,
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -287,7 +286,7 @@ class AddClientControllerImp extends AddClientController {
         },
         (clientsList) {
           try {
-            clients = clientsList; // Replace all clients (no pagination)
+            clients = clientsList;
             clientsStatusRequest = StatusRequest.success;
             isLoadingClients = false;
             update();
@@ -310,11 +309,10 @@ class AddClientControllerImp extends AddClientController {
     loadClients(refresh: true);
   }
 
-  // Load all clients by making multiple requests if needed
   Future<Either<dynamic, List<ClientModel>>> _loadAllClients() async {
     List<ClientModel> allClients = [];
     int currentPage = 1;
-    const int maxLimit = 100; // API maximum limit
+    const int maxLimit = 100;
 
     while (true) {
       final result = await _authRepository.getClients(
@@ -324,25 +322,22 @@ class AddClientControllerImp extends AddClientController {
 
       final shouldContinue = result.fold(
         (error) {
-          // If we have some clients already, return them; otherwise return error
           if (allClients.isNotEmpty) {
-            return false; // Stop and return what we have
+            return false;
           }
-          return false; // Stop on error
+          return false;
         },
         (data) {
           try {
             final clientsList = data['clients'] as List<ClientModel>;
             allClients.addAll(clientsList);
-            // If we got less than maxLimit, we've reached the end
-            return clientsList.length >= maxLimit; // Continue if we got full page
+            return clientsList.length >= maxLimit;
           } catch (e) {
-            return false; // Stop on parsing error
+            return false;
           }
         },
       );
 
-      // Check if we should return early (error or partial success)
       if (!shouldContinue) {
         return result.fold(
           (error) {
@@ -357,7 +352,6 @@ class AddClientControllerImp extends AddClientController {
         );
       }
 
-      // Continue to next page
       currentPage++;
     }
   }
@@ -411,7 +405,8 @@ class AddClientControllerImp extends AddClientController {
         (error) {
           String errorMsg = 'Failed to delete client';
           if (error is Map<String, dynamic>) {
-            errorMsg = error['message']?.toString() ?? 'Failed to delete client';
+            errorMsg =
+                error['message']?.toString() ?? 'Failed to delete client';
           } else if (error is StatusRequest) {
             if (error == StatusRequest.serverFailure) {
               errorMsg = 'Server error. Please try again.';
@@ -481,7 +476,6 @@ class AddClientControllerImp extends AddClientController {
             forwardAnimationCurve: Curves.easeOutBack,
             reverseAnimationCurve: Curves.easeInBack,
           );
-          // Remove client from list
           clients.removeWhere((client) => client.id == clientId);
           update();
         },
@@ -522,4 +516,3 @@ class AddClientControllerImp extends AddClientController {
     super.onClose();
   }
 }
-

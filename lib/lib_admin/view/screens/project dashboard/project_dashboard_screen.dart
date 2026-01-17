@@ -40,7 +40,6 @@ class ProjectDashboardScreen extends StatelessWidget {
                 title: const Text('Share Project'),
                 onTap: () {
                   Navigator.pop(context);
-                  // Share functionality can be added here
                 },
               ),
               ListTile(
@@ -130,7 +129,6 @@ class ProjectDashboardScreen extends StatelessWidget {
           onRefresh: () async {
             final controller = Get.find<ProjectDashboardControllerImp>();
             await controller.loadProjects(refresh: true);
-            // Stats will be calculated automatically from projects
           },
           color: AppColor.primaryColor,
           child: SingleChildScrollView(

@@ -58,10 +58,8 @@ class ProjectsControllerImp extends ProjectsController {
     final isDeveloper = userRole?.toLowerCase() == 'developer';
 
     String? companyId;
-    // If user is developer, don't send companyID
     if (!isDeveloper) {
       companyId = await _getCompanyId();
-      // Check companyId before sending
       if (companyId == null || companyId.isEmpty) {
         _isLoading = false;
         _statusRequest = StatusRequest.serverFailure;
@@ -74,13 +72,13 @@ class ProjectsControllerImp extends ProjectsController {
       switch (_selectedFilter.toLowerCase()) {
         case 'active':
           apiStatus =
-              'in_progress'; // API uses 'in_progress' for active projects
+              'in_progress';
           break;
         case 'completed':
           apiStatus = 'completed';
           break;
         case 'planned':
-          apiStatus = 'pending'; // API uses 'pending' for planned projects
+          apiStatus = 'pending';
           break;
         default:
           apiStatus = null;
@@ -103,7 +101,7 @@ class ProjectsControllerImp extends ProjectsController {
         update();
       },
       (projects) {
-        _projects = projects; // Replace all projects (no pagination)
+        _projects = projects;
         _statusRequest = StatusRequest.success;
         update();
       },
@@ -113,23 +111,18 @@ class ProjectsControllerImp extends ProjectsController {
   Future<String?> _getCompanyId() async {
     try {
       final authService = AuthService();
-      // Check user role
       final userRole = await authService.getUserRole();
       final isDeveloper = userRole?.toLowerCase() == 'developer';
 
-      // Get companyId from AuthService directly (from login response)
       final savedCompanyId = await authService.getCompanyId();
       if (savedCompanyId != null && savedCompanyId.isNotEmpty) {
         if (isDeveloper) {
-          // For developer, use only companyID from login response
           return savedCompanyId;
         }
         return savedCompanyId;
       }
 
-      // If user is not developer, search for companyId from other sources
       if (!isDeveloper) {
-        // Try to get companyId from employee data
         final userId = await authService.getUserId();
         if (userId != null && userId.isNotEmpty) {
           try {
@@ -138,7 +131,6 @@ class ProjectsControllerImp extends ProjectsController {
             String? companyIdFromEmployee;
             employeeResult.fold(
               (error) {
-                // Could not get employee data
               },
               (employee) {
                 if (employee.companyId != null) {
@@ -154,12 +146,10 @@ class ProjectsControllerImp extends ProjectsController {
               return companyIdFromEmployee;
             }
           } catch (e) {
-            // Error getting employee data
           }
         }
       }
     } catch (e) {
-      // Could not get companyId
     }
     return null;
   }
@@ -180,7 +170,7 @@ class ProjectsControllerImp extends ProjectsController {
 
   void _applyLocalFilter() {
     if (_selectedFilter == 'All') {
-      return; // No filtering needed for 'All'
+      return;
     }
     String targetStatus;
     switch (_selectedFilter.toLowerCase()) {
@@ -194,7 +184,7 @@ class ProjectsControllerImp extends ProjectsController {
         targetStatus = 'planned';
         break;
       default:
-        return; // Unknown filter, show all
+        return;
     }
     final filtered = _projects
         .where((project) => project.status.toLowerCase() == targetStatus)
@@ -202,14 +192,13 @@ class ProjectsControllerImp extends ProjectsController {
     _projects = filtered;
   }
 
-  // Load all projects by making multiple requests if needed
   Future<Either<StatusRequest, List<ProjectModel>>> _loadAllProjects({
     String? companyId,
     String? status,
   }) async {
     List<ProjectModel> allProjects = [];
     int currentPage = 1;
-    const int maxLimit = 100; // API maximum limit
+    const int maxLimit = 100;
 
     while (true) {
       final result = await _repository.getProjects(
@@ -221,20 +210,17 @@ class ProjectsControllerImp extends ProjectsController {
 
       final shouldContinue = result.fold(
         (error) {
-          // If we have some projects already, return them; otherwise return error
           if (allProjects.isNotEmpty) {
-            return false; // Stop and return what we have
+            return false;
           }
-          return false; // Stop on error
+          return false;
         },
         (projects) {
           allProjects.addAll(projects);
-          // If we got less than maxLimit, we've reached the end
-          return projects.length >= maxLimit; // Continue if we got full page
+          return projects.length >= maxLimit;
         },
       );
 
-      // Check if we should return early (error or partial success)
       if (!shouldContinue) {
         return result.fold((error) {
           if (allProjects.isNotEmpty) {
@@ -244,7 +230,6 @@ class ProjectsControllerImp extends ProjectsController {
         }, (projects) => Right<StatusRequest, List<ProjectModel>>(allProjects));
       }
 
-      // Continue to next page
       currentPage++;
     }
   }

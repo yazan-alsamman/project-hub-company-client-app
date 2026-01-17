@@ -4,6 +4,7 @@ import '../../../controller/auth/add_client_controller.dart';
 import '../../../core/class/statusrequest.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/constant/responsive.dart';
+import '../../../core/services/auth_service.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/header.dart';
 import '../../widgets/common/input_fields.dart';
@@ -22,53 +23,98 @@ class _AddClientScreenState extends State<AddClientScreen>
   final ScrollController _scrollController = ScrollController();
   final ScrollController _clientsScrollController = ScrollController();
   String? _previousErrorMessage;
-  late TabController _tabController;
+  TabController? _tabController;
+  bool _isPm = false;
+  bool _isLoadingRole = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _checkUserRole();
+  }
+
+  Future<void> _checkUserRole() async {
+    try {
+      final authService = AuthService();
+      final userRole = await authService.getUserRole();
+      final isPm = userRole?.toLowerCase() == 'pm' || 
+                   userRole?.toLowerCase() == 'project manager';
+      
+      setState(() {
+        _isPm = isPm;
+        _isLoadingRole = false;
+        // Only create TabController if user is not PM (PM users don't need tabs)
+        if (!isPm) {
+          _tabController = TabController(length: 2, vsync: this);
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingRole = false;
+        _tabController = TabController(length: 2, vsync: this);
+      });
+    }
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     _clientsScrollController.dispose();
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     Get.put(AddClientControllerImp());
+    
+    if (_isLoadingRole) {
+      return Scaffold(
+        appBar: const CustomAppBar(title: 'Clients', showBackButton: true),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColor.primaryColor),
+        ),
+      );
+    }
+    
     return Scaffold(
       appBar: const CustomAppBar(title: 'Clients', showBackButton: true),
       body: SafeArea(
         child: Column(
           children: [
-          Container(
-            color: AppColor.backgroundColor,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColor.primaryColor,
-              unselectedLabelColor: AppColor.textSecondaryColor,
-              indicatorColor: AppColor.primaryColor,
-              tabs: const [
-                Tab(text: 'Add Client'),
-                Tab(text: 'View Clients'),
-              ],
+            // Only show TabBar if user is not PM (PM users only see View Clients)
+            if (!_isPm && _tabController != null)
+              Container(
+                color: AppColor.backgroundColor,
+                child: TabBar(
+                  controller: _tabController!,
+                  labelColor: AppColor.primaryColor,
+                  unselectedLabelColor: AppColor.textSecondaryColor,
+                  indicatorColor: AppColor.primaryColor,
+                  tabs: const [
+                    Tab(text: 'Add Client'),
+                    Tab(text: 'View Clients'),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: _isPm
+                  ? _buildViewClientsTab(context)
+                  : _tabController != null
+                      ? TabBarView(
+                          controller: _tabController!,
+                          children: [
+                            _buildAddClientTab(context),
+                            _buildViewClientsTab(context),
+                          ],
+                        )
+                      : const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColor.primaryColor,
+                          ),
+                        ),
             ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildAddClientTab(context),
-                _buildViewClientsTab(context),
-              ],
-            ),
-          ),
-        ],
+          ],
         ),
       ),
     );

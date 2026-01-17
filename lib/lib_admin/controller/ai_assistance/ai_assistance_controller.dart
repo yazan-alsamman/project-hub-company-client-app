@@ -15,6 +15,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:open_file/open_file.dart';
 import 'package:flutter/services.dart';
 import 'package:project_hub/core/config/app_config.dart';
+import '../../core/functions/checkinternet.dart';
 
 abstract class AiAssistanceController extends GetxController {
   void generateTasks(String projectDescription, int numTasks);
@@ -31,30 +32,25 @@ class AiAssistanceControllerImp extends AiAssistanceController {
   StatusRequest statusRequest = StatusRequest.none;
   bool isLoading = false;
   List<TaskModel> generatedTasks = [];
-  double? generationTime; // Time taken to generate tasks in seconds
+  double? generationTime;
 
-  // Pagination variables
   int currentPage = 1;
   static const int itemsPerPage = 10;
   bool viewAll = false;
 
-  // Accepted tasks data
   Map<String, dynamic>? acceptedTasksResponse;
   bool showAssignTasksButton = false;
   bool isAssigningTasks = false;
 
-  // PDF generation
   bool showPdfButton = false;
   bool isGeneratingPdf = false;
   List<Map<String, dynamic>> successfulAssignments = [];
 
-  // Assignment status message (for persistent display)
   String? assignmentStatusMessage;
   String? assignmentStatusTitle;
   Color? assignmentStatusColor;
   bool showAssignmentStatus = false;
 
-  // AI Assignments from API response - to display in UI
   List<Map<String, dynamic>> aiAssignments = [];
   bool showAiAssignments = false;
 
@@ -66,7 +62,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
   @override
   void onInit() {
     super.onInit();
-    numTasksController.text = '10'; // Default value
+    numTasksController.text = '10';
   }
 
   @override
@@ -87,6 +83,22 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         colorText: AppColor.white,
         borderRadius: 12,
         margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    // Check internet connectivity first
+    final hasInternet = await checkInternet();
+    if (!hasInternet) {
+      Get.snackbar(
+        'Error',
+        'No internet connection. Please check your network and try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: AppColor.white,
+        borderRadius: 12,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
       );
       return;
     }
@@ -120,7 +132,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = jsonDecode(response.body) as Map<String, dynamic>;
 
-        // Parse the response - assuming it returns tasks in a 'tasks' or 'data' field
         List<dynamic> tasksList = [];
         if (responseData['tasks'] != null && responseData['tasks'] is List) {
           tasksList = responseData['tasks'] as List<dynamic>;
@@ -131,35 +142,28 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           tasksList = responseData as List<dynamic>;
         }
 
-        if (tasksList.isEmpty) {
-          // If no tasks array, try to parse as single task or different structure
-        }
+        if (tasksList.isEmpty) {}
 
         generatedTasks = tasksList.asMap().entries.map((entry) {
           final index = entry.key;
           final taskJson = entry.value;
           try {
-            // Convert AI response to TaskModel format
             final taskMap = taskJson is Map<String, dynamic>
                 ? taskJson
                 : <String, dynamic>{};
 
-            // Extract task name
             final taskName =
                 taskMap['task']?.toString() ??
                 taskMap['taskName']?.toString() ??
                 taskMap['title']?.toString() ??
                 'Untitled Task';
 
-            // Extract role
             final role = taskMap['role']?.toString() ?? 'Unassigned';
 
-            // Extract priority and convert to code
             final priorityStr = taskMap['priority']?.toString() ?? 'Medium';
             final priorityCode = _convertPriorityToCode(priorityStr);
             final priorityDisplay = _mapPriorityFromAI(priorityCode);
 
-            // Extract time information
             final timeObj = taskMap['time'];
             String timeDisplay = 'No time estimate';
             int? minEstimatedHour;
@@ -183,21 +187,17 @@ class AiAssistanceControllerImp extends AiAssistanceController {
                 } else {
                   timeDisplay = '${hours}h';
                 }
-                // Convert to hours (approximate)
                 minEstimatedHour = hours;
                 maxEstimatedHour = hours + (minutes > 0 ? 1 : 0);
               }
             }
 
-            // Generate initials from role
             final roleInitials = role.isNotEmpty
                 ? role.substring(0, 1).toUpperCase()
                 : 'UA';
 
-            // Get avatar color based on role
             final avatarColor = _getAvatarColorFromRole(role);
 
-            // Create a TaskModel from the AI response
             return TaskModel(
               id: 'ai_task_${DateTime.now().millisecondsSinceEpoch}_$index',
               title: taskName,
@@ -218,7 +218,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
               maxEstimatedHour: maxEstimatedHour,
             );
           } catch (e) {
-            // Return a default task if parsing fails
             return TaskModel(
               id: 'ai_task_error_${DateTime.now().millisecondsSinceEpoch}_$index',
               title: 'Parsing Error',
@@ -235,7 +234,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           }
         }).toList();
 
-        // Extract generation time from response
         if (responseData['generation_time'] != null) {
           generationTime = responseData['generation_time'] is double
               ? responseData['generation_time'] as double
@@ -259,18 +257,15 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           duration: const Duration(seconds: 2),
         );
       } else {
-        // Parse error response
         String errorMessage = 'Failed to generate tasks';
         try {
           final errorResponse =
               jsonDecode(response.body) as Map<String, dynamic>;
 
-          // Check for detail array (validation errors)
           if (errorResponse['detail'] != null &&
               errorResponse['detail'] is List) {
             final detailList = errorResponse['detail'] as List<dynamic>;
             if (detailList.isNotEmpty) {
-              // Extract messages from detail array
               final messages = detailList
                   .map((error) {
                     if (error is Map<String, dynamic> && error['msg'] != null) {
@@ -285,13 +280,9 @@ class AiAssistanceControllerImp extends AiAssistanceController {
                 errorMessage = messages.join('\n');
               }
             }
-          }
-          // Check for message field
-          else if (errorResponse['message'] != null) {
+          } else if (errorResponse['message'] != null) {
             errorMessage = errorResponse['message'].toString();
-          }
-          // Check for error field
-          else if (errorResponse['error'] != null) {
+          } else if (errorResponse['error'] != null) {
             errorMessage = errorResponse['error'].toString();
           }
         } catch (e) {
@@ -320,7 +311,19 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         errorMessage = 'Request timed out. Please try again.';
       } else if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup')) {
-        errorMessage = 'No internet connection. Please check your network.';
+        // Re-check connectivity to be more accurate
+        final hasInternetNow = await checkInternet();
+        if (!hasInternetNow) {
+          errorMessage =
+              'No internet connection. Please check your network and try again.';
+        } else {
+          // Internet is available but connection failed - likely server issue
+          errorMessage =
+              'Unable to connect to server. Please check your connection or try again later.';
+        }
+      } else {
+        errorMessage =
+            'An error occurred while generating tasks. Please try again.';
       }
 
       Get.snackbar(
@@ -331,6 +334,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         colorText: AppColor.white,
         borderRadius: 12,
         margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
       );
     } finally {
       isLoading = false;
@@ -349,7 +353,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     update();
   }
 
-  // Get tasks for current page
   List<TaskModel> get displayedTasks {
     if (viewAll) {
       return generatedTasks;
@@ -365,28 +368,23 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     );
   }
 
-  // Get total number of pages
   int get totalPages {
     if (generatedTasks.isEmpty) return 0;
     return (generatedTasks.length / itemsPerPage).ceil();
   }
 
-  // Check if pagination is needed
   bool get needsPagination {
     return generatedTasks.length > itemsPerPage;
   }
 
-  // Navigate to specific page
   void goToPage(int page) {
     if (page >= 1 && page <= totalPages) {
       currentPage = page;
       viewAll = false;
       update();
-      // Scroll to top of tasks list
     }
   }
 
-  // Go to next page
   void nextPage() {
     if (currentPage < totalPages) {
       currentPage++;
@@ -395,7 +393,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     }
   }
 
-  // Go to previous page
   void previousPage() {
     if (currentPage > 1) {
       currentPage--;
@@ -404,7 +401,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     }
   }
 
-  // Toggle view all
   void toggleViewAll() {
     viewAll = !viewAll;
     if (!viewAll) {
@@ -490,7 +486,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
   @override
   Future<void> showProjectSelectionDialog(BuildContext context) async {
     try {
-      // Get company ID
       final authService = AuthService();
       final companyId = await authService.getCompanyId();
 
@@ -507,12 +502,11 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         return;
       }
 
-      // Load projects
       final projectsRepository = ProjectsRepository();
       final result = await projectsRepository.getProjects(
         companyId: companyId,
         page: 1,
-        limit: 100, // Get more projects for selection
+        limit: 100,
       );
 
       result.fold(
@@ -541,7 +535,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             return;
           }
 
-          // Show dialog
           showDialog(
             context: context,
             builder: (BuildContext dialogContext) {
@@ -667,16 +660,13 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       return;
     }
 
-    // Show loading dialog
     Get.dialog(
       const Center(child: CircularProgressIndicator()),
       barrierDismissible: false,
     );
 
     try {
-      // Convert TaskModel to API format
       final tasksForApi = generatedTasks.map((task) {
-        // Convert priority from H/M/L to High/Medium/Low
         String priority = 'Medium';
         if (task.taskPriority != null) {
           switch (task.taskPriority!.toUpperCase()) {
@@ -695,16 +685,13 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           }
         }
 
-        // Get hours and minutes from estimated hours
         int hours = task.minEstimatedHour ?? 0;
         int minutes = 0;
 
-        // If there's a range, use the average or max
         if (task.maxEstimatedHour != null && task.maxEstimatedHour! > hours) {
           hours = task.maxEstimatedHour!;
         }
 
-        // Extract role from category or targetRole
         String role = task.category.isNotEmpty
             ? task.category
             : (task.targetRole ?? 'Unassigned');
@@ -717,14 +704,13 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         };
       }).toList();
 
-      // Send to API
       final tasksRepository = TasksRepository();
       final result = await tasksRepository.bulkCreateTasks(
         projectId: projectId,
         tasks: tasksForApi,
       );
 
-      Get.back(); // Close loading dialog
+      Get.back();
 
       result.fold(
         (error) {
@@ -759,7 +745,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
               response['message']?.toString() ?? 'Tasks created successfully';
 
           if (failureCount > 0) {
-            // Partial success
             Get.snackbar(
               'Partial Success',
               '$message\nSuccess: $successCount, Failed: $failureCount',
@@ -771,7 +756,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
               duration: const Duration(seconds: 4),
             );
           } else {
-            // Full success
             Get.snackbar(
               'Success',
               '$message\nAll $successCount tasks created successfully!',
@@ -784,11 +768,9 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             );
           }
 
-          // Store the response and show assign button
           acceptedTasksResponse = response;
           showAssignTasksButton = true;
 
-          // Clear generated tasks after successful creation but keep the response
           generatedTasks.clear();
           generationTime = null;
           currentPage = 1;
@@ -797,7 +779,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         },
       );
     } catch (e) {
-      Get.back(); // Close loading dialog
+      Get.back();
       Get.snackbar(
         'Error',
         'An unexpected error occurred: ${e.toString()}',
@@ -816,7 +798,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       return 'Please enter number of tasks';
     }
 
-    // Check if contains commas or other non-numeric characters (except digits)
     if (value.contains(',') || value.contains('.')) {
       return 'Number should not contain commas or decimals';
     }
@@ -843,7 +824,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
 
   Future<void> assignTasksByAI() async {
     if (acceptedTasksResponse == null) {
-      // Set persistent error message
       assignmentStatusTitle = 'Error';
       assignmentStatusMessage = 'No accepted tasks found';
       assignmentStatusColor = AppColor.errorColor;
@@ -852,7 +832,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       return;
     }
 
-    // Clear previous status message
     showAssignmentStatus = false;
     assignmentStatusMessage = null;
     assignmentStatusTitle = null;
@@ -862,8 +841,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     update();
 
     try {
-      // Step 1: Fetch employees from API - Fresh request every time (no caching)
-      // This ensures we always get the latest employee data
       final employeesEndpoint = '/employee/roles';
 
       final employeesResult = await _apiService.get(
@@ -885,8 +862,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         throw Exception(errorMsg);
       }, (response) => response);
 
-      // Parse employees list - Creating fresh list for this request only
-      // This list is local to this method and not stored in the controller
       List<dynamic> employeesList = [];
       if (employeesData['data'] != null && employeesData['data'] is List) {
         employeesList = employeesData['data'] as List<dynamic>;
@@ -894,7 +869,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
           employeesData['employees'] is List) {
         employeesList = employeesData['employees'] as List<dynamic>;
       } else {
-        // Try to find any list in the response
         employeesData.forEach((key, value) {
           if (value is List && value.isNotEmpty && employeesList.isEmpty) {
             employeesList = value;
@@ -906,8 +880,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         throw Exception('No employees found in response');
       }
 
-      // Define allowed roles for task assignment (development-related roles only)
-      // Based on backend validation: "Only development-related roles can be assigned tasks"
       final allowedRoles = [
         'backend',
         'frontend',
@@ -921,17 +893,12 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         'test engineer',
       ].map((r) => r.toLowerCase()).toSet();
 
-      // Format employees for AI API
-      // Filter out employees with roles that cannot be assigned tasks
-      // The response already has the correct structure: {employeeId, role, employeeName}
-      // This list is created fresh for each request and not stored in the controller
       final List<Map<String, dynamic>> employeesForAI = [];
       int filteredCount = 0;
 
       for (var emp in employeesList) {
         try {
           final empMap = emp as Map<String, dynamic>;
-          // The API already returns the correct structure, use it directly
           final employeeId = empMap['employeeId']?.toString() ?? '';
           final role = empMap['role']?.toString() ?? '';
           final employeeName = empMap['employeeName']?.toString() ?? '';
@@ -940,7 +907,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             continue;
           }
 
-          // Filter by role - only include employees with development-related roles
           final roleLower = role.toLowerCase();
           if (!allowedRoles.contains(roleLower)) {
             filteredCount++;
@@ -963,22 +929,16 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         );
       }
 
-      // Step 2: Format tasks from accepted response
-      // Use the response from "Accept Tasks" button directly
       final responseData = acceptedTasksResponse!;
 
-      // Extract tasks data from acceptedTasksResponse
-      // The structure should be: {success, message, data: {results: {successful: [...]}}}
       Map<String, dynamic>? tasksDataForAI;
 
       if (responseData['data'] != null && responseData['data'] is Map) {
         final dataField = responseData['data'] as Map<String, dynamic>;
 
-        // Check if data contains results.successful structure
         if (dataField['results'] != null && dataField['results'] is Map) {
           final results = dataField['results'] as Map<String, dynamic>;
           if (results['successful'] != null && results['successful'] is List) {
-            // Build tasks structure for AI API: {data: {results: {successful: [...]}}}
             tasksDataForAI = {
               'data': {
                 'results': {'successful': results['successful']},
@@ -994,16 +954,11 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         );
       }
 
-      // Format tasks for AI API - exactly as specified
       final tasksForAI = tasksDataForAI;
 
-      // Step 3: Call AI assignment API
-
-      // Count tasks from the formatted structure
       final tasksCount =
           (tasksForAI['data']?['results']?['successful'] as List?)?.length ?? 0;
 
-      // Get authentication token
       final authService = AuthService();
       final token = await authService.getToken();
 
@@ -1049,20 +1004,14 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         throw Exception('No assignments generated');
       }
 
-      // Get total tasks count and unassigned tasks from AI response
-      // Store these values to use later in the bulk create response handler
-      final totalTasksSent = tasksCount; // Number of tasks sent to AI
-      final assignmentsGenerated =
-          assignments.length; // Number of assignments AI generated
+      final totalTasksSent = tasksCount;
+      final assignmentsGenerated = assignments.length;
       final unassignedTasks =
           assignmentsData['unassigned_tasks'] as List<dynamic>? ?? [];
       final unassignedCount = unassignedTasks.length;
 
-      // Get summary from AI response if available
       final summary = assignmentsData['summary'] as Map<String, dynamic>?;
 
-      // Extract tasks from acceptedTasksResponse for mapping task IDs to names and roles
-      // This is used later for PDF generation
       final taskIdToNameMap = <String, String>{};
       final taskIdToRoleMap = <String, String>{};
       if (responseData['data'] != null && responseData['data'] is Map) {
@@ -1094,7 +1043,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         }
       }
 
-      // Create a map of employeeId -> employeeName from employeesList
       final employeeIdToNameMap = <String, Map<String, String>>{};
       for (var empMap in employeesList) {
         if (empMap is Map<String, dynamic>) {
@@ -1110,24 +1058,19 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         }
       }
 
-      // Step 4: Prepare assignments data for display in UI
-      // Format assignments with task names and employee names for TaskCard display
       aiAssignments = [];
       for (var assignment in assignments) {
         final assignMap = assignment as Map<String, dynamic>;
         final taskId = assignMap['taskId']?.toString() ?? '';
         final employeeId = assignMap['employeeId']?.toString() ?? '';
 
-        // Get task name and role
         final taskName = taskIdToNameMap[taskId] ?? 'Unknown Task';
         final taskRole = taskIdToRoleMap[taskId] ?? '';
 
-        // Get employee info
         final employeeInfo = employeeIdToNameMap[employeeId];
         final employeeName = employeeInfo?['name'] ?? 'Unknown Employee';
         final employeeRole = employeeInfo?['role'] ?? '';
 
-        // Format dates
         String formattedStartDate = 'N/A';
         String formattedEndDate = 'N/A';
         try {
@@ -1147,9 +1090,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
                   '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
             }
           }
-        } catch (e) {
-          // Error formatting dates
-        }
+        } catch (e) {}
 
         final estimatedHours = assignMap['estimatedHours'] is int
             ? assignMap['estimatedHours'] as int
@@ -1173,7 +1114,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         });
       }
 
-      // Also prepare for PDF
       successfulAssignments = aiAssignments.map((assign) {
         return {
           'taskName': assign['taskName'],
@@ -1188,7 +1128,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       isAssigningTasks = false;
       showAiAssignments = true;
 
-      // Show success message
       String successMessage =
           '${assignments.length} assignment(s) generated successfully!';
       if (unassignedCount > 0) {
@@ -1196,11 +1135,9 @@ class AiAssistanceControllerImp extends AiAssistanceController {
             '\n\nNote: $unassignedCount task(s) were not assigned by AI';
       } else if (totalTasksSent > assignmentsGenerated) {
         final missingCount = totalTasksSent - assignmentsGenerated;
-        successMessage +=
-            '\n\nNote: $missingCount task(s) were not assigned';
+        successMessage += '\n\nNote: $missingCount task(s) were not assigned';
       } else if (totalTasksSent == assignmentsGenerated) {
-        successMessage +=
-            '\n\nAll $totalTasksSent task(s) have been assigned!';
+        successMessage += '\n\nAll $totalTasksSent task(s) have been assigned!';
       }
 
       assignmentStatusTitle = 'Success';
@@ -1208,11 +1145,9 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       assignmentStatusColor = AppColor.successColor;
       showAssignmentStatus = true;
 
-      // Clear accepted tasks response
       acceptedTasksResponse = null;
       showAssignTasksButton = false;
 
-      // Show PDF button
       if (successfulAssignments.isNotEmpty) {
         showPdfButton = true;
       }
@@ -1233,7 +1168,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         errorMessage = e.toString().replaceFirst('Exception: ', '');
       }
 
-      // Set persistent error message
       assignmentStatusTitle = 'Error';
       assignmentStatusMessage = errorMessage;
       assignmentStatusColor = AppColor.errorColor;
@@ -1247,7 +1181,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
     }
   }
 
-  /// Generate and download PDF for successful assignments
   Future<void> downloadAssignmentsPDF() async {
     if (successfulAssignments.isEmpty) {
       Get.snackbar(
@@ -1275,7 +1208,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         final fileSize = await file.length();
 
         try {
-          // Try to share/open the file
           await Share.shareXFiles(
             [XFile(file.path, mimeType: 'application/pdf')],
             text: 'Task Assignments Report',
@@ -1283,7 +1215,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
                 'Task Assignments - ${DateTime.now().toString().split(' ')[0]}',
           );
         } catch (shareError) {
-          // Try alternative method
           try {
             final result = await OpenFile.open(file.path);
             if (result.type == ResultType.done) {
@@ -1300,7 +1231,6 @@ class AiAssistanceControllerImp extends AiAssistanceController {
               throw Exception('Failed to open file: ${result.message}');
             }
           } catch (openError) {
-            // Show success message with file path
             Get.snackbar(
               'PDF Generated Successfully!',
               'PDF saved at: ${file.path}\n\nTap to copy path',

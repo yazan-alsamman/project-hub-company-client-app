@@ -12,38 +12,31 @@ class DelaysController extends GetxController {
   final ProjectsRepository _projectsRepository = ProjectsRepository();
   final AuthService _authService = AuthService();
 
-  // Delay Summary
   Map<String, dynamic>? _delaySummary;
   StatusRequest _summaryStatusRequest = StatusRequest.none;
   bool _isLoadingSummary = false;
 
-  // All Projects Delay Status
   List<dynamic> _allProjectsDelayStatus = [];
   StatusRequest _allProjectsStatusRequest = StatusRequest.none;
   bool _isLoadingAllProjects = false;
 
-  // Project Delay Status (Single Project)
   Map<String, dynamic>? _projectDelayStatus;
   StatusRequest _projectDelayStatusRequest = StatusRequest.none;
   bool _isLoadingProjectDelay = false;
 
-  // Project Task Delays
   List<dynamic> _projectTaskDelays = [];
   StatusRequest _projectTaskDelaysStatusRequest = StatusRequest.none;
   bool _isLoadingProjectTaskDelays = false;
 
-  // Requested Delays (for PM)
   List<dynamic> _requestedDelays = [];
   StatusRequest _requestedDelaysStatusRequest = StatusRequest.none;
   bool _isLoadingRequestedDelays = false;
   Map<String, dynamic>? _requestedDelaysPagination;
 
-  // Projects list for dropdowns
   List<ProjectModel> _projects = [];
   String? _selectedProjectId;
   bool _isLoadingProjects = false;
 
-  // Getters
   Map<String, dynamic>? get delaySummary => _delaySummary;
   StatusRequest get summaryStatusRequest => _summaryStatusRequest;
   bool get isLoadingSummary => _isLoadingSummary;
@@ -75,7 +68,6 @@ class DelaysController extends GetxController {
     loadProjects();
   }
 
-  // Load projects for dropdowns
   Future<void> loadProjects() async {
     _isLoadingProjects = true;
     update();
@@ -104,10 +96,8 @@ class DelaysController extends GetxController {
     }
   }
 
-  // Select project for dropdowns
   void selectProject(String? projectId) {
     _selectedProjectId = projectId;
-    // Clear related data when project changes
     _projectDelayStatus = null;
     _projectTaskDelays = [];
     _projectDelayStatusRequest = StatusRequest.none;
@@ -115,7 +105,6 @@ class DelaysController extends GetxController {
     update();
   }
 
-  // Load Delay Summary
   Future<void> loadDelaySummary() async {
     _isLoadingSummary = true;
     _summaryStatusRequest = StatusRequest.loading;
@@ -143,7 +132,6 @@ class DelaysController extends GetxController {
     }
   }
 
-  // Load All Projects Delay Status
   Future<void> loadAllProjectsDelayStatus({int page = 1, int limit = 10}) async {
     _isLoadingAllProjects = true;
     _allProjectsStatusRequest = StatusRequest.loading;
@@ -161,7 +149,6 @@ class DelaysController extends GetxController {
           _allProjectsDelayStatus = [];
         },
         (data) {
-          // Extract projects list from response
           if (data['projects'] != null && data['projects'] is List) {
             _allProjectsDelayStatus = data['projects'] as List<dynamic>;
           } else {
@@ -179,7 +166,6 @@ class DelaysController extends GetxController {
     }
   }
 
-  // Load Project Delay Status (Single Project)
   Future<void> loadProjectDelayStatus() async {
     if (_selectedProjectId == null || _selectedProjectId!.isEmpty) {
       return;
@@ -211,7 +197,6 @@ class DelaysController extends GetxController {
     }
   }
 
-  // Load Project Task Delays
   Future<void> loadProjectTaskDelays({int page = 1, int limit = 10}) async {
     if (_selectedProjectId == null || _selectedProjectId!.isEmpty) {
       return;
@@ -234,7 +219,6 @@ class DelaysController extends GetxController {
           _projectTaskDelays = [];
         },
         (data) {
-          // Extract tasks list from response
           if (data['tasks'] != null && data['tasks'] is List) {
             _projectTaskDelays = data['tasks'] as List<dynamic>;
           } else {
@@ -252,7 +236,6 @@ class DelaysController extends GetxController {
     }
   }
 
-  // Accept Delay Request
   Future<void> acceptDelayRequest({
     required String delayRequestId,
     required String reviewNote,
@@ -283,11 +266,9 @@ class DelaysController extends GetxController {
             colorText: Colors.white,
             duration: const Duration(seconds: 2),
           );
-          // Reload project task delays to refresh the list
           if (_selectedProjectId != null) {
             loadProjectTaskDelays();
           }
-          // Reload requested delays to refresh the list
           loadRequestedDelays();
         },
       );
@@ -303,7 +284,6 @@ class DelaysController extends GetxController {
     }
   }
 
-  // Reject Delay Request
   Future<void> rejectDelayRequest({
     required String delayRequestId,
     required String reviewNote,
@@ -334,11 +314,9 @@ class DelaysController extends GetxController {
             colorText: Colors.white,
             duration: const Duration(seconds: 2),
           );
-          // Reload project task delays to refresh the list
           if (_selectedProjectId != null) {
             loadProjectTaskDelays();
           }
-          // Reload requested delays to refresh the list
           loadRequestedDelays();
         },
       );
@@ -354,7 +332,6 @@ class DelaysController extends GetxController {
     }
   }
 
-  // Load Requested Delays (for PM)
   Future<void> loadRequestedDelays({
     int page = 1,
     int limit = 10,
@@ -382,13 +359,11 @@ class DelaysController extends GetxController {
           _requestedDelaysPagination = null;
         },
         (data) {
-          // Extract delay requests list from response
           if (data['delayRequests'] != null && data['delayRequests'] is List) {
             _requestedDelays = data['delayRequests'] as List<dynamic>;
           } else {
             _requestedDelays = [];
           }
-          // Extract pagination info
           if (data['pagination'] != null && data['pagination'] is Map) {
             _requestedDelaysPagination = data['pagination'] as Map<String, dynamic>;
           } else {

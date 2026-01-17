@@ -29,7 +29,6 @@ class _TeamScreenState extends State<TeamScreen> {
     final authService = AuthService();
     final role = await authService.getUserRole();
     if (role?.toLowerCase() == 'developer') {
-      // Redirect developer to tasks page
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Get.offAllNamed(AppRoute.tasks);
       });
@@ -459,7 +458,7 @@ class _TeamScreenState extends State<TeamScreen> {
     try {
       final teamRepository = TeamRepository();
       final result = await teamRepository.deleteEmployee(member.id!);
-      Get.back(); // Close loading dialog
+      Get.back();
       result.fold(
         (error) {
           String errorMsg = 'Failed to delete employee';
@@ -508,7 +507,7 @@ class _TeamScreenState extends State<TeamScreen> {
         },
       );
     } catch (e) {
-      Get.back(); // Close loading dialog
+      Get.back();
       Get.snackbar(
         'Error',
         'An unexpected error occurred. Please try again.',

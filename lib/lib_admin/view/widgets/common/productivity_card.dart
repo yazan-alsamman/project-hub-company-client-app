@@ -82,8 +82,8 @@ class ProductivityCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFF2196F3), // Blue
-                        Color(0xFF9C27B0), // Purple
+                        Color(0xFF2196F3),
+                        Color(0xFF9C27B0),
                       ],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,

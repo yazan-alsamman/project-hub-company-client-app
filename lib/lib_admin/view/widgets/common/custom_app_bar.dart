@@ -9,7 +9,6 @@ import '../../../data/repository/auth_repository.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
   final bool showSearch;
-  final bool showNotifications;
   final bool showUserProfile;
   final bool showHamburgerMenu;
   final bool showBackButton;
@@ -17,7 +16,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.title,
     this.showSearch = true,
-    this.showNotifications = true,
     this.showUserProfile = true,
     this.showHamburgerMenu = true,
     this.showBackButton = false,
@@ -73,10 +71,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ],
               if (showSearch && !Responsive.isMobile(context)) ...[
                 _buildSearchIcon(context),
-                SizedBox(width: Responsive.spacing(context, mobile: 16)),
-              ],
-              if (showNotifications) ...[
-                _buildNotificationBell(context, controller),
                 SizedBox(width: Responsive.spacing(context, mobile: 16)),
               ],
               if (showUserProfile) ...[_buildUserProfile(context, controller)],
@@ -168,46 +162,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-  Widget _buildNotificationBell(
-    BuildContext context,
-    CustomappbarControllerImp controller,
-  ) {
-    return Obx(
-      () => GestureDetector(
-        onTap: () {
-          controller.onNotificationTap();
-          _showNotificationDialog(controller.notificationCount.value);
-        },
-        child: Stack(
-          children: [
-            Container(
-              padding: EdgeInsets.all(Responsive.spacing(context, mobile: 8)),
-              child: Icon(
-                Icons.notifications_outlined,
-                color: AppColor.textSecondaryColor,
-                size: Responsive.iconSize(context, mobile: 24),
-              ),
-            ),
-            if (controller.notificationCount.value > 0)
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Container(
-                  width: Responsive.size(context, mobile: 12),
-                  height: Responsive.size(context, mobile: 12),
-                  decoration: BoxDecoration(
-                    color: AppColor.errorColor,
-                    borderRadius: BorderRadius.circular(
-                      Responsive.size(context, mobile: 6),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
   Widget _buildUserProfile(
     BuildContext context,
     CustomappbarControllerImp controller,
@@ -245,25 +199,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             color: AppColor.textSecondaryColor,
             size: Responsive.iconSize(context, mobile: 16),
           ),
-        ],
-      ),
-    );
-  }
-  void _showNotificationDialog(int count) {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Notifications'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (count == 0)
-              const Text('No new notifications')
-            else
-              Text('You have $count new notifications'),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Close')),
         ],
       ),
     );

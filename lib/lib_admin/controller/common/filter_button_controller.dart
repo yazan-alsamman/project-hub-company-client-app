@@ -5,7 +5,7 @@ class FilterButtonController extends GetxController {
   String selectedFilter = 'All';
   void selectFilter(String filter) {
     selectedFilter = filter;
-    update(); // This triggers GetBuilder to rebuild
+    update();
     if (Get.isRegistered<TasksControllerImp>()) {
       Get.find<TasksControllerImp>().update();
     }

@@ -1035,7 +1035,6 @@ class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
                       widget.reply.id!,
                       controller.editController.text,
                     );
-                    // Refresh the parent comment's replies after update
                     _refreshParentComment();
                   }
                 },
@@ -1096,7 +1095,6 @@ class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
               onPressed: () {
                 Navigator.of(context).pop();
                 widget.controller.deleteComment(replyId);
-                // Refresh the parent comment's replies after delete
                 _refreshParentComment();
               },
               child: Text(
@@ -1114,7 +1112,6 @@ class _ReplyItemWidgetState extends State<_ReplyItemWidget> {
   }
 
   void _refreshParentComment() {
-    // Reload comments to refresh the replies list
     widget.controller.loadComments();
   }
 }

@@ -81,11 +81,9 @@ class TasksControllerImp extends TasksController {
         update();
       },
       (tasks) {
-        // If project is selected, show all tasks without pagination
         if (_selectedProjectId != null && _selectedProjectId!.isNotEmpty) {
-          _allTasks = tasks; // Replace all tasks (no pagination)
+          _allTasks = tasks;
         } else {
-          // For all tasks, keep pagination logic
           if (refresh) {
             _allTasks = tasks;
           } else {
@@ -124,7 +122,7 @@ class TasksControllerImp extends TasksController {
       final result = await _projectsRepository.getProjects(
         companyId: companyId,
         page: 1,
-        limit: 100, // Get more projects for dropdown
+        limit: 100,
       );
 
       result.fold(
@@ -162,13 +160,12 @@ class TasksControllerImp extends TasksController {
     loadTasks(refresh: true);
   }
 
-  // Load all tasks for a project by making multiple requests if needed
   Future<Either<StatusRequest, List<TaskModel>>> _loadAllTasksForProject(
     String projectId,
   ) async {
     List<TaskModel> allProjectTasks = [];
     int currentPage = 1;
-    const int maxLimit = 100; // API maximum limit
+    const int maxLimit = 100;
 
     while (true) {
       final result = await _tasksRepository.getTasksByProject(
@@ -179,20 +176,17 @@ class TasksControllerImp extends TasksController {
 
       final shouldContinue = result.fold(
         (error) {
-          // If we have some tasks already, return them; otherwise return error
           if (allProjectTasks.isNotEmpty) {
-            return false; // Stop and return what we have
+            return false;
           }
-          return false; // Stop on error
+          return false;
         },
         (tasks) {
           allProjectTasks.addAll(tasks);
-          // If we got less than maxLimit, we've reached the end
-          return tasks.length >= maxLimit; // Continue if we got full page
+          return tasks.length >= maxLimit;
         },
       );
 
-      // Check if we should return early (error or partial success)
       if (!shouldContinue) {
         return result.fold(
           (error) {
@@ -205,7 +199,6 @@ class TasksControllerImp extends TasksController {
         );
       }
 
-      // Continue to next page
       currentPage++;
     }
   }

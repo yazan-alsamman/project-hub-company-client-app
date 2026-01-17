@@ -31,7 +31,7 @@ class AddProjectControllerImp extends AddProjectController {
   void onInit() {
     super.onInit();
     loadClients();
-    safeDelayController.text = '7'; // Default safe delay
+    safeDelayController.text = '7';
   }
   Future<void> loadClients() async {
     isLoadingClients = true;
@@ -69,9 +69,7 @@ class AddProjectControllerImp extends AddProjectController {
     statusRequest = StatusRequest.loading;
     update();
     try {
-      // جلب companyId من AuthService مباشرة في كل مرة (من response الـ login)
       final finalCompanyId = await _authService.getCompanyId();
-      // التحقق من وجود companyId قبل الإرسال
       if (finalCompanyId == null || finalCompanyId.isEmpty) {
         Get.snackbar(
           'Error',
@@ -158,7 +156,6 @@ class AddProjectControllerImp extends AddProjectController {
             final projectsController = Get.find<ProjectsControllerImp>();
             projectsController.refreshProjects();
           } catch (e) {
-            // Could not refresh projects
           }
           Get.snackbar(
             'Success',

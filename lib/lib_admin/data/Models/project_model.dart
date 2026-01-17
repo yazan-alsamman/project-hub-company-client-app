@@ -80,7 +80,7 @@ class ProjectModel {
       progress: progressPercentage,
       startDate: startDate,
       endDate: endDate,
-      teamMembers: totalTasks, // Use totalTasks as teamMembers for now
+      teamMembers: totalTasks,
       status: status,
       code: json['code']?.toString(),
       projectCode: json['code']?.toString(),
@@ -105,16 +105,16 @@ class ProjectModel {
       case 'pending':
         return 'planned';
       case 'in_progress':
-        return 'active'; // Map API's 'in_progress' to UI's 'active'
-      case 'active': // Legacy support if API uses 'active'
+        return 'active';
+      case 'active':
         return 'active';
       case 'completed':
       case 'done':
         return 'completed';
       case 'on_hold':
-        return 'planned'; // Map on_hold to planned
+        return 'planned';
       case 'cancelled':
-        return 'completed'; // Map cancelled to completed (or could be planned)
+        return 'completed';
       default:
         return 'planned';
     }

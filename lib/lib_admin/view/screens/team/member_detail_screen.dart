@@ -12,7 +12,6 @@ class MemberDetailScreen extends StatelessWidget {
         showBackButton: true,
         title: member.name,
         showSearch: false,
-        showNotifications: false,
         showUserProfile: false,
         showHamburgerMenu: false,
       ),
@@ -123,7 +122,7 @@ class MemberDetailScreen extends StatelessWidget {
                     if (member.linkedin != null)
                       _buildContactRow(
                         Icons
-                            .link, // Use a generic "link" icon as LinkedIn isn't available in Icons
+                            .link,
                         "LinkedIn",
                         member.linkedin!,
                       ),

@@ -104,7 +104,6 @@ class RequestDelayController extends GetxController {
     update();
 
     try {
-      // Format date as ISO 8601 string
       final formattedDate = selectedDate!.toUtc().toIso8601String();
 
       final result = await _tasksRepository.requestTaskDelay(
@@ -164,13 +163,11 @@ class RequestDelayController extends GetxController {
             borderRadius: 12,
             margin: const EdgeInsets.all(16),
           );
-          // Refresh tasks list
           try {
             if (Get.isRegistered<TasksControllerImp>()) {
               Get.find<TasksControllerImp>().refreshTasks();
             }
           } catch (e) {
-            // Could not refresh tasks
           }
           Future.delayed(const Duration(milliseconds: 300), () {
             Get.back();

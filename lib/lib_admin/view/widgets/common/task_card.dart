@@ -44,7 +44,6 @@ class TaskCard extends StatelessWidget {
       return delayRequests!;
     }
     
-    // Try to parse from subtitle if it contains delay information
     if (subtitle.contains('DELAY REQUESTED') || subtitle.contains('delay requested')) {
       final List<Map<String, dynamic>> delays = [];
       final lines = subtitle.split('\n');
@@ -53,9 +52,7 @@ class TaskCard extends StatelessWidget {
         final trimmedLine = line.trim();
         if (trimmedLine.isEmpty) continue;
         
-        // Check for delay request pattern: "DELAY REQUESTED date - Reason: reason"
         if (trimmedLine.toUpperCase().contains('DELAY REQUESTED')) {
-          // Try pattern: "DELAY REQUESTED date - Reason: reason"
           if (trimmedLine.contains(' - Reason: ') || trimmedLine.contains(' - reason: ')) {
             final parts = trimmedLine.split(RegExp(r' - [Rr]eason: '));
             if (parts.length == 2) {
@@ -72,7 +69,6 @@ class TaskCard extends StatelessWidget {
               }
             }
           } else {
-            // Try to extract date and reason separately
             final dateMatch = RegExp(r'\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}').firstMatch(trimmedLine);
             if (dateMatch != null) {
               final datePart = dateMatch.group(0) ?? '';
@@ -135,7 +131,6 @@ class TaskCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with icon and title
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -209,7 +204,6 @@ class TaskCard extends StatelessWidget {
             ],
           ),
           
-          // Delay Requests Section
           if (hasDelays) ...[
             const SizedBox(height: 16),
             Container(
@@ -265,7 +259,6 @@ class TaskCard extends StatelessWidget {
           
           const SizedBox(height: 16),
           
-          // Category and Request Delay Button
           Row(
             children: [
               Container(
@@ -314,7 +307,6 @@ class TaskCard extends StatelessWidget {
           
           const SizedBox(height: 16),
           
-          // Priority, Due Date, and Assignee
           Row(
             children: [
               Container(

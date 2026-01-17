@@ -56,7 +56,6 @@ class _DelaysScreenState extends State<DelaysScreen>
             final isPm = role == 'pm' || role == 'project manager';
             final tabCount = isPm ? 3 : 4;
 
-            // Initialize or update TabController when tab count changes
             _initializeTabController(tabCount);
 
             return Column(
@@ -529,7 +528,6 @@ class _DelaysScreenState extends State<DelaysScreen>
     BuildContext context,
     dynamic projectData,
   ) {
-    // Handle both Map and wrapped project data
     Map<String, dynamic>? projectMap;
     if (projectData is Map<String, dynamic>) {
       if (projectData['project'] != null) {
@@ -971,7 +969,6 @@ class _DelaysScreenState extends State<DelaysScreen>
     String? delayRequestId;
 
     if (taskData is Map<String, dynamic>) {
-      // Extract delayRequestId if available
       delayRequestId =
           taskData['_id']?.toString() ??
           taskData['id']?.toString() ??
@@ -1960,14 +1957,11 @@ class _DelaysScreenState extends State<DelaysScreen>
       );
     }
 
-    // Extract taskId (not task) from the response
     final taskId = delayRequest['taskId'] as Map<String, dynamic>?;
     final task = delayRequest['task'] as Map<String, dynamic>?;
 
-    // Try taskId first, then fallback to task
     final taskData = taskId ?? task;
 
-    // Extract project information
     final projectId = taskData?['projectId'] as Map<String, dynamic>?;
     final projectName = projectId?['name']?.toString() ?? 'N/A';
     final projectCode = projectId?['code']?.toString() ?? '';
@@ -1975,7 +1969,6 @@ class _DelaysScreenState extends State<DelaysScreen>
         ? '$projectName ($projectCode)'
         : projectName;
 
-    // Extract task information
     final taskName =
         taskData?['taskName']?.toString() ??
         taskData?['title']?.toString() ??

@@ -21,7 +21,6 @@ class ProfileController extends GetxController {
       userId = await _authService.getUserId();
       role = await _authService.getUserRole();
     } catch (e) {
-      // Error loading profile data
     } finally {
       isLoading = false;
       update();

@@ -59,7 +59,7 @@ class MemberCard extends StatelessWidget {
         key: Key('member_${name}_$position'),
         endActionPane: ActionPane(
           motion: const DrawerMotion(),
-          extentRatio: 0.3, // Limit swipe to 30% of card width
+          extentRatio: 0.3,
           children: [
             if (onEdit != null)
               SlidableAction(

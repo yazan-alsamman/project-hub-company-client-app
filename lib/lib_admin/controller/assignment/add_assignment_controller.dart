@@ -61,12 +61,11 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     update();
     final result = await _tasksRepository.getTasks(
       page: 1,
-      limit: 100, // Get all tasks for dropdown
+      limit: 100,
     );
     isLoadingTasks = false;
     result.fold(
       (error) {
-        // Error loading tasks
       },
       (loadedTasks) {
         tasks = loadedTasks;
@@ -81,14 +80,13 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     final companyId = await _authService.getCompanyId();
     final result = await _teamRepository.getEmployees(
       page: 1,
-      limit: 100, // Get all employees for dropdown
+      limit: 100,
       companyId: companyId,
-      status: null, // Get all employees
+      status: null,
     );
     isLoadingEmployees = false;
     result.fold(
       (error) {
-        // Error loading employees
       },
       (loadedEmployees) {
         employees = loadedEmployees;
@@ -158,7 +156,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
             startDate!.year,
             startDate!.month,
             startDate!.day,
-            9, // 9 AM
+            9,
             0,
             0,
           )
@@ -168,7 +166,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
             endDate!.year,
             endDate!.month,
             endDate!.day,
-            17, // 5 PM
+            17,
             0,
             0,
           )
