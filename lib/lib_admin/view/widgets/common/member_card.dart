@@ -5,6 +5,7 @@ import '../../../core/constant/responsive.dart';
 class MemberCard extends StatelessWidget {
   final String name;
   final String position;
+  final String? subRole;
   final String status;
   final Color statusColor;
   final IconData? icon;
@@ -20,6 +21,7 @@ class MemberCard extends StatelessWidget {
     super.key,
     required this.name,
     required this.position,
+    this.subRole,
     required this.status,
     this.statusColor = AppColor.successColor,
     this.icon,
@@ -146,6 +148,20 @@ class MemberCard extends StatelessWidget {
                         color: AppColor.textSecondaryColor,
                       ),
                     ),
+                    if (subRole != null && subRole!.isNotEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: Responsive.spacing(context, mobile: 4),
+                        ),
+                        child: Text(
+                          subRole!,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, mobile: 12),
+                            color: AppColor.textSecondaryColor,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
                     SizedBox(height: Responsive.spacing(context, mobile: 8)),
                     Container(
                       padding: EdgeInsets.symmetric(

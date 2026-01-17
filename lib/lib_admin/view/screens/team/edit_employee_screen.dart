@@ -7,12 +7,14 @@ import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/header.dart';
 import '../../widgets/common/input_fields.dart';
 import '../../widgets/common/main_button.dart';
+
 class EditEmployeeScreen extends StatefulWidget {
   final String employeeId;
   const EditEmployeeScreen({super.key, required this.employeeId});
   @override
   State<EditEmployeeScreen> createState() => _EditEmployeeScreenState();
 }
+
 class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _previousErrorMessage;
@@ -21,6 +23,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     _scrollController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     Get.put(EditEmployeeControllerImp(employeeId: widget.employeeId));
@@ -29,245 +32,246 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       body: SafeArea(
         child: GetBuilder<EditEmployeeControllerImp>(
           builder: (controller) {
-          if (controller.errorMessage != null &&
-              controller.errorMessage != _previousErrorMessage) {
-            _previousErrorMessage = controller.errorMessage;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_scrollController.hasClients) {
-                _scrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                );
-              }
-            });
-          } else if (controller.errorMessage == null) {
-            _previousErrorMessage = null;
-          }
-          if (controller.isLoadingEmployee) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColor.primaryColor),
-            );
-          }
-          if (controller.employee == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: AppColor.errorColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    controller.errorMessage ?? 'Failed to load employee data',
-                    style: TextStyle(fontSize: 16, color: AppColor.textColor),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => controller.loadEmployeeData(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-          final employee = controller.employee!;
-          return SingleChildScrollView(
-            controller: _scrollController,
-            child: Padding(
-              padding: Responsive.padding(context),
-              child: Form(
+            if (controller.errorMessage != null &&
+                controller.errorMessage != _previousErrorMessage) {
+              _previousErrorMessage = controller.errorMessage;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_scrollController.hasClients) {
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  );
+                }
+              });
+            } else if (controller.errorMessage == null) {
+              _previousErrorMessage = null;
+            }
+            if (controller.isLoadingEmployee) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColor.primaryColor),
+              );
+            }
+            if (controller.employee == null) {
+              return Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Header(
-                      title: "Edit Employee",
-                      subtitle: "Update employee information",
-                      haveButton: false,
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: AppColor.errorColor,
                     ),
-                    if (controller.errorMessage != null)
-                      _buildErrorMessage(
-                        context,
-                        controller,
-                        controller.errorMessage!,
-                      ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                    const SizedBox(height: 16),
                     Text(
-                      "Employee Information",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 18),
-                        fontWeight: FontWeight.bold,
-                        color: AppColor.textColor,
+                      controller.errorMessage ?? 'Failed to load employee data',
+                      style: TextStyle(fontSize: 16, color: AppColor.textColor),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => controller.loadEmployeeData(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            final employee = controller.employee!;
+            return SingleChildScrollView(
+              controller: _scrollController,
+              child: Padding(
+                padding: Responsive.padding(context),
+                child: Form(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Header(
+                        title: "Edit Employee",
+                        subtitle: "Update employee information",
+                        haveButton: false,
                       ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildReadOnlyField(
-                      context,
-                      label: "Username",
-                      value: employee.username,
-                      icon: Icons.person_outline,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildReadOnlyField(
-                      context,
-                      label: "Email",
-                      value: employee.email,
-                      icon: Icons.email_outlined,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildReadOnlyField(
-                      context,
-                      label: "Employee Code",
-                      value: employee.employeeCode ?? '-',
-                      icon: Icons.badge_outlined,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildReadOnlyField(
-                      context,
-                      label: "Hire Date",
-                      value: employee.hireDate != null
-                          ? _formatDate(employee.hireDate!)
-                          : '-',
-                      icon: Icons.calendar_today_outlined,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildReadOnlyField(
-                      context,
-                      label: "Sub Role",
-                      value: employee.subRole ?? '-',
-                      icon: Icons.work_outline,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 30)),
-                    Text(
-                      "Editable Information",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 18),
-                        fontWeight: FontWeight.bold,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "Position",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
-                    _buildPositionDropdown(context, controller),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "Department",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
-                    _buildDepartmentDropdown(context, controller),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    _buildFormField(
-                      context,
-                      label: "Salary",
-                      hint: "e.g., 75000",
-                      controller: controller.salaryController,
-                      keyboardType: TextInputType.number,
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Text(
-                      "Status",
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 14),
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textColor,
-                      ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 8)),
-                    _buildStatusDropdown(context, controller),
-                    SizedBox(height: Responsive.spacing(context, mobile: 30)),
-                    MainButton(
-                      onPressed: controller.isLoading
-                          ? null
-                          : controller.updateEmployee,
-                      text: controller.isLoading
-                          ? 'Updating...'
-                          : 'Update Employee',
-                      icon: Icons.save,
-                      width: double.infinity,
-                      height: Responsive.size(context, mobile: 50),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                    Container(
-                      width: double.infinity,
-                      height: Responsive.size(context, mobile: 50),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColor.errorColor,
-                          width: 1.5,
+                      if (controller.errorMessage != null)
+                        _buildErrorMessage(
+                          context,
+                          controller,
+                          controller.errorMessage!,
+                        ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Employee Information",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 18),
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.textColor,
                         ),
                       ),
-                      child: ElevatedButton(
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildReadOnlyField(
+                        context,
+                        label: "Username",
+                        value: employee.username,
+                        icon: Icons.person_outline,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildReadOnlyField(
+                        context,
+                        label: "Email",
+                        value: employee.email,
+                        icon: Icons.email_outlined,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildReadOnlyField(
+                        context,
+                        label: "Employee Code",
+                        value: employee.employeeCode ?? '-',
+                        icon: Icons.badge_outlined,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildReadOnlyField(
+                        context,
+                        label: "Hire Date",
+                        value: employee.hireDate != null
+                            ? _formatDate(employee.hireDate!)
+                            : '-',
+                        icon: Icons.calendar_today_outlined,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildReadOnlyField(
+                        context,
+                        label: "Sub Role",
+                        value: employee.subRole ?? '-',
+                        icon: Icons.work_outline,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 30)),
+                      Text(
+                        "Editable Information",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 18),
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Position",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      _buildPositionDropdown(context, controller),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Department",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      _buildDepartmentDropdown(context, controller),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildFormField(
+                        context,
+                        label: "Salary",
+                        hint: "e.g., 75000",
+                        controller: controller.salaryController,
+                        keyboardType: TextInputType.number,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Text(
+                        "Status",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      _buildStatusDropdown(context, controller),
+                      SizedBox(height: Responsive.spacing(context, mobile: 30)),
+                      MainButton(
                         onPressed: controller.isLoading
                             ? null
-                            : controller.deleteEmployee,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            : controller.updateEmployee,
+                        text: controller.isLoading
+                            ? 'Updating...'
+                            : 'Update Employee',
+                        icon: Icons.save,
+                        width: double.infinity,
+                        height: Responsive.size(context, mobile: 50),
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      Container(
+                        width: double.infinity,
+                        height: Responsive.size(context, mobile: 50),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColor.errorColor,
+                            width: 1.5,
                           ),
-                          elevation: 0,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.delete_outline,
-                              color: controller.isLoading
-                                  ? AppColor.textSecondaryColor
-                                  : AppColor.errorColor,
-                              size: 20,
+                        child: ElevatedButton(
+                          onPressed: controller.isLoading
+                              ? null
+                              : controller.deleteEmployee,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            SizedBox(
-                              width: Responsive.spacing(context, mobile: 8),
-                            ),
-                            Text(
-                              controller.isLoading
-                                  ? 'Deleting...'
-                                  : 'Delete Employee',
-                              style: TextStyle(
-                                fontSize: Responsive.fontSize(
-                                  context,
-                                  mobile: 16,
-                                ),
-                                fontWeight: FontWeight.w600,
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
                                 color: controller.isLoading
                                     ? AppColor.textSecondaryColor
                                     : AppColor.errorColor,
+                                size: 20,
                               ),
-                            ),
-                          ],
+                              SizedBox(
+                                width: Responsive.spacing(context, mobile: 8),
+                              ),
+                              Text(
+                                controller.isLoading
+                                    ? 'Deleting...'
+                                    : 'Delete Employee',
+                                style: TextStyle(
+                                  fontSize: Responsive.fontSize(
+                                    context,
+                                    mobile: 16,
+                                  ),
+                                  fontWeight: FontWeight.w600,
+                                  color: controller.isLoading
+                                      ? AppColor.textSecondaryColor
+                                      : AppColor.errorColor,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: Responsive.spacing(context, mobile: 20)),
-                  ],
+                      SizedBox(height: Responsive.spacing(context, mobile: 20)),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
         ),
       ),
     );
   }
+
   Widget _buildReadOnlyField(
     BuildContext context, {
     required String label,
@@ -312,6 +316,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       ],
     );
   }
+
   Widget _buildFormField(
     BuildContext context, {
     required String label,
@@ -342,6 +347,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       ],
     );
   }
+
   Widget _buildPositionDropdown(
     BuildContext context,
     EditEmployeeControllerImp controller,
@@ -375,7 +381,13 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonFormField<String>(
-        initialValue: controller.selectedPositionId,
+        value:
+            controller.selectedPositionId != null &&
+                controller.positions.any(
+                  (p) => p.id == controller.selectedPositionId,
+                )
+            ? controller.selectedPositionId
+            : null,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -414,6 +426,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       ),
     );
   }
+
   Widget _buildDepartmentDropdown(
     BuildContext context,
     EditEmployeeControllerImp controller,
@@ -447,7 +460,13 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonFormField<String>(
-        initialValue: controller.selectedDepartmentId,
+        value:
+            controller.selectedDepartmentId != null &&
+                controller.departments.any(
+                  (d) => d.id == controller.selectedDepartmentId,
+                )
+            ? controller.selectedDepartmentId
+            : null,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -487,6 +506,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       ),
     );
   }
+
   Widget _buildStatusDropdown(
     BuildContext context,
     EditEmployeeControllerImp controller,
@@ -497,7 +517,15 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonFormField<String>(
-        initialValue: controller.selectedStatus,
+        value:
+            controller.selectedStatus != null &&
+                [
+                  'active',
+                  'on_leave',
+                  'terminated',
+                ].contains(controller.selectedStatus)
+            ? controller.selectedStatus
+            : null,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -527,6 +555,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       ),
     );
   }
+
   Widget _buildErrorMessage(
     BuildContext context,
     EditEmployeeControllerImp controller,
@@ -586,6 +615,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
       ),
     );
   }
+
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);

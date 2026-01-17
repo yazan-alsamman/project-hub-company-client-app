@@ -15,6 +15,7 @@ import '../../widgets/common/project_card.dart';
 import '../../../core/constant/routes.dart';
 import '../../../data/Models/project_model.dart';
 import '../../../data/repository/projects_repository.dart';
+
 class _ErrorBanner extends StatefulWidget {
   final String message;
   final VoidCallback onRetry;
@@ -22,6 +23,7 @@ class _ErrorBanner extends StatefulWidget {
   @override
   State<_ErrorBanner> createState() => _ErrorBannerState();
 }
+
 class _ErrorBannerState extends State<_ErrorBanner> {
   bool _isVisible = true;
   @override
@@ -35,6 +37,7 @@ class _ErrorBannerState extends State<_ErrorBanner> {
       }
     });
   }
+
   @override
   Widget build(BuildContext context) {
     if (!_isVisible) return const SizedBox.shrink();
@@ -78,6 +81,7 @@ class _ErrorBannerState extends State<_ErrorBanner> {
     );
   }
 }
+
 class ProjectScreen extends StatelessWidget {
   const ProjectScreen({super.key});
   @override
@@ -93,298 +97,308 @@ class ProjectScreen extends StatelessWidget {
       appBar: const CustomAppBar(),
       body: SafeArea(
         child: GetBuilder<ProjectsControllerImp>(
-        init: Get.find<ProjectsControllerImp>(),
-        builder: (controller) {
-          if (controller.statusRequest == StatusRequest.loading &&
-              controller.projects.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColor.primaryColor),
-            );
-          }
-          final hasError =
-              !controller.isLoading &&
-              (controller.statusRequest == StatusRequest.serverFailure ||
-                  controller.statusRequest == StatusRequest.offlineFailure ||
-                  controller.statusRequest == StatusRequest.serverException ||
-                  controller.statusRequest == StatusRequest.timeoutException);
-          if (hasError && controller.projects.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: AppColor.errorColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Failed to load projects',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColor.textColor,
+          init: Get.find<ProjectsControllerImp>(),
+          builder: (controller) {
+            if (controller.statusRequest == StatusRequest.loading &&
+                controller.projects.isEmpty) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColor.primaryColor),
+              );
+            }
+            final hasError =
+                !controller.isLoading &&
+                (controller.statusRequest == StatusRequest.serverFailure ||
+                    controller.statusRequest == StatusRequest.offlineFailure ||
+                    controller.statusRequest == StatusRequest.serverException ||
+                    controller.statusRequest == StatusRequest.timeoutException);
+            if (hasError && controller.projects.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: AppColor.errorColor,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => controller.refreshProjects(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: () => controller.refreshProjects(),
-            color: AppColor.primaryColor,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  Container(
-                    color: AppColor.backgroundColor,
-                    child: Padding(
-                      padding: Responsive.padding(context),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FutureBuilder<String?>(
-                            future: AuthService().getUserRole(),
-                            builder: (context, snapshot) {
-                              final role = snapshot.data?.toLowerCase() ?? '';
-                              final canAddProject = role != 'developer';
-                              return Header(
-                                title: "Projects",
-                                subtitle: "Manage and organize all your projects",
-                                buttonText: canAddProject ? "New Project" : null,
-                                buttonIcon: canAddProject ? Icons.add : null,
-                                haveButton: canAddProject,
-                                onPressed: canAddProject
-                                    ? () {
-                                        Get.toNamed(AppRoute.addProject);
-                                      }
-                                    : null,
-                              );
-                            },
-                          ),
-                          SizedBox(
-                            height: Responsive.spacing(context, mobile: 30),
-                          ),
-                          GetBuilder<FilterButtonController>(
-                            builder: (filterController) =>
-                                SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.filter_alt_outlined,
-                                        color: AppColor.textSecondaryColor,
-                                        size: Responsive.iconSize(
-                                          context,
-                                          mobile: 20,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: Responsive.spacing(
-                                          context,
-                                          mobile: 12,
-                                        ),
-                                      ),
-                                      FilterButton(
-                                        text: "All",
-                                        isSelected:
-                                            filterController.selectedFilter ==
-                                            'All',
-                                        onPressed: () {
-                                          filterController.selectFilter('All');
-                                        },
-                                      ),
-                                      SizedBox(
-                                        width: Responsive.spacing(
-                                          context,
-                                          mobile: 8,
-                                        ),
-                                      ),
-                                      FilterButton(
-                                        text: "Active",
-                                        isSelected:
-                                            filterController.selectedFilter ==
-                                            'Active',
-                                        onPressed: () {
-                                          filterController.selectFilter(
-                                            'Active',
-                                          );
-                                        },
-                                      ),
-                                      SizedBox(
-                                        width: Responsive.spacing(
-                                          context,
-                                          mobile: 8,
-                                        ),
-                                      ),
-                                      FilterButton(
-                                        text: "Completed",
-                                        isSelected:
-                                            filterController.selectedFilter ==
-                                            'Completed',
-                                        onPressed: () {
-                                          filterController.selectFilter(
-                                            'Completed',
-                                          );
-                                        },
-                                      ),
-                                      SizedBox(
-                                        width: Responsive.spacing(
-                                          context,
-                                          mobile: 8,
-                                        ),
-                                      ),
-                                      FilterButton(
-                                        text: "Planned",
-                                        isSelected:
-                                            filterController.selectedFilter ==
-                                            'Planned',
-                                        onPressed: () {
-                                          filterController.selectFilter(
-                                            'Planned',
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                          ),
-                        ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to load projects',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.textColor,
                       ),
                     ),
-                  ),
-                  if (hasError && controller.projects.isNotEmpty)
-                    _ErrorBanner(
-                      message:
-                          'Failed to refresh projects. Showing cached data.',
-                      onRetry: () => controller.refreshProjects(),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => controller.refreshProjects(),
+                      child: const Text('Retry'),
                     ),
-                  Padding(
-                    padding: Responsive.padding(context),
-                    child:
-                        controller.projects.isEmpty &&
-                            !controller.isLoading &&
-                            controller.statusRequest == StatusRequest.success
-                        ? Center(
-                            child: Column(
-                              children: [
-                                SizedBox(
-                                  height: Responsive.spacing(
-                                    context,
-                                    mobile: 50,
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.folder_open_outlined,
-                                  size: Responsive.size(context, mobile: 64),
-                                  color: AppColor.textSecondaryColor
-                                      .withOpacity(0.5),
-                                ),
-                                SizedBox(
-                                  height: Responsive.spacing(
-                                    context,
-                                    mobile: 16,
-                                  ),
-                                ),
-                                Text(
-                                  'No projects found',
-                                  style: TextStyle(
-                                    fontSize: Responsive.fontSize(
-                                      context,
-                                      mobile: 18,
-                                    ),
-                                    color: AppColor.textSecondaryColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: Responsive.spacing(
-                                    context,
-                                    mobile: 8,
-                                  ),
-                                ),
-                                Text(
-                                  'Try selecting a different filter',
-                                  style: TextStyle(
-                                    fontSize: Responsive.fontSize(
-                                      context,
-                                      mobile: 14,
-                                    ),
-                                    color: AppColor.textSecondaryColor
-                                        .withOpacity(0.7),
-                                  ),
-                                ),
-                              ],
+                  ],
+                ),
+              );
+            }
+            return RefreshIndicator(
+              onRefresh: () => controller.refreshProjects(),
+              color: AppColor.primaryColor,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    Container(
+                      color: AppColor.backgroundColor,
+                      child: Padding(
+                        padding: Responsive.padding(context),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FutureBuilder<String?>(
+                              future: AuthService().getUserRole(),
+                              builder: (context, snapshot) {
+                                final role = snapshot.data?.toLowerCase() ?? '';
+                                final canAddProject = role != 'developer';
+                                return Header(
+                                  title: "Projects",
+                                  subtitle:
+                                      "Manage and organize all your projects",
+                                  buttonText: canAddProject
+                                      ? "New Project"
+                                      : null,
+                                  buttonIcon: canAddProject ? Icons.add : null,
+                                  haveButton: canAddProject,
+                                  onPressed: canAddProject
+                                      ? () {
+                                          Get.toNamed(AppRoute.addProject);
+                                        }
+                                      : null,
+                                );
+                              },
                             ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: controller.projects.length,
-                            itemBuilder: (context, index) {
-                              final project = controller.projects[index];
-                              return FutureBuilder<String?>(
-                                future: AuthService().getUserRole(),
-                                builder: (context, roleSnapshot) {
-                                  final userRole = roleSnapshot.data?.toLowerCase() ?? '';
-                                  final isDeveloper = userRole == 'developer';
-                                  final isPM = userRole == 'pm';
-                                  final isAdmin = userRole == 'admin';
-                                  final canViewComments = isDeveloper || isPM || isAdmin;
-                                  
-                                  return ProjectCard(
-                                    title: project.title,
-                                    company: project.company,
-                                    description: project.description,
-                                    progress: project.progress,
-                                    startDate: project.startDate,
-                                    endDate: project.endDate,
-                                    teamMembers: project.teamMembers,
-                                    status: project.status,
-                                    onTap: canViewComments
-                                        ? () {
-                                            _showProjectOptionsDialog(context, project);
-                                          }
-                                        : () {
-                                            print(
-                                              'Navigating to project details for: ${project.title}',
-                                            );
-                                            Get.toNamed(
-                                              AppRoute.projectDetails,
-                                              arguments: project,
+                            SizedBox(
+                              height: Responsive.spacing(context, mobile: 30),
+                            ),
+                            GetBuilder<FilterButtonController>(
+                              builder: (filterController) =>
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.filter_alt_outlined,
+                                          color: AppColor.textSecondaryColor,
+                                          size: Responsive.iconSize(
+                                            context,
+                                            mobile: 20,
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: Responsive.spacing(
+                                            context,
+                                            mobile: 12,
+                                          ),
+                                        ),
+                                        FilterButton(
+                                          text: "All",
+                                          isSelected:
+                                              filterController.selectedFilter ==
+                                              'All',
+                                          onPressed: () {
+                                            filterController.selectFilter(
+                                              'All',
                                             );
                                           },
-                                    onEdit: () {
-                                      Get.toNamed(
-                                        AppRoute.editProject,
-                                        arguments: project.id,
-                                      );
-                                    },
-                                    onDelete: () {
-                                      _handleDeleteProject(
+                                        ),
+                                        SizedBox(
+                                          width: Responsive.spacing(
+                                            context,
+                                            mobile: 8,
+                                          ),
+                                        ),
+                                        FilterButton(
+                                          text: "Active",
+                                          isSelected:
+                                              filterController.selectedFilter ==
+                                              'Active',
+                                          onPressed: () {
+                                            filterController.selectFilter(
+                                              'Active',
+                                            );
+                                          },
+                                        ),
+                                        SizedBox(
+                                          width: Responsive.spacing(
+                                            context,
+                                            mobile: 8,
+                                          ),
+                                        ),
+                                        FilterButton(
+                                          text: "Completed",
+                                          isSelected:
+                                              filterController.selectedFilter ==
+                                              'Completed',
+                                          onPressed: () {
+                                            filterController.selectFilter(
+                                              'Completed',
+                                            );
+                                          },
+                                        ),
+                                        SizedBox(
+                                          width: Responsive.spacing(
+                                            context,
+                                            mobile: 8,
+                                          ),
+                                        ),
+                                        FilterButton(
+                                          text: "Planned",
+                                          isSelected:
+                                              filterController.selectedFilter ==
+                                              'Planned',
+                                          onPressed: () {
+                                            filterController.selectFilter(
+                                              'Planned',
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (hasError && controller.projects.isNotEmpty)
+                      _ErrorBanner(
+                        message:
+                            'Failed to refresh projects. Showing cached data.',
+                        onRetry: () => controller.refreshProjects(),
+                      ),
+                    Padding(
+                      padding: Responsive.padding(context),
+                      child:
+                          controller.projects.isEmpty &&
+                              !controller.isLoading &&
+                              controller.statusRequest == StatusRequest.success
+                          ? Center(
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: Responsive.spacing(
+                                      context,
+                                      mobile: 50,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.folder_open_outlined,
+                                    size: Responsive.size(context, mobile: 64),
+                                    color: AppColor.textSecondaryColor
+                                        .withOpacity(0.5),
+                                  ),
+                                  SizedBox(
+                                    height: Responsive.spacing(
+                                      context,
+                                      mobile: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    'No projects found',
+                                    style: TextStyle(
+                                      fontSize: Responsive.fontSize(
                                         context,
-                                        project,
-                                        controller,
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ],
+                                        mobile: 18,
+                                      ),
+                                      color: AppColor.textSecondaryColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: Responsive.spacing(
+                                      context,
+                                      mobile: 8,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Try selecting a different filter',
+                                    style: TextStyle(
+                                      fontSize: Responsive.fontSize(
+                                        context,
+                                        mobile: 14,
+                                      ),
+                                      color: AppColor.textSecondaryColor
+                                          .withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: controller.projects.length,
+                              itemBuilder: (context, index) {
+                                final project = controller.projects[index];
+                                return FutureBuilder<String?>(
+                                  future: AuthService().getUserRole(),
+                                  builder: (context, roleSnapshot) {
+                                    final userRole =
+                                        roleSnapshot.data?.toLowerCase() ?? '';
+                                    final isDeveloper = userRole == 'developer';
+                                    final isPM = userRole == 'pm';
+                                    final isAdmin = userRole == 'admin';
+                                    final canViewComments =
+                                        isDeveloper || isPM || isAdmin;
+
+                                    return ProjectCard(
+                                      title: project.title,
+                                      company: project.company,
+                                      description: project.description,
+                                      progress: project.progress,
+                                      startDate: project.startDate,
+                                      endDate: project.endDate,
+                                      teamMembers: project.teamMembers,
+                                      status: project.status,
+                                      onTap: canViewComments
+                                          ? () {
+                                              _showProjectOptionsDialog(
+                                                context,
+                                                project,
+                                              );
+                                            }
+                                          : () {
+                                              print(
+                                                'Navigating to project details for: ${project.title}',
+                                              );
+                                              Get.toNamed(
+                                                AppRoute.projectDetails,
+                                                arguments: project,
+                                              );
+                                            },
+                                      onEdit: () {
+                                        Get.toNamed(
+                                          AppRoute.editProject,
+                                          arguments: project.id,
+                                        );
+                                      },
+                                      onDelete: () {
+                                        _handleDeleteProject(
+                                          context,
+                                          project,
+                                          controller,
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -392,9 +406,7 @@ class ProjectScreen extends StatelessWidget {
   void _showProjectOptionsDialog(BuildContext context, ProjectModel project) {
     Get.dialog(
       AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Project Options',
           style: TextStyle(
@@ -418,15 +430,15 @@ class ProjectScreen extends StatelessWidget {
               ),
               onTap: () {
                 Get.back();
-                Get.toNamed(
-                  AppRoute.projectDetails,
-                  arguments: project,
-                );
+                Get.toNamed(AppRoute.projectDetails, arguments: project);
               },
             ),
             const Divider(height: 1),
             ListTile(
-              leading: Icon(Icons.comment_outlined, color: AppColor.primaryColor),
+              leading: Icon(
+                Icons.comment_outlined,
+                color: AppColor.primaryColor,
+              ),
               title: Text(
                 'View Comments',
                 style: TextStyle(
@@ -437,10 +449,7 @@ class ProjectScreen extends StatelessWidget {
               ),
               onTap: () {
                 Get.back();
-                Get.toNamed(
-                  AppRoute.projectComments,
-                  arguments: project,
-                );
+                Get.toNamed(AppRoute.projectComments, arguments: project);
               },
             ),
           ],

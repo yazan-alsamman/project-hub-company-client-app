@@ -296,6 +296,7 @@ class _TeamScreenState extends State<TeamScreen> {
                             child: MemberCard(
                               name: member.name,
                               position: member.position,
+                              subRole: member.subRole,
                               status: member.status,
                               statusColor: member.statusColor,
                               icon: member.icon,

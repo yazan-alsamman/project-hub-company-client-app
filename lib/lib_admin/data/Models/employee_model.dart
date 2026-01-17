@@ -134,6 +134,7 @@ class EmployeeModel {
       name: displayName,
       position:
           position ?? subRole ?? (role?['name']?.toString() ?? 'Employee'),
+      subRole: subRole,
       status: _getStatusDisplay(status ?? 'active'),
       statusColor: _getStatusColor(status ?? 'active'),
       icon: _getIconForPosition(

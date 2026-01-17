@@ -3,6 +3,7 @@ import '../../core/constant/color.dart';
 class TeamMember {
   final String name;
   final String position;
+  final String? subRole;
   final String status;
   final Color statusColor;
   final IconData icon;
@@ -22,6 +23,7 @@ class TeamMember {
   TeamMember({
     required this.name,
     required this.position,
+    this.subRole,
     required this.status,
     required this.statusColor,
     required this.icon,
