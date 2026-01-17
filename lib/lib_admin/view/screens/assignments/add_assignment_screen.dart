@@ -112,7 +112,7 @@ class AddAssignmentScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Select Tasks",
+          "Select Task",
           style: TextStyle(
             fontSize: Responsive.fontSize(context, mobile: 14),
             fontWeight: FontWeight.w500,
@@ -134,11 +134,16 @@ class AddAssignmentScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    controller.selectedTaskIds.isEmpty
-                        ? 'Select tasks (you can select multiple)'
-                        : '${controller.selectedTaskIds.length} task(s) selected',
+                    controller.selectedTaskId == null
+                        ? 'Select a task'
+                        : controller.tasks
+                            .firstWhere(
+                              (t) => t.id == controller.selectedTaskId,
+                              orElse: () => controller.tasks.first,
+                            )
+                            .title,
                     style: TextStyle(
-                      color: controller.selectedTaskIds.isEmpty
+                      color: controller.selectedTaskId == null
                           ? AppColor.textSecondaryColor
                           : AppColor.textColor,
                       fontSize: Responsive.fontSize(context, mobile: 14),
@@ -150,35 +155,6 @@ class AddAssignmentScreen extends StatelessWidget {
             ),
           ),
         ),
-        if (controller.selectedTaskIds.isNotEmpty) ...[
-          SizedBox(height: Responsive.spacing(context, mobile: 8)),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: controller.selectedTaskIds.map((taskId) {
-              final task = controller.tasks.firstWhere(
-                (t) => t.id == taskId,
-                orElse: () => controller.tasks.first,
-              );
-              return Chip(
-                label: Text(
-                  task.title,
-                  style: TextStyle(
-                    fontSize: Responsive.fontSize(context, mobile: 12),
-                    color: AppColor.white,
-                  ),
-                ),
-                backgroundColor: AppColor.primaryColor,
-                deleteIcon: const Icon(
-                  Icons.close,
-                  size: 18,
-                  color: Colors.white,
-                ),
-                onDeleted: () => controller.toggleTaskSelection(taskId),
-              );
-            }).toList(),
-          ),
-        ],
       ],
     );
   }
@@ -190,7 +166,7 @@ class AddAssignmentScreen extends StatelessWidget {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Select Tasks'),
+          title: const Text('Select Task'),
           content: SizedBox(
             width: double.maxFinite,
             child: controller.isLoadingTasks
@@ -202,21 +178,21 @@ class AddAssignmentScreen extends StatelessWidget {
                     itemCount: controller.tasks.length,
                     itemBuilder: (context, index) {
                       final task = controller.tasks[index];
-                      final isSelected = controller.isTaskSelected(task.id);
-                      return CheckboxListTile(
+                      return RadioListTile<String>(
                         title: Text(task.title),
                         subtitle: Text(
                           task.subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        value: isSelected,
+                        value: task.id,
+                        groupValue: controller.selectedTaskId,
                         onChanged: (value) {
-                          controller.toggleTaskSelection(task.id);
+                          controller.selectTask(value);
                           setDialogState(() {});
+                          Navigator.pop(dialogContext);
                         },
                         activeColor: AppColor.primaryColor,
-                        checkColor: AppColor.white,
                       );
                     },
                   ),
@@ -224,7 +200,7 @@ class AddAssignmentScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Done'),
+              child: const Text('Cancel'),
             ),
           ],
         ),

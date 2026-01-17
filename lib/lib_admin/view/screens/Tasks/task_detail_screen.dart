@@ -498,95 +498,209 @@ class _CommentItemWidgetState extends State<_CommentItemWidget> {
                   ],
                 ),
               SizedBox(height: Responsive.spacing(context, mobile: 12)),
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: Responsive.size(context, mobile: 14),
-                    backgroundColor: Color(widget.comment.authorColor)
-                        .withOpacity(0.2),
-                    child: Text(
-                      widget.comment.author.isNotEmpty
-                          ? widget.comment.author.substring(0, 1).toUpperCase()
-                          : 'U',
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 10),
-                        color: Color(widget.comment.authorColor),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
-                  Text(
-                    widget.comment.author,
-                    style: TextStyle(
-                      fontSize: Responsive.fontSize(context, mobile: 12),
-                      color: AppColor.textSecondaryColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
-                  Text(
-                    '•',
-                    style: TextStyle(
-                      fontSize: Responsive.fontSize(context, mobile: 12),
-                      color: AppColor.textSecondaryColor,
-                    ),
-                  ),
-                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
-                  Text(
-                    widget.comment.date,
-                    style: TextStyle(
-                      fontSize: Responsive.fontSize(context, mobile: 12),
-                      color: AppColor.textSecondaryColor,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (!isEditingThis && !_isAdmin)
-                    GestureDetector(
-                      onTap: () {
-                        if (widget.controller.replyingToCommentId ==
-                            widget.comment.id) {
-                          widget.controller.cancelReply();
-                        } else {
-                          widget.controller.startReply(widget.comment.id!);
-                        }
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: Responsive.spacing(context, mobile: 8),
-                          vertical: Responsive.spacing(context, mobile: 4),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 350;
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: Responsive.size(context, mobile: 14),
+                              backgroundColor: Color(widget.comment.authorColor)
+                                  .withOpacity(0.2),
+                              child: Text(
+                                widget.comment.author.isNotEmpty
+                                    ? widget.comment.author.substring(0, 1).toUpperCase()
+                                    : 'U',
+                                style: TextStyle(
+                                  fontSize: Responsive.fontSize(context, mobile: 10),
+                                  color: Color(widget.comment.authorColor),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                            Expanded(
+                              child: Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: Responsive.spacing(context, mobile: 4),
+                                children: [
+                                  Text(
+                                    widget.comment.author,
+                                    style: TextStyle(
+                                      fontSize: Responsive.fontSize(context, mobile: 12),
+                                      color: AppColor.textSecondaryColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '•',
+                                    style: TextStyle(
+                                      fontSize: Responsive.fontSize(context, mobile: 12),
+                                      color: AppColor.textSecondaryColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    widget.comment.date,
+                                    style: TextStyle(
+                                      fontSize: Responsive.fontSize(context, mobile: 12),
+                                      color: AppColor.textSecondaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        decoration: BoxDecoration(
-                          color: AppColor.backgroundColor,
-                          borderRadius: BorderRadius.circular(
-                            Responsive.borderRadius(context, mobile: 6),
+                        if (!isEditingThis && !_isAdmin) ...[
+                          SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                          GestureDetector(
+                            onTap: () {
+                              if (widget.controller.replyingToCommentId ==
+                                  widget.comment.id) {
+                                widget.controller.cancelReply();
+                              } else {
+                                widget.controller.startReply(widget.comment.id!);
+                              }
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: Responsive.spacing(context, mobile: 8),
+                                vertical: Responsive.spacing(context, mobile: 4),
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColor.backgroundColor,
+                                borderRadius: BorderRadius.circular(
+                                  Responsive.borderRadius(context, mobile: 6),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.reply,
+                                    size: Responsive.iconSize(context, mobile: 16),
+                                    color: AppColor.primaryColor,
+                                  ),
+                                  SizedBox(
+                                    width: Responsive.spacing(context, mobile: 4),
+                                  ),
+                                  Text(
+                                    'Reply',
+                                    style: TextStyle(
+                                      fontSize:
+                                          Responsive.fontSize(context, mobile: 12),
+                                      color: AppColor.primaryColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      CircleAvatar(
+                        radius: Responsive.size(context, mobile: 14),
+                        backgroundColor: Color(widget.comment.authorColor)
+                            .withOpacity(0.2),
+                        child: Text(
+                          widget.comment.author.isNotEmpty
+                              ? widget.comment.author.substring(0, 1).toUpperCase()
+                              : 'U',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, mobile: 10),
+                            color: Color(widget.comment.authorColor),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      ),
+                      SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                      Expanded(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: Responsive.spacing(context, mobile: 4),
                           children: [
-                            Icon(
-                              Icons.reply,
-                              size: Responsive.iconSize(context, mobile: 16),
-                              color: AppColor.primaryColor,
-                            ),
-                            SizedBox(
-                              width: Responsive.spacing(context, mobile: 4),
+                            Text(
+                              widget.comment.author,
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(context, mobile: 12),
+                                color: AppColor.textSecondaryColor,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             Text(
-                              'Reply',
+                              '•',
                               style: TextStyle(
-                                fontSize:
-                                    Responsive.fontSize(context, mobile: 12),
-                                color: AppColor.primaryColor,
-                                fontWeight: FontWeight.w500,
+                                fontSize: Responsive.fontSize(context, mobile: 12),
+                                color: AppColor.textSecondaryColor,
+                              ),
+                            ),
+                            Text(
+                              widget.comment.date,
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(context, mobile: 12),
+                                color: AppColor.textSecondaryColor,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                ],
+                      if (!isEditingThis && !_isAdmin)
+                        GestureDetector(
+                          onTap: () {
+                            if (widget.controller.replyingToCommentId ==
+                                widget.comment.id) {
+                              widget.controller.cancelReply();
+                            } else {
+                              widget.controller.startReply(widget.comment.id!);
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: Responsive.spacing(context, mobile: 8),
+                              vertical: Responsive.spacing(context, mobile: 4),
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColor.backgroundColor,
+                              borderRadius: BorderRadius.circular(
+                                Responsive.borderRadius(context, mobile: 6),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.reply,
+                                  size: Responsive.iconSize(context, mobile: 16),
+                                  color: AppColor.primaryColor,
+                                ),
+                                SizedBox(
+                                  width: Responsive.spacing(context, mobile: 4),
+                                ),
+                                Text(
+                                  'Reply',
+                                  style: TextStyle(
+                                    fontSize:
+                                        Responsive.fontSize(context, mobile: 12),
+                                    color: AppColor.primaryColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ],
           ),

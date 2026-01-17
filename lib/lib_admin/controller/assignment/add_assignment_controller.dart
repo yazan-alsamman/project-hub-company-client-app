@@ -27,7 +27,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
   late TextEditingController endDateController;
   late TextEditingController estimatedHoursController;
   late TextEditingController notesController;
-  List<String> selectedTaskIds = [];
+  String? selectedTaskId;
   String? selectedEmployeeId;
   DateTime? startDate;
   DateTime? endDate;
@@ -89,17 +89,13 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     });
   }
 
-  void toggleTaskSelection(String taskId) {
-    if (selectedTaskIds.contains(taskId)) {
-      selectedTaskIds.remove(taskId);
-    } else {
-      selectedTaskIds.add(taskId);
-    }
+  void selectTask(String? taskId) {
+    selectedTaskId = taskId;
     update();
   }
 
   bool isTaskSelected(String taskId) {
-    return selectedTaskIds.contains(taskId);
+    return selectedTaskId == taskId;
   }
 
   void selectEmployee(String? employeeId) {
@@ -175,148 +171,65 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     final notes = notesController.text.trim().isEmpty
         ? null
         : notesController.text.trim();
-    if (selectedTaskIds.length > 1) {
-      final assignmentsList = selectedTaskIds.map((taskId) {
-        return {
-          'taskId': taskId,
-          'employeeId': selectedEmployeeId!,
-          'startDate': startDateTime.toUtc().toIso8601String(),
-          'endDate': endDateTime.toUtc().toIso8601String(),
-          'estimatedHours': estimatedHours,
-          if (notes != null) 'notes': notes,
-        };
-      }).toList();
-      final bulkResult = await _assignmentsRepository.createBulkAssignments(
-        assignments: assignmentsList,
-      );
-      isLoading = false;
-      bulkResult.fold(
-        (error) {
-          if (error is Map<String, dynamic>) {
-            final message = error['message'];
-            if (message != null) {
-              errorMessage = message.toString();
-            } else {
-              errorMessage = 'Failed to create assignments. Please try again.';
-            }
-            final errorStatus = error['error'];
-            statusRequest = errorStatus is StatusRequest
-                ? errorStatus
-                : StatusRequest.serverFailure;
-          } else if (error is StatusRequest) {
-            statusRequest = error;
-            errorMessage = 'Failed to create assignments. Please try again.';
+    final result = await _assignmentsRepository.createAssignment(
+      taskId: selectedTaskId!,
+      employeeId: selectedEmployeeId!,
+      startDate: startDateTime.toUtc().toIso8601String(),
+      endDate: endDateTime.toUtc().toIso8601String(),
+      estimatedHours: estimatedHours,
+      notes: notes,
+    );
+    isLoading = false;
+    result.fold(
+      (error) {
+        if (error is Map<String, dynamic>) {
+          final message = error['message'];
+          if (message != null) {
+            errorMessage = message.toString();
           } else {
-            statusRequest = StatusRequest.serverFailure;
-            errorMessage = 'Failed to create assignments. Please try again.';
-          }
-          update();
-        },
-        (response) {
-          final successCount = response['successCount'] as int? ?? 0;
-          final failureCount = response['failureCount'] as int? ?? 0;
-          final results = response['results'] as Map<String, dynamic>? ?? {};
-          final failed = results['failed'] as List<dynamic>? ?? [];
-          errorDetails.clear();
-          for (var failedItem in failed) {
-            if (failedItem is Map<String, dynamic>) {
-              final taskId = failedItem['taskId']?.toString() ?? 'Unknown';
-              final message =
-                  failedItem['message']?.toString() ?? 'Unknown error';
-              errorDetails.add('Task $taskId: $message');
-            }
-          }
-          if (successCount > 0) {
-            statusRequest = StatusRequest.success;
-            resetForm();
-            Get.back();
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (Get.isRegistered<AssignmentsControllerImp>()) {
-                Get.find<AssignmentsControllerImp>().refreshAssignments();
-              }
-              Get.snackbar(
-                'Success',
-                failureCount > 0
-                    ? '$successCount task(s) assigned successfully. $failureCount failed.'
-                    : '$successCount task(s) assigned successfully!',
-                backgroundColor: AppColor.successColor,
-                colorText: AppColor.white,
-                snackPosition: SnackPosition.BOTTOM,
-                duration: const Duration(seconds: 2),
-                borderRadius: 12,
-                margin: const EdgeInsets.all(16),
-              );
-            });
-          } else {
-            statusRequest = StatusRequest.serverFailure;
-            errorMessage = failureCount > 0
-                ? 'All assignments failed. Check error details below.'
-                : 'Failed to create assignments. Please try again.';
-            update();
-          }
-        },
-      );
-    } else {
-      final result = await _assignmentsRepository.createAssignment(
-        taskId: selectedTaskIds.first,
-        employeeId: selectedEmployeeId!,
-        startDate: startDateTime.toUtc().toIso8601String(),
-        endDate: endDateTime.toUtc().toIso8601String(),
-        estimatedHours: estimatedHours,
-        notes: notes,
-      );
-      isLoading = false;
-      result.fold(
-        (error) {
-          if (error is Map<String, dynamic>) {
-            final message = error['message'];
-            if (message != null) {
-              errorMessage = message.toString();
-            } else {
-              errorMessage = 'Failed to assign task. Please try again.';
-            }
-            final errorStatus = error['error'];
-            statusRequest = errorStatus is StatusRequest
-                ? errorStatus
-                : StatusRequest.serverFailure;
-          } else if (error is StatusRequest) {
-            statusRequest = error;
-            errorMessage = 'Failed to assign task. Please try again.';
-          } else {
-            statusRequest = StatusRequest.serverFailure;
             errorMessage = 'Failed to assign task. Please try again.';
           }
-          update();
-        },
-        (assignment) {
-          statusRequest = StatusRequest.success;
-          resetForm();
-          Get.back();
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (Get.isRegistered<AssignmentsControllerImp>()) {
-              Get.find<AssignmentsControllerImp>().refreshAssignments();
-            }
-            Get.snackbar(
-              'Success',
-              'Task assigned successfully!',
-              backgroundColor: AppColor.successColor,
-              colorText: AppColor.white,
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(seconds: 2),
-              borderRadius: 12,
-              margin: const EdgeInsets.all(16),
-            );
-          });
-        },
-      );
-    }
+          final errorStatus = error['error'];
+          statusRequest = errorStatus is StatusRequest
+              ? errorStatus
+              : StatusRequest.serverFailure;
+        } else if (error is StatusRequest) {
+          statusRequest = error;
+          errorMessage = 'Failed to assign task. Please try again.';
+        } else {
+          statusRequest = StatusRequest.serverFailure;
+          errorMessage = 'Failed to assign task. Please try again.';
+        }
+        update();
+      },
+      (assignment) {
+        statusRequest = StatusRequest.success;
+        resetForm();
+        Get.back();
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (Get.isRegistered<AssignmentsControllerImp>()) {
+            Get.find<AssignmentsControllerImp>().refreshAssignments();
+          }
+          Get.snackbar(
+            'Success',
+            'Task assigned successfully!',
+            backgroundColor: AppColor.successColor,
+            colorText: AppColor.white,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 2),
+            borderRadius: 12,
+            margin: const EdgeInsets.all(16),
+          );
+        });
+      },
+    );
   }
 
   bool _validateForm() {
-    if (selectedTaskIds.isEmpty) {
+    if (selectedTaskId == null || selectedTaskId!.isEmpty) {
       Get.snackbar(
         'Error',
-        'Please select at least one task',
+        'Please select a task',
         backgroundColor: AppColor.errorColor,
         colorText: AppColor.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -390,7 +303,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
 
   @override
   void resetForm() {
-    selectedTaskIds.clear();
+    selectedTaskId = null;
     selectedEmployeeId = null;
     startDate = null;
     endDate = null;
