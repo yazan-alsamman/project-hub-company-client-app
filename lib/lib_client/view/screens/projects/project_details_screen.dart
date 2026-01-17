@@ -5,6 +5,7 @@ import 'package:project_hub/lib_client/core/constant/color.dart';
 import 'package:project_hub/lib_client/data/Models/project_model.dart';
 import 'package:project_hub/lib_client/data/Models/comment_model.dart';
 import 'package:project_hub/lib_client/data/repository/comment_repository.dart';
+import 'package:project_hub/lib_client/data/repository/task_repository.dart';
 import 'package:project_hub/lib_client/view/widgets/custom_app_bar.dart';
 import 'package:project_hub/lib_client/view/widgets/common/custom_drawer.dart';
 
@@ -14,7 +15,7 @@ class ProjectDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final project = Get.arguments as ProjectModel?;
-    
+
     if (project == null) {
       return Scaffold(
         appBar: const CustomAppBar(showBackButton: true, title: ''),
@@ -28,26 +29,58 @@ class ProjectDetailsScreen extends StatelessWidget {
 
 class _ProjectDetailsScreenContent extends StatefulWidget {
   final ProjectModel project;
-  
+
   const _ProjectDetailsScreenContent({required this.project});
 
   @override
-  State<_ProjectDetailsScreenContent> createState() => _ProjectDetailsScreenContentState();
+  State<_ProjectDetailsScreenContent> createState() =>
+      _ProjectDetailsScreenContentState();
 }
 
-class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenContent> {
+class _ProjectDetailsScreenContentState
+    extends State<_ProjectDetailsScreenContent> {
   final CommentRepository _commentRepository = CommentRepository();
   final TextEditingController _commentController = TextEditingController();
   List<CommentModel> _comments = [];
   bool _isLoadingComments = false;
   bool _isAddingComment = false;
+  final TaskRepository _taskRepository = TaskRepository();
+  List<Map<String, String>> _teamMembers = []; // {name, role}
 
   @override
   void initState() {
     super.initState();
     _loadComments();
+    _loadTeamMembers();
     if (!Get.isRegistered<CustomDrawerControllerImp>()) {
       Get.put(CustomDrawerControllerImp());
+    }
+  }
+
+  Future<void> _loadTeamMembers() async {
+    try {
+      final result = await _taskRepository.getTasksByProject(widget.project.id);
+      result.fold(
+        (error) {
+          // ignore - show fallback or no members
+        },
+        (tasks) {
+          final Map<String, Map<String, String>> unique = {};
+          for (final t in tasks) {
+            final name = (t.assignee ?? '').trim();
+            if (name.isEmpty) continue;
+            if (!unique.containsKey(name)) {
+              unique[name] = {'name': name, 'role': t.targetRole ?? 'Member'};
+            }
+          }
+
+          setState(() {
+            _teamMembers = unique.values.toList();
+          });
+        },
+      );
+    } catch (_) {
+      // ignore errors
     }
   }
 
@@ -63,11 +96,16 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
     });
 
     try {
-      final result = await _commentRepository.getCommentsByProjectId(widget.project.id);
+      final result = await _commentRepository.getCommentsByProjectId(
+        widget.project.id,
+      );
       result.fold(
         (error) {
-          Get.snackbar('Error', 'Failed to load comments: $error',
-              snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar(
+            'Error',
+            'Failed to load comments: $error',
+            snackPosition: SnackPosition.BOTTOM,
+          );
         },
         (comments) {
           setState(() {
@@ -80,8 +118,11 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
       setState(() {
         _isLoadingComments = false;
       });
-      Get.snackbar('Error', 'Failed to load comments: $e',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Failed to load comments: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 
@@ -94,11 +135,17 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
     });
 
     try {
-      final result = await _commentRepository.addProjectComment(widget.project.id, text);
+      final result = await _commentRepository.addProjectComment(
+        widget.project.id,
+        text,
+      );
       result.fold(
         (error) {
-          Get.snackbar('Error', 'Failed to add comment: $error',
-              snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar(
+            'Error',
+            'Failed to add comment: $error',
+            snackPosition: SnackPosition.BOTTOM,
+          );
         },
         (comment) {
           setState(() {
@@ -108,8 +155,11 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
         },
       );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to add comment: $e',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Failed to add comment: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       setState(() {
         _isAddingComment = false;
@@ -123,8 +173,11 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
 
       result.fold(
         (error) {
-          Get.snackbar('Error', 'Failed to delete comment: $error',
-              snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar(
+            'Error',
+            'Failed to delete comment: $error',
+            snackPosition: SnackPosition.BOTTOM,
+          );
         },
         (success) {
           if (success) {
@@ -135,8 +188,11 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
         },
       );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to delete comment: $e',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Failed to delete comment: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 
@@ -234,10 +290,26 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
   }
 
   Widget _buildTeamMembersList() {
+    if (_teamMembers.isEmpty) {
+      // Fallback: show message or previous placeholder count
+      return Column(
+        children: [
+          if ((widget.project.teamMembers ?? 0) > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text('${widget.project.teamMembers} team members'),
+            ),
+          const SizedBox(height: 8),
+          const Text('No assigned team members available'),
+        ],
+      );
+    }
+
     return Column(
-      children: List.generate(
-        widget.project.teamMembers,
-        (index) => Container(
+      children: List.generate(_teamMembers.length, (index) {
+        final member = _teamMembers[index];
+        final color = _getRandomColor(index);
+        return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -248,9 +320,11 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: _getRandomColor(index),
+                backgroundColor: color,
                 child: Text(
-                  'U${index + 1}',
+                  (member['name'] ?? 'U').isNotEmpty
+                      ? (member['name']![0].toUpperCase())
+                      : 'U',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -264,7 +338,7 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'User ${index + 1}',
+                      member['name'] ?? 'Unknown',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -272,7 +346,7 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                       ),
                     ),
                     Text(
-                      _getRandomRole(index),
+                      member['role'] ?? 'Member',
                       style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF666666),
@@ -284,8 +358,8 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
               Icon(Icons.more_vert, color: const Color(0xFF666666), size: 20),
             ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -397,7 +471,8 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           widget.project.title,
@@ -462,7 +537,8 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           mainAxisAlignment:
@@ -489,16 +565,28 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                                         Container(
                                           height: 8,
                                           decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                             color: const Color(0xFFE0E0E0),
                                           ),
                                           clipBehavior: Clip.hardEdge,
                                           child: FractionallySizedBox(
                                             alignment: Alignment.centerLeft,
-                                            widthFactor: (widget.project.progress > 1.0 ? widget.project.progress / 100 : widget.project.progress).clamp(0.0, 1.0),
+                                            widthFactor:
+                                                (widget.project.progress > 1.0
+                                                        ? widget
+                                                                  .project
+                                                                  .progress /
+                                                              100
+                                                        : widget
+                                                              .project
+                                                              .progress)
+                                                    .clamp(0.0, 1.0),
                                             child: Container(
                                               decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(4),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                                 gradient: const LinearGradient(
                                                   colors: [
                                                     Color(0xFF4285F4),
@@ -641,16 +729,22 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                                       decoration: InputDecoration(
                                         hintText: 'Add a comment...',
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
-                                        contentPadding: const EdgeInsets.all(12),
+                                        contentPadding: const EdgeInsets.all(
+                                          12,
+                                        ),
                                       ),
                                       maxLines: 3,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   IconButton(
-                                    onPressed: _isAddingComment ? null : _addComment,
+                                    onPressed: _isAddingComment
+                                        ? null
+                                        : _addComment,
                                     icon: _isAddingComment
                                         ? const SizedBox(
                                             width: 20,
@@ -674,29 +768,30 @@ class _ProjectDetailsScreenContentState extends State<_ProjectDetailsScreenConte
                                       ),
                                     )
                                   : _comments.isEmpty
-                                      ? const Padding(
-                                          padding: EdgeInsets.all(20.0),
-                                          child: Text(
-                                            'No comments yet',
-                                            style: TextStyle(
-                                              color: Color(0xFF666666),
-                                            ),
-                                          ),
-                                        )
-                                      : ListView.builder(
-                                          shrinkWrap: true,
-                                          physics: const NeverScrollableScrollPhysics(),
-                                          itemCount: _comments.length,
-                                          itemBuilder: (context, index) {
-                                            final comment = _comments[index];
-                                            return _ProjectCommentItemWidget(
-                                              comment: comment,
-                                              onDelete: (commentId) async {
-                                                await _deleteComment(commentId);
-                                              },
-                                            );
-                                          },
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(20.0),
+                                      child: Text(
+                                        'No comments yet',
+                                        style: TextStyle(
+                                          color: Color(0xFF666666),
                                         ),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount: _comments.length,
+                                      itemBuilder: (context, index) {
+                                        final comment = _comments[index];
+                                        return _ProjectCommentItemWidget(
+                                          comment: comment,
+                                          onDelete: (commentId) async {
+                                            await _deleteComment(commentId);
+                                          },
+                                        );
+                                      },
+                                    ),
                             ],
                           ),
                         ),
@@ -724,7 +819,8 @@ class _ProjectCommentItemWidget extends StatefulWidget {
   });
 
   @override
-  State<_ProjectCommentItemWidget> createState() => _ProjectCommentItemWidgetState();
+  State<_ProjectCommentItemWidget> createState() =>
+      _ProjectCommentItemWidgetState();
 }
 
 class _ProjectCommentItemWidgetState extends State<_ProjectCommentItemWidget> {
@@ -734,10 +830,7 @@ class _ProjectCommentItemWidgetState extends State<_ProjectCommentItemWidget> {
         title: const Text('Delete Comment'),
         content: const Text('Are you sure you want to delete this comment?'),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
               Get.back();
@@ -745,10 +838,7 @@ class _ProjectCommentItemWidgetState extends State<_ProjectCommentItemWidget> {
                 widget.onDelete(widget.comment.id!);
               }
             },
-            child: Text(
-              'Delete',
-              style: TextStyle(color: AppColor.errorColor),
-            ),
+            child: Text('Delete', style: TextStyle(color: AppColor.errorColor)),
           ),
         ],
       ),
@@ -795,7 +885,9 @@ class _ProjectCommentItemWidgetState extends State<_ProjectCommentItemWidget> {
             children: [
               CircleAvatar(
                 radius: 12,
-                backgroundColor: Color(widget.comment.authorColor).withValues(alpha: 0.2),
+                backgroundColor: Color(
+                  widget.comment.authorColor,
+                ).withValues(alpha: 0.2),
                 child: Text(
                   widget.comment.author.isNotEmpty
                       ? widget.comment.author.substring(0, 1).toUpperCase()
@@ -819,18 +911,12 @@ class _ProjectCommentItemWidgetState extends State<_ProjectCommentItemWidget> {
               const SizedBox(width: 8),
               const Text(
                 '•',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF666666),
-                ),
+                style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
               ),
               const SizedBox(width: 8),
               Text(
                 widget.comment.date,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF666666),
-                ),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
               ),
             ],
           ),
@@ -839,4 +925,3 @@ class _ProjectCommentItemWidgetState extends State<_ProjectCommentItemWidget> {
     );
   }
 }
-

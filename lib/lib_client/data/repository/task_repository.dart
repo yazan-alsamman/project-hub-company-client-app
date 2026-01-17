@@ -10,38 +10,59 @@ class TaskRepository {
     String? projectId,
   }) async {
     try {
-      final queryParams = <String, String>{};
-      if (status != null && status != 'All') {
-        queryParams['taskStatus'] = status.toLowerCase();
-      }
-      if (projectId != null) {
-        queryParams['projectId'] = projectId;
+      final allTasks = <TaskModel>[];
+      int page = 1;
+      const int limit = 100; // Fetch 100 tasks per page to minimize requests
+      bool hasMorePages = true;
+
+      while (hasMorePages) {
+        final queryParams = <String, String>{
+          'page': page.toString(),
+          'limit': limit.toString(),
+        };
+        if (status != null && status != 'All') {
+          queryParams['taskStatus'] = status.toLowerCase();
+        }
+        if (projectId != null) {
+          queryParams['projectId'] = projectId;
+        }
+
+        final response = await _apiService.get(
+          '/task',
+          queryParameters: queryParams,
+        );
+
+        final data = _apiService.handleResponse(response);
+
+        if (data['data'] != null) {
+          final dataObj = data['data'] as Map<String, dynamic>;
+
+          if (dataObj['tasks'] != null && dataObj['tasks'] is List) {
+            final pageTasks = (dataObj['tasks'] as List)
+                .map((item) => TaskModel.fromJson(item as Map<String, dynamic>))
+                .toList();
+            allTasks.addAll(pageTasks);
+          }
+
+          // Check if there are more pages
+          if (dataObj['pagination'] != null) {
+            final pagination = dataObj['pagination'] as Map<String, dynamic>;
+            final totalPages = pagination['totalPages'] ?? 1;
+            hasMorePages = page < totalPages;
+            page++;
+          } else {
+            hasMorePages = false;
+          }
+        } else {
+          hasMorePages = false;
+        }
       }
 
-      final response = await _apiService.get(
-        '/task',
-        queryParameters: queryParams.isNotEmpty ? queryParams : null,
-      );
-
-      final data = _apiService.handleResponse(response);
-      
-      if (data['data'] != null) {
-        final dataObj = data['data'] as Map<String, dynamic>;
-        if (dataObj['tasks'] != null && dataObj['tasks'] is List) {
-          final tasks = (dataObj['tasks'] as List)
-              .map((item) => TaskModel.fromJson(item as Map<String, dynamic>))
-              .toList();
-          return Right(tasks);
-        }
-        if (dataObj is List) {
-          final tasks = (dataObj as List)
-              .map((item) => TaskModel.fromJson(item as Map<String, dynamic>))
-              .toList();
-          return Right(tasks);
-        }
+      if (allTasks.isEmpty) {
+        return Left('No tasks found');
       }
-      
-      return Left('No tasks found');
+
+      return Right(allTasks);
     } catch (e) {
       return Left(e.toString());
     }
@@ -52,29 +73,55 @@ class TaskRepository {
     String? status,
   }) async {
     try {
-      final queryParams = <String, String>{};
-      if (status != null && status != 'All') {
-        queryParams['taskStatus'] = status.toLowerCase();
-      }
+      final allTasks = <TaskModel>[];
+      int page = 1;
+      const int limit = 100; // Fetch 100 tasks per page to minimize requests
+      bool hasMorePages = true;
 
-      final response = await _apiService.get(
-        '/task/project/$projectId',
-        queryParameters: queryParams.isNotEmpty ? queryParams : null,
-      );
+      while (hasMorePages) {
+        final queryParams = <String, String>{
+          'page': page.toString(),
+          'limit': limit.toString(),
+        };
+        if (status != null && status != 'All') {
+          queryParams['taskStatus'] = status.toLowerCase();
+        }
 
-      final data = _apiService.handleResponse(response);
-      
-      if (data['data'] != null) {
-        final dataObj = data['data'] as Map<String, dynamic>;
-        if (dataObj['tasks'] != null && dataObj['tasks'] is List) {
-          final tasks = (dataObj['tasks'] as List)
-              .map((item) => TaskModel.fromJson(item as Map<String, dynamic>))
-              .toList();
-          return Right(tasks);
+        final response = await _apiService.get(
+          '/task/project/$projectId',
+          queryParameters: queryParams,
+        );
+
+        final data = _apiService.handleResponse(response);
+
+        if (data['data'] != null) {
+          final dataObj = data['data'] as Map<String, dynamic>;
+          if (dataObj['tasks'] != null && dataObj['tasks'] is List) {
+            final pageTasks = (dataObj['tasks'] as List)
+                .map((item) => TaskModel.fromJson(item as Map<String, dynamic>))
+                .toList();
+            allTasks.addAll(pageTasks);
+          }
+
+          // Check if there are more pages
+          if (dataObj['pagination'] != null) {
+            final pagination = dataObj['pagination'] as Map<String, dynamic>;
+            final totalPages = pagination['totalPages'] ?? 1;
+            hasMorePages = page < totalPages;
+            page++;
+          } else {
+            hasMorePages = false;
+          }
+        } else {
+          hasMorePages = false;
         }
       }
-      
-      return Left('No tasks found for this project');
+
+      if (allTasks.isEmpty) {
+        return Left('No tasks found for this project');
+      }
+
+      return Right(allTasks);
     } catch (e) {
       return Left(e.toString());
     }
@@ -84,12 +131,12 @@ class TaskRepository {
     try {
       final response = await _apiService.get('/task/$id');
       final data = _apiService.handleResponse(response);
-      
+
       if (data['data'] != null) {
         final task = TaskModel.fromJson(data['data'] as Map<String, dynamic>);
         return Right(task);
       }
-      
+
       return Left('Task not found');
     } catch (e) {
       return Left(e.toString());
@@ -98,20 +145,17 @@ class TaskRepository {
 
   Future<Either<String, TaskModel>> createTask(TaskModel task) async {
     try {
-      final response = await _apiService.post(
-        '/task',
-        body: task.toJson(),
-      );
-      
+      final response = await _apiService.post('/task', body: task.toJson());
+
       final data = _apiService.handleResponse(response);
-      
+
       if (data['data'] != null) {
         final createdTask = TaskModel.fromJson(
           data['data'] as Map<String, dynamic>,
         );
         return Right(createdTask);
       }
-      
+
       return Left('Failed to create task');
     } catch (e) {
       return Left(e.toString());
@@ -128,16 +172,16 @@ class TaskRepository {
         '/task/${task.id}',
         body: task.toJson(),
       );
-      
+
       final data = _apiService.handleResponse(response);
-      
+
       if (data['data'] != null) {
         final updatedTask = TaskModel.fromJson(
           data['data'] as Map<String, dynamic>,
         );
         return Right(updatedTask);
       }
-      
+
       return Left('Failed to update task');
     } catch (e) {
       return Left(e.toString());
@@ -163,20 +207,19 @@ class TaskRepository {
         '/task/$id/status',
         body: {'taskStatus': status.toLowerCase()},
       );
-      
+
       final data = _apiService.handleResponse(response);
-      
+
       if (data['data'] != null) {
         final updatedTask = TaskModel.fromJson(
           data['data'] as Map<String, dynamic>,
         );
         return Right(updatedTask);
       }
-      
+
       return Left('Failed to update task status');
     } catch (e) {
       return Left(e.toString());
     }
   }
 }
-
