@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/Models/project_model.dart';
+
 class ProjectDashboardInformationCard extends StatelessWidget {
   final ProjectModel project;
   final VoidCallback? onTap;
@@ -95,7 +96,7 @@ class ProjectDashboardInformationCard extends StatelessWidget {
                       style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
                     ),
                     Text(
-                      "${project.progress > 1.0 ? project.progress.round() : (project.progress * 100).round()}%",
+                      "${project.progressPercentage != null ? project.progressPercentage!.round() : (project.progress > 1.0 ? project.progress.round() : (project.progress * 100).round())}%",
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -114,7 +115,16 @@ class ProjectDashboardInformationCard extends StatelessWidget {
                   clipBehavior: Clip.hardEdge,
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
-                    widthFactor: (project.progress > 1.0 ? project.progress / 100 : project.progress).clamp(0.0, 1.0),
+                    widthFactor:
+                        (project.progressPercentage != null
+                                ? (project.progressPercentage! / 100).clamp(
+                                    0.0,
+                                    1.0,
+                                  )
+                                : (project.progress > 1.0
+                                      ? project.progress / 100
+                                      : project.progress))
+                            .clamp(0.0, 1.0),
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
@@ -158,6 +168,7 @@ class ProjectDashboardInformationCard extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildStatusChip(String status) {
     Color backgroundColor;
     Color textColor;
@@ -207,6 +218,7 @@ class ProjectDashboardInformationCard extends StatelessWidget {
       ),
     );
   }
+
   String _getStatusText(String status) {
     switch (status.toLowerCase()) {
       case 'active':
@@ -219,6 +231,7 @@ class ProjectDashboardInformationCard extends StatelessWidget {
         return "Pending";
     }
   }
+
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
@@ -241,6 +254,7 @@ class ProjectDashboardInformationCard extends StatelessWidget {
       return dateString;
     }
   }
+
   List<Widget> _buildTeamAvatars() {
     final avatars = <Widget>[];
     final teamMembersCount = project.teamMembers;

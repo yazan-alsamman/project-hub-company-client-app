@@ -143,18 +143,29 @@ class EditProjectControllerImp extends EditProjectController {
       result.fold(
         (error) {
           String errorMsg = 'Failed to update project';
-          if (error == StatusRequest.serverFailure) {
-            errorMsg = 'Server error. Please try again.';
-          } else if (error == StatusRequest.offlineFailure) {
-            errorMsg = 'No internet connection. Please check your network.';
-          } else if (error == StatusRequest.timeoutException) {
-            errorMsg = 'Request timed out. Please try again.';
-          } else if (error == StatusRequest.serverException) {
-            errorMsg = 'An unexpected server error occurred.';
+          StatusRequest errorStatus = StatusRequest.serverFailure;
+          if (error is Map<String, dynamic>) {
+            errorStatus =
+                error['error'] as StatusRequest? ?? StatusRequest.serverFailure;
+            errorMsg =
+                error['message']?.toString() ?? 'Failed to update project';
+          } else if (error is StatusRequest) {
+            errorStatus = error;
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
           }
           errorMessage = errorMsg;
           isLoading = false;
-          statusRequest = error;
+          statusRequest = errorStatus;
           update();
           Get.snackbar(
             'Error',
@@ -254,17 +265,28 @@ class EditProjectControllerImp extends EditProjectController {
       result.fold(
         (error) {
           String errorMsg = 'Failed to delete project';
-          if (error == StatusRequest.serverFailure) {
-            errorMsg = 'Server error. Please try again.';
-          } else if (error == StatusRequest.offlineFailure) {
-            errorMsg = 'No internet connection. Please check your network.';
-          } else if (error == StatusRequest.timeoutException) {
-            errorMsg = 'Request timed out. Please try again.';
-          } else if (error == StatusRequest.serverException) {
-            errorMsg = 'An unexpected server error occurred.';
+          StatusRequest errorStatus = StatusRequest.serverFailure;
+          if (error is Map<String, dynamic>) {
+            errorStatus =
+                error['error'] as StatusRequest? ?? StatusRequest.serverFailure;
+            errorMsg =
+                error['message']?.toString() ?? 'Failed to delete project';
+          } else if (error is StatusRequest) {
+            errorStatus = error;
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
           }
           isLoading = false;
-          statusRequest = error;
+          statusRequest = errorStatus;
           update();
           Get.snackbar(
             'Error',

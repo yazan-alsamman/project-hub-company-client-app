@@ -26,11 +26,18 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(EditEmployeeControllerImp(employeeId: widget.employeeId));
+    if (!Get.isRegistered<EditEmployeeControllerImp>()) {
+      Get.put(EditEmployeeControllerImp(employeeId: widget.employeeId));
+    }
     return Scaffold(
       appBar: const CustomAppBar(title: 'Edit Employee', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<EditEmployeeControllerImp>(
+          init: Get.isRegistered<EditEmployeeControllerImp>()
+              ? Get.find<EditEmployeeControllerImp>()
+              : Get.put(
+                  EditEmployeeControllerImp(employeeId: widget.employeeId),
+                ),
           builder: (controller) {
             if (controller.errorMessage != null &&
                 controller.errorMessage != _previousErrorMessage) {

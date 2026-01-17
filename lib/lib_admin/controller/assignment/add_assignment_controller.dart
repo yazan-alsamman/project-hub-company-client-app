@@ -9,12 +9,14 @@ import '../../data/repository/assignments_repository.dart';
 import '../../data/repository/tasks_repository.dart';
 import '../../data/repository/team_repository.dart';
 import 'assignments_controller.dart';
+
 abstract class AddAssignmentController extends GetxController {
   void assignTasks();
   void resetForm();
   void loadTasks();
   void loadEmployees();
 }
+
 class AddAssignmentControllerImp extends AddAssignmentController {
   final AssignmentsRepository _assignmentsRepository = AssignmentsRepository();
   final TasksRepository _tasksRepository = TasksRepository();
@@ -47,6 +49,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     loadTasks();
     loadEmployees();
   }
+
   @override
   void dispose() {
     startDateController.dispose();
@@ -55,24 +58,19 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     notesController.dispose();
     super.dispose();
   }
+
   @override
   Future<void> loadTasks() async {
     isLoadingTasks = true;
     update();
-    final result = await _tasksRepository.getTasks(
-      page: 1,
-      limit: 100,
-    );
+    final result = await _tasksRepository.getTasks(page: 1, limit: 100);
     isLoadingTasks = false;
-    result.fold(
-      (error) {
-      },
-      (loadedTasks) {
-        tasks = loadedTasks;
-        update();
-      },
-    );
+    result.fold((error) {}, (loadedTasks) {
+      tasks = loadedTasks;
+      update();
+    });
   }
+
   @override
   Future<void> loadEmployees() async {
     isLoadingEmployees = true;
@@ -85,15 +83,12 @@ class AddAssignmentControllerImp extends AddAssignmentController {
       status: null,
     );
     isLoadingEmployees = false;
-    result.fold(
-      (error) {
-      },
-      (loadedEmployees) {
-        employees = loadedEmployees;
-        update();
-      },
-    );
+    result.fold((error) {}, (loadedEmployees) {
+      employees = loadedEmployees;
+      update();
+    });
   }
+
   void toggleTaskSelection(String taskId) {
     if (selectedTaskIds.contains(taskId)) {
       selectedTaskIds.remove(taskId);
@@ -102,13 +97,16 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     }
     update();
   }
+
   bool isTaskSelected(String taskId) {
     return selectedTaskIds.contains(taskId);
   }
+
   void selectEmployee(String? employeeId) {
     selectedEmployeeId = employeeId;
     update();
   }
+
   Future<void> selectStartDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
@@ -123,13 +121,28 @@ class AddAssignmentControllerImp extends AddAssignmentController {
       update();
     }
   }
+
   Future<void> selectEndDate(BuildContext context) async {
+    final firstDateValue = startDate ?? DateTime.now();
+    final lastDateValue = DateTime.now().add(const Duration(days: 365));
+    final initialDateValue =
+        endDate ??
+        (firstDateValue.isAfter(DateTime.now())
+            ? firstDateValue
+            : DateTime.now().add(const Duration(days: 1)));
+
+    // Ensure initialDate is not before firstDate
+    final safeInitialDate = initialDateValue.isBefore(firstDateValue)
+        ? firstDateValue
+        : (initialDateValue.isAfter(lastDateValue)
+              ? lastDateValue
+              : initialDateValue);
+
     final picked = await showDatePicker(
       context: context,
-      initialDate:
-          endDate ?? (startDate ?? DateTime.now()).add(const Duration(days: 1)),
-      firstDate: startDate ?? DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: safeInitialDate,
+      firstDate: firstDateValue,
+      lastDate: lastDateValue,
     );
     if (picked != null) {
       endDate = picked;
@@ -138,6 +151,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
       update();
     }
   }
+
   @override
   Future<void> assignTasks() async {
     if (!formState.currentState!.validate()) {
@@ -152,24 +166,10 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     statusRequest = StatusRequest.loading;
     update();
     final startDateTime = startDate != null
-        ? DateTime(
-            startDate!.year,
-            startDate!.month,
-            startDate!.day,
-            9,
-            0,
-            0,
-          )
+        ? DateTime(startDate!.year, startDate!.month, startDate!.day, 9, 0, 0)
         : DateTime.now();
     final endDateTime = endDate != null
-        ? DateTime(
-            endDate!.year,
-            endDate!.month,
-            endDate!.day,
-            17,
-            0,
-            0,
-          )
+        ? DateTime(endDate!.year, endDate!.month, endDate!.day, 17, 0, 0)
         : DateTime.now().add(const Duration(hours: 8));
     final estimatedHours = int.tryParse(estimatedHoursController.text) ?? 8;
     final notes = notesController.text.trim().isEmpty
@@ -311,6 +311,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
       );
     }
   }
+
   bool _validateForm() {
     if (selectedTaskIds.isEmpty) {
       Get.snackbar(
@@ -386,6 +387,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     }
     return true;
   }
+
   @override
   void resetForm() {
     selectedTaskIds.clear();
@@ -401,6 +403,7 @@ class AddAssignmentControllerImp extends AddAssignmentController {
     statusRequest = StatusRequest.none;
     update();
   }
+
   void clearErrors() {
     errorMessage = null;
     errorDetails.clear();

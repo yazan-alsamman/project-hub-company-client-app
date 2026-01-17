@@ -7,6 +7,7 @@ import '../../core/constant/color.dart';
 import '../../data/Models/task_model.dart';
 import '../../data/repository/projects_repository.dart';
 import '../../data/repository/tasks_repository.dart';
+import '../../data/repository/assignments_repository.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/constant/api_constant.dart';
 import '../../core/services/api_service.dart';
@@ -54,10 +55,15 @@ class AiAssistanceControllerImp extends AiAssistanceController {
   List<Map<String, dynamic>> aiAssignments = [];
   bool showAiAssignments = false;
 
+  Map<String, dynamic>? aiAssignmentsResponse; // Store the AI response for approval
+  bool showApproveButton = false;
+  bool isApprovingAssignments = false;
+
   static const String aiApiUrl = AppConfig.aiApiUrl;
   static const String assignTasksApiUrl = AppConfig.aiAssignTasksApiUrl;
 
   final ApiService _apiService = ApiService();
+  final AssignmentsRepository _assignmentsRepository = AssignmentsRepository();
 
   @override
   void onInit() {
@@ -1004,6 +1010,9 @@ class AiAssistanceControllerImp extends AiAssistanceController {
         throw Exception('No assignments generated');
       }
 
+      // Store the response for approval
+      aiAssignmentsResponse = assignResponseData;
+
       final totalTasksSent = tasksCount;
       final assignmentsGenerated = assignments.length;
       final unassignedTasks =
@@ -1150,6 +1159,7 @@ class AiAssistanceControllerImp extends AiAssistanceController {
 
       if (successfulAssignments.isNotEmpty) {
         showPdfButton = true;
+        showApproveButton = true; // Show approve button after successful AI assignment
       }
 
       update();
@@ -1290,6 +1300,108 @@ class AiAssistanceControllerImp extends AiAssistanceController {
       );
     } finally {
       isGeneratingPdf = false;
+      update();
+    }
+  }
+
+  Future<void> approveAssignments() async {
+    if (aiAssignmentsResponse == null) {
+      Get.snackbar(
+        'Error',
+        'No assignments to approve',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: AppColor.white,
+        borderRadius: 12,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      );
+      return;
+    }
+
+    isApprovingAssignments = true;
+    update();
+
+    try {
+      final assignmentsData =
+          aiAssignmentsResponse!['data'] as Map<String, dynamic>;
+      final assignments = assignmentsData['assignments'] as List<dynamic>?;
+
+      if (assignments == null || assignments.isEmpty) {
+        throw Exception('No assignments found in response');
+      }
+
+      // Convert assignments to the format required by the API
+      final List<Map<String, dynamic>> assignmentsToSend = [];
+      for (var assignment in assignments) {
+        final assignMap = assignment as Map<String, dynamic>;
+        assignmentsToSend.add({
+          'taskId': assignMap['taskId']?.toString() ?? '',
+          'employeeId': assignMap['employeeId']?.toString() ?? '',
+          'startDate': assignMap['startDate']?.toString() ?? '',
+          'endDate': assignMap['endDate']?.toString() ?? '',
+          'estimatedHours': assignMap['estimatedHours'] is int
+              ? assignMap['estimatedHours'] as int
+              : assignMap['estimatedHours'] is num
+                  ? (assignMap['estimatedHours'] as num).toInt()
+                  : 0,
+          'notes': assignMap['notes']?.toString() ?? '',
+        });
+      }
+
+      final result = await _assignmentsRepository.createBulkAssignments(
+        assignments: assignmentsToSend,
+      );
+
+      isApprovingAssignments = false;
+      result.fold(
+        (error) {
+          String errorMsg = error['message']?.toString() ??
+              'Failed to approve assignments';
+          Get.snackbar(
+            'Error',
+            errorMsg,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.errorColor,
+            colorText: AppColor.white,
+            borderRadius: 12,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+          );
+          update();
+        },
+        (response) {
+          showApproveButton = false;
+          aiAssignmentsResponse = null;
+          Get.snackbar(
+            'Success',
+            'Assignments approved and created successfully!',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.successColor,
+            colorText: AppColor.white,
+            borderRadius: 12,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          );
+          update();
+        },
+      );
+    } catch (e) {
+      isApprovingAssignments = false;
+      String errorMessage = 'Failed to approve assignments';
+      if (e.toString().contains('Exception:')) {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      }
+      Get.snackbar(
+        'Error',
+        errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.errorColor,
+        colorText: AppColor.white,
+        borderRadius: 12,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      );
       update();
     }
   }

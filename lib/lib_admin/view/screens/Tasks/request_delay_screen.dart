@@ -30,6 +30,9 @@ class RequestDelayScreen extends StatelessWidget {
       appBar: const CustomAppBar(title: 'Request Delay', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<RequestDelayController>(
+          init: Get.isRegistered<RequestDelayController>()
+              ? Get.find<RequestDelayController>()
+              : Get.put(RequestDelayController(taskId: task.id, task: task)),
           builder: (controller) {
             return SingleChildScrollView(
               child: Padding(
@@ -48,6 +51,10 @@ class RequestDelayScreen extends StatelessWidget {
                     _buildDateField(context, controller),
                     SizedBox(height: Responsive.spacing(context, mobile: 24)),
                     _buildReasonField(context, controller),
+                    if (controller.errorMessage != null) ...[
+                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
+                      _buildErrorMessage(context, controller.errorMessage!),
+                    ],
                     SizedBox(height: Responsive.spacing(context, mobile: 32)),
                     _buildSubmitButton(context, controller),
                   ],
@@ -269,6 +276,42 @@ class RequestDelayScreen extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildErrorMessage(BuildContext context, String errorMessage) {
+    return Container(
+      padding: EdgeInsets.all(Responsive.spacing(context, mobile: 12)),
+      decoration: BoxDecoration(
+        color: AppColor.errorColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(
+          Responsive.borderRadius(context, mobile: 8),
+        ),
+        border: Border.all(
+          color: AppColor.errorColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: AppColor.errorColor,
+            size: Responsive.iconSize(context, mobile: 20),
+          ),
+          SizedBox(width: Responsive.spacing(context, mobile: 12)),
+          Expanded(
+            child: Text(
+              errorMessage,
+              style: TextStyle(
+                fontSize: Responsive.fontSize(context, mobile: 14),
+                color: AppColor.errorColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

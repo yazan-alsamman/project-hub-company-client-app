@@ -39,6 +39,9 @@ class _DelaysScreenState extends State<DelaysScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
     return Scaffold(

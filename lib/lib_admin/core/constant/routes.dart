@@ -31,6 +31,7 @@ class AppRoute {
   static const String profile = "/profile";
   static const String assignments = "/assignments";
   static const String addAssignment = "/add-assignment";
+  static const String reassignAssignment = "/reassign-assignment";
   static const String addClient = "/add-client";
   static const String aiAssistance = "/ai-assistance";
   static const String delays = "/delays";

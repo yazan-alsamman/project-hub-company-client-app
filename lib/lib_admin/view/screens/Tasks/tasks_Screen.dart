@@ -18,6 +18,17 @@ class TasksScreen extends StatelessWidget {
   const TasksScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    // Ensure controllers are registered before use
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
+    if (!Get.isRegistered<TasksControllerImp>()) {
+      Get.put(TasksControllerImp());
+    }
+    if (!Get.isRegistered<FilterButtonController>()) {
+      Get.put(FilterButtonController());
+    }
+    
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
     return Scaffold(
@@ -207,6 +218,9 @@ class TasksScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 20),
                           GetBuilder<FilterButtonController>(
+                            init: Get.isRegistered<FilterButtonController>()
+                                ? Get.find<FilterButtonController>()
+                                : Get.put(FilterButtonController()),
                             builder: (filterController) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 controller.update();
@@ -296,6 +310,9 @@ class TasksScreen extends StatelessWidget {
                           future: AuthService().getUserRole(),
                           builder: (context, roleSnapshot) {
                             return GetBuilder<FilterButtonController>(
+                              init: Get.isRegistered<FilterButtonController>()
+                                  ? Get.find<FilterButtonController>()
+                                  : Get.put(FilterButtonController()),
                               builder: (filterController) {
                                 final filteredTasks = controller.filteredTasks;
                                 final userRole = roleSnapshot.data?.toLowerCase() ?? '';
@@ -375,6 +392,7 @@ class TasksScreen extends StatelessWidget {
                                       avatarColor: avatarColor,
                                       isCompleted: isCompleted,
                                       isPending: isPending,
+                                      showAssignee: !isDeveloper,
                                       delayRequests: task.delayRequests,
                                       onTap: canViewTaskDetail
                                           ? () {
@@ -414,6 +432,15 @@ class TasksScreen extends StatelessWidget {
                                               Get.toNamed(
                                                 AppRoute.requestDelay,
                                                 arguments: task,
+                                              );
+                                            }
+                                          : null,
+                                      onMarkCompleted: isDeveloper && !isCompleted
+                                          ? () {
+                                              _handleMarkAsCompleted(
+                                                context,
+                                                task.id,
+                                                controller,
                                               );
                                             }
                                           : null,
@@ -553,5 +580,56 @@ class TasksScreen extends StatelessWidget {
         margin: const EdgeInsets.all(16),
       );
     }
+  }
+
+  void _handleMarkAsCompleted(
+    BuildContext context,
+    String taskId,
+    TasksControllerImp controller,
+  ) async {
+    final confirm = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text(
+          'Mark as Completed',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColor.textColor,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to mark this task as completed?',
+          style: TextStyle(fontSize: 14, color: AppColor.textColor),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColor.textSecondaryColor,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text(
+              'Mark as Completed',
+              style: TextStyle(
+                color: AppColor.successColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) {
+      return;
+    }
+    await controller.markTaskAsCompleted(taskId);
   }
 }

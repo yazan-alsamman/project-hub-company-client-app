@@ -11,11 +11,16 @@ class AddAssignmentScreen extends StatelessWidget {
   const AddAssignmentScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    Get.put(AddAssignmentControllerImp());
+    if (!Get.isRegistered<AddAssignmentControllerImp>()) {
+      Get.put(AddAssignmentControllerImp());
+    }
     return Scaffold(
       appBar: const CustomAppBar(title: 'Add Assignment', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<AddAssignmentControllerImp>(
+          init: Get.isRegistered<AddAssignmentControllerImp>()
+              ? Get.find<AddAssignmentControllerImp>()
+              : Get.put(AddAssignmentControllerImp()),
           builder: (controller) => SingleChildScrollView(
             child: Padding(
               padding: Responsive.padding(context),

@@ -51,6 +51,12 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
+    if (!Get.isRegistered<AiAssistanceControllerImp>()) {
+      Get.put(AiAssistanceControllerImp());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
 
@@ -63,6 +69,9 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
       appBar: const CustomAppBar(),
       body: SafeArea(
         child: GetBuilder<AiAssistanceControllerImp>(
+          init: Get.isRegistered<AiAssistanceControllerImp>()
+              ? Get.find<AiAssistanceControllerImp>()
+              : Get.put(AiAssistanceControllerImp()),
           builder: (controller) {
             return SingleChildScrollView(
               controller: _scrollController,
@@ -751,6 +760,58 @@ class _AiAssistanceScreenState extends State<AiAssistanceScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                      ],
+                      if (controller.showApproveButton) ...[
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: controller.isApprovingAssignments
+                                ? null
+                                : () {
+                                    controller.approveAssignments();
+                                  },
+                            icon: controller.isApprovingAssignments
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.check_circle,
+                                    size: 20,
+                                  ),
+                            label: Text(
+                              controller.isApprovingAssignments
+                                  ? 'Approving...'
+                                  : 'Approve',
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(
+                                  context,
+                                  mobile: 16,
+                                ),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColor.successColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 2,
+                              shadowColor:
+                                  AppColor.successColor.withOpacity(0.3),
+                            ),
                           ),
                         ),
                       ],

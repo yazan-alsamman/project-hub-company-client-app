@@ -86,6 +86,17 @@ class ProjectScreen extends StatelessWidget {
   const ProjectScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    // Ensure controllers are registered before use
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
+    if (!Get.isRegistered<ProjectsControllerImp>()) {
+      Get.put(ProjectsControllerImp());
+    }
+    if (!Get.isRegistered<FilterButtonController>()) {
+      Get.put(FilterButtonController());
+    }
+
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
     return Scaffold(
@@ -179,6 +190,9 @@ class ProjectScreen extends StatelessWidget {
                               height: Responsive.spacing(context, mobile: 30),
                             ),
                             GetBuilder<FilterButtonController>(
+                              init: Get.isRegistered<FilterButtonController>()
+                                  ? Get.find<FilterButtonController>()
+                                  : Get.put(FilterButtonController()),
                               builder: (filterController) =>
                                   SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
@@ -353,7 +367,7 @@ class ProjectScreen extends StatelessWidget {
                                       title: project.title,
                                       company: project.company,
                                       description: project.description,
-                                      progress: project.progress,
+                                      progress: project.progressPercentage ?? project.progress,
                                       startDate: project.startDate,
                                       endDate: project.endDate,
                                       teamMembers: project.teamMembers,
@@ -374,19 +388,23 @@ class ProjectScreen extends StatelessWidget {
                                                 arguments: project,
                                               );
                                             },
-                                      onEdit: () {
-                                        Get.toNamed(
-                                          AppRoute.editProject,
-                                          arguments: project.id,
-                                        );
-                                      },
-                                      onDelete: () {
-                                        _handleDeleteProject(
-                                          context,
-                                          project,
-                                          controller,
-                                        );
-                                      },
+                                      onEdit: isDeveloper
+                                          ? null
+                                          : () {
+                                              Get.toNamed(
+                                                AppRoute.editProject,
+                                                arguments: project.id,
+                                              );
+                                            },
+                                      onDelete: (isDeveloper || isPM)
+                                          ? null
+                                          : () {
+                                              _handleDeleteProject(
+                                                context,
+                                                project,
+                                                controller,
+                                              );
+                                            },
                                     );
                                   },
                                 );

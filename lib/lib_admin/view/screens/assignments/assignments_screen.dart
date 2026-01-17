@@ -7,6 +7,7 @@ import '../../../core/class/statusrequest.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/constant/responsive.dart';
 import '../../../core/constant/routes.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../data/Models/assignment_model.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/custom_drawer.dart';
@@ -36,6 +37,9 @@ class _AssignmentsScreenState extends State<AssignmentsScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
     return Scaffold(
@@ -565,6 +569,47 @@ class _AssignmentsScreenState extends State<AssignmentsScreen>
               ],
             ),
           ],
+          FutureBuilder<String?>(
+            future: AuthService().getUserRole(),
+            builder: (context, snapshot) {
+              final role = snapshot.data?.toLowerCase() ?? '';
+              final isPM = role == 'pm' || role == 'project manager';
+              final isAdmin = role == 'admin';
+              
+              if (!isPM && !isAdmin) {
+                return const SizedBox.shrink();
+              }
+              
+              return Column(
+                children: [
+                  const SizedBox(height: 12),
+                  const Divider(color: AppColor.borderColor),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Get.toNamed(
+                          AppRoute.reassignAssignment,
+                          arguments: assignment,
+                        );
+                      },
+                      icon: const Icon(Icons.person_add_alt_1_outlined),
+                      label: const Text('Edit Assign'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF34A853),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
@@ -1152,6 +1197,47 @@ class _AssignmentsScreenState extends State<AssignmentsScreen>
               ],
             ),
           ],
+          FutureBuilder<String?>(
+            future: AuthService().getUserRole(),
+            builder: (context, snapshot) {
+              final role = snapshot.data?.toLowerCase() ?? '';
+              final isPM = role == 'pm' || role == 'project manager';
+              final isAdmin = role == 'admin';
+              
+              if (!isPM && !isAdmin) {
+                return const SizedBox.shrink();
+              }
+              
+              return Column(
+                children: [
+                  const SizedBox(height: 12),
+                  const Divider(color: AppColor.borderColor),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Get.toNamed(
+                          AppRoute.reassignAssignment,
+                          arguments: assignment,
+                        );
+                      },
+                      icon: const Icon(Icons.person_add_alt_1_outlined),
+                      label: const Text('Edit Assign'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF34A853),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );

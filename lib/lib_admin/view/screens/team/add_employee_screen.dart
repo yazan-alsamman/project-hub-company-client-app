@@ -25,11 +25,16 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(AddEmployeeControllerImp());
+    if (!Get.isRegistered<AddEmployeeControllerImp>()) {
+      Get.put(AddEmployeeControllerImp());
+    }
     return Scaffold(
       appBar: const CustomAppBar(title: 'Add Employee', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<AddEmployeeControllerImp>(
+          init: Get.isRegistered<AddEmployeeControllerImp>()
+              ? Get.find<AddEmployeeControllerImp>()
+              : Get.put(AddEmployeeControllerImp()),
           builder: (controller) {
             if (controller.errorMessage != null &&
                 controller.errorMessage != _previousErrorMessage) {
@@ -196,14 +201,16 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                       SizedBox(height: Responsive.spacing(context, mobile: 8)),
                       _buildStatusDropdown(context, controller),
                       SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                      _buildFormField(
-                        context,
-                        label: "Sub Role",
-                        hint: "e.g., frontend, backend,",
-                        controller: controller.subRoleController,
-                        icon: Icons.settings_outlined,
-                        keyboardType: TextInputType.text,
+                      Text(
+                        "Sub Role",
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, mobile: 14),
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textColor,
+                        ),
                       ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 8)),
+                      _buildSubRoleDropdown(context, controller),
                       SizedBox(height: Responsive.spacing(context, mobile: 30)),
                       MainButton(
                         onPressed: controller.isLoading
@@ -571,6 +578,80 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubRoleDropdown(
+    BuildContext context,
+    AddEmployeeControllerImp controller,
+  ) {
+    const List<String> subRoles = [
+      'pm',
+      'admin',
+      'developer',
+      'backend',
+      'frontend',
+      'fullstack',
+      'mobile',
+      'devops',
+      'qa',
+      'ui_ux',
+      'data',
+      'security',
+      'support',
+    ];
+    
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColor.borderColor, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButtonFormField<String>(
+        value: controller.selectedSubRole != null &&
+                subRoles.contains(controller.selectedSubRole)
+            ? controller.selectedSubRole
+            : null,
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          border: InputBorder.none,
+          hintText: "Select sub role",
+          hintStyle: TextStyle(
+            color: AppColor.textSecondaryColor,
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.settings_outlined,
+            color: AppColor.textSecondaryColor,
+            size: 20,
+          ),
+        ),
+        items: subRoles.map((subRole) {
+          return DropdownMenuItem<String>(
+            value: subRole,
+            child: Text(
+              subRole.toUpperCase(),
+              style: TextStyle(
+                fontSize: Responsive.fontSize(context, mobile: 14),
+                fontWeight: FontWeight.w500,
+                color: AppColor.textColor,
+              ),
+            ),
+          );
+        }).toList(),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a sub role';
+          }
+          return null;
+        },
+        onChanged: (value) {
+          controller.selectedSubRole = value;
+          controller.update();
+        },
       ),
     );
   }

@@ -26,6 +26,7 @@ import 'view/screens/project dashboard/project_dashboard_screen.dart';
 import 'view/screens/profile/profile_screen.dart';
 import 'view/screens/assignments/assignments_screen.dart';
 import 'view/screens/assignments/add_assignment_screen.dart';
+import 'view/screens/assignments/reassign_assignment_screen.dart';
 import 'view/screens/auth/add_client_screen.dart';
 import 'view/screens/ai_assistance/ai_assistance_screen.dart';
 import 'view/screens/delays/delays_screen.dart';
@@ -160,6 +161,11 @@ List<GetPage<dynamic>>? routes = [
     name: AppRoute.addAssignment,
     page: () => const AddAssignmentScreen(),
     binding: AddAssignmentScreenBinding(),
+  ),
+  GetPage(
+    name: AppRoute.reassignAssignment,
+    page: () => const ReassignAssignmentScreen(),
+    binding: ReassignAssignmentScreenBinding(),
   ),
   GetPage(
     name: AppRoute.addClient,

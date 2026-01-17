@@ -35,6 +35,9 @@ class ProjectCommentsScreen extends StatelessWidget {
       Get.put(ProjectCommentsController(projectId: project.id, project: project));
     }
 
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
 
@@ -47,6 +50,9 @@ class ProjectCommentsScreen extends StatelessWidget {
       appBar: const CustomAppBar(title: 'Project Comments', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<ProjectCommentsController>(
+          init: Get.isRegistered<ProjectCommentsController>()
+              ? Get.find<ProjectCommentsController>()
+              : Get.put(ProjectCommentsController(projectId: project.id, project: project)),
           builder: (controller) {
             if (controller.statusRequest == StatusRequest.loading &&
                 controller.comments.isEmpty) {

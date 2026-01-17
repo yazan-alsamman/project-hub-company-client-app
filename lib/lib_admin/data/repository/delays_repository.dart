@@ -6,6 +6,21 @@ import '../../core/services/api_service.dart';
 class DelaysRepository {
   final ApiService _apiService = ApiService();
 
+  String _getErrorMessage(StatusRequest error) {
+    switch (error) {
+      case StatusRequest.serverFailure:
+        return 'Server error. Please try again.';
+      case StatusRequest.offlineFailure:
+        return 'No internet connection. Please check your network.';
+      case StatusRequest.timeoutException:
+        return 'Request timed out. Please try again.';
+      case StatusRequest.serverException:
+        return 'An unexpected error occurred.';
+      default:
+        return 'An error occurred. Please try again.';
+    }
+  }
+
   Future<Either<StatusRequest, Map<String, dynamic>>> getDelaySummary() async {
     try {
       final result = await _apiService.get(
@@ -19,6 +34,9 @@ class DelaysRepository {
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'] as Map<String, dynamic>;
               return Right(data);
@@ -57,6 +75,9 @@ class DelaysRepository {
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'] as Map<String, dynamic>;
               return Right(data);
@@ -89,6 +110,9 @@ class DelaysRepository {
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'] as Map<String, dynamic>;
               return Right(data);
@@ -129,6 +153,9 @@ class DelaysRepository {
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'] as Map<String, dynamic>;
               return Right(data);
@@ -145,7 +172,7 @@ class DelaysRepository {
     }
   }
 
-  Future<Either<StatusRequest, bool>> acceptDelayRequest({
+  Future<Either<dynamic, bool>> acceptDelayRequest({
     required String delayRequestId,
     required String reviewNote,
   }) async {
@@ -163,26 +190,41 @@ class DelaysRepository {
 
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to accept delay request';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
             if (response['success'] == true) {
               return const Right(true);
             } else {
-              return const Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to accept delay request';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
             }
           } catch (e, stackTrace) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
-  Future<Either<StatusRequest, bool>> rejectDelayRequest({
+  Future<Either<dynamic, bool>> rejectDelayRequest({
     required String delayRequestId,
     required String reviewNote,
   }) async {
@@ -200,22 +242,37 @@ class DelaysRepository {
 
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to reject delay request';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
             if (response['success'] == true) {
               return const Right(true);
             } else {
-              return const Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to reject delay request';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
             }
           } catch (e, stackTrace) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
@@ -254,6 +311,9 @@ class DelaysRepository {
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'] as Map<String, dynamic>;
               return Right(data);

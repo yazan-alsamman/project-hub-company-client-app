@@ -276,6 +276,15 @@ class AddAssignmentScreenBinding extends Bindings {
   }
 }
 
+/// Bindings for Reassign Assignment Screen
+/// Note: ReassignAssignmentController requires AssignmentModel, so it's initialized in the screen's build method
+class ReassignAssignmentScreenBinding extends Bindings {
+  @override
+  void dependencies() {
+    // ReassignAssignmentController is initialized in ReassignAssignmentScreen with assignment from Get.arguments
+  }
+}
+
 /// Bindings for Add Client Screen
 class AddClientScreenBinding extends Bindings {
   @override

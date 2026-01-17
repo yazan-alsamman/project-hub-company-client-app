@@ -23,6 +23,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _navigateToNextScreen() {
     Timer(const Duration(seconds: 5), () {
+      if (!Get.isRegistered<Myservices>()) {
+        Get.put(Myservices());
+      }
       final myservices = Get.find<Myservices>();
       final onBoardingStatus = myservices.sharedPreferences.getString("onBoarding");
       

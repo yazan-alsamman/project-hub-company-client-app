@@ -11,11 +11,16 @@ class AddTaskScreen extends StatelessWidget {
   const AddTaskScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    Get.put(AddTaskControllerImp());
+    if (!Get.isRegistered<AddTaskControllerImp>()) {
+      Get.put(AddTaskControllerImp());
+    }
     return Scaffold(
       appBar: const CustomAppBar(title: 'Add New Task', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<AddTaskControllerImp>(
+          init: Get.isRegistered<AddTaskControllerImp>()
+              ? Get.find<AddTaskControllerImp>()
+              : Get.put(AddTaskControllerImp()),
           builder: (controller) => SingleChildScrollView(
           child: Padding(
             padding: Responsive.padding(context),

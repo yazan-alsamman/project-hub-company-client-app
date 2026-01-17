@@ -1,0 +1,18 @@
+<svg width="900" height="300" viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon -->
+  <circle cx="150" cy="150" r="36" fill="#2563EB"></circle>
+  <circle cx="150" cy="70" r="14" fill="#14B8A6"></circle>
+  <circle cx="230" cy="150" r="14" fill="#14B8A6"></circle>
+  <circle cx="150" cy="230" r="14" fill="#14B8A6"></circle>
+  <circle cx="70" cy="150" r="14" fill="#14B8A6"></circle>
+
+  <line x1="150" y1="96" x2="150" y2="124" stroke="#2563EB" stroke-width="6"></line>
+  <line x1="176" y1="150" x2="204" y2="150" stroke="#2563EB" stroke-width="6"></line>
+  <line x1="150" y1="176" x2="150" y2="204" stroke="#2563EB" stroke-width="6"></line>
+  <line x1="96" y1="150" x2="124" y2="150" stroke="#2563EB" stroke-width="6"></line>
+
+  <!-- Text -->
+  <text x="300" y="170" font-family="Inter, Arial, sans-serif" font-size="72" fill="#1F2937">
+    project<tspan fill="#2563EB" font-weight="600">Hub</tspan>
+  </text>
+</svg>

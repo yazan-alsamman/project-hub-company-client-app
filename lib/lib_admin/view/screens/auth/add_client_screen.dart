@@ -66,7 +66,9 @@ class _AddClientScreenState extends State<AddClientScreen>
 
   @override
   Widget build(BuildContext context) {
-    Get.put(AddClientControllerImp());
+    if (!Get.isRegistered<AddClientControllerImp>()) {
+      Get.put(AddClientControllerImp());
+    }
     
     if (_isLoadingRole) {
       return Scaffold(

@@ -165,14 +165,6 @@ class ProfileScreen extends StatelessWidget {
                     children: [
                       _buildInfoCard(
                         context,
-                        icon: Icons.badge,
-                        title: 'User ID',
-                        value: controller.userId ?? 'N/A',
-                        color: AppColor.primaryColor,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildInfoCard(
-                        context,
                         icon: Icons.email,
                         title: 'Email',
                         value: controller.email ?? 'N/A',

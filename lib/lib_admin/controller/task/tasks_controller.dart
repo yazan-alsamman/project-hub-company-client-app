@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
+import '../../core/constant/color.dart';
 import '../../core/services/auth_service.dart';
 import '../common/filter_button_controller.dart';
 import '../../data/Models/task_model.dart';
@@ -212,5 +214,45 @@ class TasksControllerImp extends TasksController {
     return _allTasks
         .where((task) => task.status == filterController.selectedFilter)
         .toList();
+  }
+
+  Future<bool> markTaskAsCompleted(String taskId) async {
+    final result = await _tasksRepository.markTaskAsCompleted(taskId);
+    return result.fold(
+      (error) {
+        Get.snackbar(
+          'Error',
+          error,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColor.errorColor,
+          colorText: AppColor.white,
+          icon: const Icon(Icons.error_outline, color: AppColor.white, size: 28),
+          duration: const Duration(seconds: 5),
+          borderRadius: 12,
+          margin: const EdgeInsets.all(16),
+        );
+        return false;
+      },
+      (success) {
+        Get.snackbar(
+          'Success',
+          'Task marked as completed successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColor.successColor,
+          colorText: AppColor.white,
+          icon: const Icon(
+            Icons.check_circle_outline,
+            color: AppColor.white,
+            size: 28,
+          ),
+          duration: const Duration(seconds: 2),
+          borderRadius: 12,
+          margin: const EdgeInsets.all(16),
+        );
+        // Refresh tasks after marking as completed
+        refreshTasks();
+        return true;
+      },
+    );
   }
 }

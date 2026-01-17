@@ -23,11 +23,16 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    Get.put(EditProjectControllerImp(projectId: widget.projectId));
+    if (!Get.isRegistered<EditProjectControllerImp>()) {
+      Get.put(EditProjectControllerImp(projectId: widget.projectId));
+    }
     return Scaffold(
       appBar: const CustomAppBar(title: 'Edit Project', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<EditProjectControllerImp>(
+          init: Get.isRegistered<EditProjectControllerImp>()
+              ? Get.find<EditProjectControllerImp>()
+              : Get.put(EditProjectControllerImp(projectId: widget.projectId)),
           builder: (controller) {
           if (controller.errorMessage != null &&
               controller.errorMessage != _previousErrorMessage) {
@@ -372,7 +377,12 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
               ),
             )
           : DropdownButtonFormField<String>(
-              value: controller.selectedClientId,
+              value: controller.selectedClientId != null &&
+                      controller.clients.any(
+                        (client) => client.id == controller.selectedClientId,
+                      )
+                  ? controller.selectedClientId
+                  : null,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,

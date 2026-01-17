@@ -62,12 +62,25 @@ class EmployeeScheduleController extends GetxController {
     }
   }
   Future<void> selectEndDate(BuildContext context) async {
+    final firstDateValue = startDate ?? DateTime.now();
+    final lastDateValue = DateTime.now().add(const Duration(days: 365));
+    final initialDateValue = endDate ?? 
+        (firstDateValue.isAfter(DateTime.now()) 
+            ? firstDateValue 
+            : DateTime.now().add(const Duration(days: 1)));
+    
+    // Ensure initialDate is not before firstDate
+    final safeInitialDate = initialDateValue.isBefore(firstDateValue)
+        ? firstDateValue
+        : (initialDateValue.isAfter(lastDateValue) 
+            ? lastDateValue 
+            : initialDateValue);
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate:
-          endDate ?? (startDate ?? DateTime.now()).add(const Duration(days: 1)),
-      firstDate: startDate ?? DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: safeInitialDate,
+      firstDate: firstDateValue,
+      lastDate: lastDateValue,
     );
     if (picked != null) {
       endDate = picked;

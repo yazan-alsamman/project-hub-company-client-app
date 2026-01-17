@@ -32,6 +32,7 @@ class AddEmployeeControllerImp extends AddEmployeeController {
   String? selectedRoleId;
   String? selectedPositionId;
   String? selectedDepartmentId;
+  String? selectedSubRole;
   StatusRequest statusRequest = StatusRequest.none;
   bool isLoading = false;
   bool isLoadingRoles = false;
@@ -198,6 +199,20 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         update();
         return;
       }
+      if (selectedSubRole == null || selectedSubRole!.isEmpty) {
+        Get.snackbar(
+          'Error',
+          'Please select a sub role',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColor.errorColor,
+          colorText: AppColor.white,
+          borderRadius: 12,
+          margin: const EdgeInsets.all(16),
+        );
+        isLoading = false;
+        update();
+        return;
+      }
       final positionId = selectedPositionId ?? positions.first.id;
       final departmentId = selectedDepartmentId ?? departments.first.id;
       String? finalCompanyId = await authService.getCompanyId();
@@ -224,9 +239,7 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         hireDate: hireDateController.text.trim(),
         salary: salary,
         status: selectedStatus ?? 'active',
-        subRole: subRoleController.text.trim().isNotEmpty
-            ? subRoleController.text.trim()
-            : null,
+        subRole: selectedSubRole,
         username: usernameController.text.trim(),
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
@@ -518,6 +531,7 @@ class AddEmployeeControllerImp extends AddEmployeeController {
         ? departments.first.id
         : null;
     selectedStatus = 'active';
+    selectedSubRole = null;
     authService.getCompanyId().then((companyId) {
       selectedCompanyId = companyId;
       update();

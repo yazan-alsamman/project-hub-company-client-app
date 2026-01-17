@@ -6,11 +6,13 @@ import '../../core/constant/routes.dart';
 import 'tasks_controller.dart';
 import '../../data/Models/task_model.dart';
 import '../../data/repository/tasks_repository.dart';
+
 abstract class EditTaskController extends GetxController {
   void updateTask();
   void loadTaskData();
   void deleteTask();
 }
+
 class EditTaskControllerImp extends EditTaskController {
   final TasksRepository _tasksRepository = TasksRepository();
   final String taskId;
@@ -48,6 +50,7 @@ class EditTaskControllerImp extends EditTaskController {
     super.onInit();
     loadTaskData();
   }
+
   @override
   Future<void> loadTaskData() async {
     isLoadingTask = true;
@@ -86,8 +89,7 @@ class EditTaskControllerImp extends EditTaskController {
         isLoadingTask = false;
         update();
         return;
-      } catch (e) {
-      }
+      } catch (e) {}
       isLoadingTask = false;
       errorMessage = 'Task not found';
       update();
@@ -97,6 +99,7 @@ class EditTaskControllerImp extends EditTaskController {
       update();
     }
   }
+
   @override
   void updateTask() async {
     if (!_validateForm()) {
@@ -180,10 +183,12 @@ class EditTaskControllerImp extends EditTaskController {
         targetRole: targetRole.isNotEmpty ? targetRole : null,
       );
       result.fold(
-        (errorMsg) {
+        (error) {
+          String errorMsg = error;
+          StatusRequest errorStatus = StatusRequest.serverFailure;
           errorMessage = errorMsg;
           isLoading = false;
-          statusRequest = StatusRequest.serverFailure;
+          statusRequest = errorStatus;
           update();
           Get.snackbar(
             'Error',
@@ -209,8 +214,7 @@ class EditTaskControllerImp extends EditTaskController {
           try {
             final tasksController = Get.find<TasksControllerImp>();
             tasksController.refreshTasks();
-          } catch (e) {
-          }
+          } catch (e) {}
           Get.snackbar(
             'Success',
             'Task updated successfully',
@@ -248,6 +252,7 @@ class EditTaskControllerImp extends EditTaskController {
       );
     }
   }
+
   @override
   void deleteTask() async {
     final confirm = await Get.dialog<bool>(
@@ -283,17 +288,30 @@ class EditTaskControllerImp extends EditTaskController {
       result.fold(
         (error) {
           String errorMsg = 'Failed to delete task';
-          if (error == StatusRequest.serverFailure) {
-            errorMsg = 'Server error. Please try again.';
-          } else if (error == StatusRequest.offlineFailure) {
-            errorMsg = 'No internet connection. Please check your network.';
-          } else if (error == StatusRequest.timeoutException) {
-            errorMsg = 'Request timed out. Please try again.';
-          } else if (error == StatusRequest.serverException) {
-            errorMsg = 'An unexpected server error occurred.';
+          StatusRequest errorStatus = StatusRequest.serverFailure;
+          if (error is Map<String, dynamic>) {
+            final errorStatusValue = error['error'];
+            errorStatus = errorStatusValue is StatusRequest
+                ? errorStatusValue
+                : StatusRequest.serverFailure;
+            final messageValue = error['message'];
+            errorMsg = messageValue?.toString() ?? 'Failed to delete task';
+          } else if (error is StatusRequest) {
+            errorStatus = error;
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
           }
           isLoading = false;
-          statusRequest = error;
+          statusRequest = errorStatus;
           update();
           Get.snackbar(
             'Error',
@@ -318,8 +336,7 @@ class EditTaskControllerImp extends EditTaskController {
           try {
             final tasksController = Get.find<TasksControllerImp>();
             tasksController.refreshTasks();
-          } catch (e) {
-          }
+          } catch (e) {}
           Get.snackbar(
             'Success',
             'Task deleted successfully',
@@ -357,6 +374,7 @@ class EditTaskControllerImp extends EditTaskController {
       );
     }
   }
+
   bool _validateForm() {
     if (taskNameController.text.trim().isEmpty) {
       Get.snackbar(
@@ -420,6 +438,7 @@ class EditTaskControllerImp extends EditTaskController {
     }
     return true;
   }
+
   @override
   void onClose() {
     taskNameController.dispose();

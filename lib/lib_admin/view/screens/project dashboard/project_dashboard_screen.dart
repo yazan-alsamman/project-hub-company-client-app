@@ -4,117 +4,20 @@ import 'package:get/get.dart';
 import '../../../controller/project/project_dashboard_controller.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/constant/responsive.dart';
-import '../../../core/constant/routes.dart';
-import '../../../data/Models/project_model.dart';
-import '../../../data/repository/projects_repository.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/custom_drawer.dart';
 import '../../widgets/common/project_dashboard_card.dart';
-import '../../widgets/common/project_dashboard_information_card.dart';
 import '../../widgets/common/sort_dropdown.dart';
 class ProjectDashboardScreen extends StatelessWidget {
   const ProjectDashboardScreen({super.key});
-  void _showProjectOptions(BuildContext context, ProjectModel project) {
-    final projectsRepository = ProjectsRepository();
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('Edit Project'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Get.toNamed(
-                    AppRoute.editProject,
-                    arguments: project.id,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.share),
-                title: const Text('Share Project'),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text(
-                  'Delete Project',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Get.dialog(
-                    AlertDialog(
-                      title: const Text('Delete Project'),
-                      content: Text('Are you sure you want to delete "${project.title}"?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Get.back(),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            Get.back();
-                            try {
-                              final result = await projectsRepository.deleteProject(project.id);
-                              result.fold(
-                                (error) {
-                                  Get.snackbar(
-                                    'Error',
-                                    'Failed to delete project',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                    backgroundColor: Colors.red,
-                                    colorText: Colors.white,
-                                  );
-                                },
-                                (success) {
-                                  Get.snackbar(
-                                    'Success',
-                                    'Project deleted successfully',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                    backgroundColor: Colors.green,
-                                    colorText: Colors.white,
-                                  );
-                                  final controller = Get.find<ProjectDashboardControllerImp>();
-                                  controller.loadProjects(refresh: true);
-                                  controller.loadStats();
-                                },
-                              );
-                            } catch (e) {
-                              Get.snackbar(
-                                'Error',
-                                'An error occurred while deleting project',
-                                snackPosition: SnackPosition.BOTTOM,
-                                backgroundColor: Colors.red,
-                                colorText: Colors.white,
-                              );
-                            }
-                          },
-                          child: const Text(
-                            'Delete',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
+    if (!Get.isRegistered<ProjectDashboardControllerImp>()) {
+      Get.put(ProjectDashboardControllerImp());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
     return Scaffold(
@@ -127,7 +30,9 @@ class ProjectDashboardScreen extends StatelessWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            final controller = Get.find<ProjectDashboardControllerImp>();
+            final controller = Get.isRegistered<ProjectDashboardControllerImp>()
+                ? Get.find<ProjectDashboardControllerImp>()
+                : Get.put(ProjectDashboardControllerImp());
             await controller.loadProjects(refresh: true);
           },
           color: AppColor.primaryColor,
@@ -138,6 +43,9 @@ class ProjectDashboardScreen extends StatelessWidget {
             Container(
               color: AppColor.backgroundColor,
               child: GetBuilder<ProjectDashboardControllerImp>(
+                init: Get.isRegistered<ProjectDashboardControllerImp>()
+                    ? Get.find<ProjectDashboardControllerImp>()
+                    : Get.put(ProjectDashboardControllerImp()),
                 builder: (controller) => Padding(
                   padding: Responsive.padding(context),
                   child: Column(
@@ -316,51 +224,6 @@ class ProjectDashboardScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                      SizedBox(height: Responsive.spacing(context, mobile: 24)),
-                      Text(
-                        "Project Details",
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, mobile: 20),
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1A1A1A),
-                        ),
-                      ),
-                      SizedBox(height: Responsive.spacing(context, mobile: 16)),
-                      if (controller.isLoading)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      else if (controller.projects.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Center(
-                            child: Text(
-                              'No projects found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        ...controller.projects.map(
-                          (project) => ProjectDashboardInformationCard(
-                            project: project,
-                            onTap: () {
-                              Get.toNamed(
-                                AppRoute.projectDetails,
-                                arguments: project,
-                              );
-                            },
-                            onMoreTap: () {
-                              _showProjectOptions(context, project);
-                            },
-                          ),
-                        ),
                     ],
                   ),
                 ),

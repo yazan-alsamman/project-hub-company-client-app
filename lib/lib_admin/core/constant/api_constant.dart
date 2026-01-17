@@ -87,6 +87,8 @@ class ApiConstant {
   static const String taskAssignmentsByTask = '/task-assignment/task/{taskId}';
   static const String createTaskAssignment = '/task-assignment';
   static const String bulkCreateTaskAssignment = '/task-assignment/bulk/create';
+  static const String markTaskAsCompleted = '/task-assignment/task/{taskId}/complete';
+  static const String reassignTaskAssignment = '/task-assignment/{assignmentId}/reassign';
   static const String employees = '/employee';
   static const String employeeDetails = '/employee/{id}';
   static const String updateEmployee = '/employee/{id}';

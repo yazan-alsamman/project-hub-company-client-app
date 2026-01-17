@@ -37,6 +37,12 @@ class _TeamScreenState extends State<TeamScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
+    if (!Get.isRegistered<TeamControllerImp>()) {
+      Get.put(TeamControllerImp());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
     return Scaffold(
@@ -48,7 +54,9 @@ class _TeamScreenState extends State<TeamScreen> {
       appBar: const CustomAppBar(),
       body: SafeArea(
         child: GetBuilder<TeamControllerImp>(
-        init: Get.find<TeamControllerImp>(),
+        init: Get.isRegistered<TeamControllerImp>()
+            ? Get.find<TeamControllerImp>()
+            : Get.put(TeamControllerImp()),
         builder: (controller) {
           debugPrint(
             '🟡 TeamScreen build - Status: ${controller.statusRequest}, Members: ${controller.teamMembers.length}, Loading: ${controller.isLoading}',

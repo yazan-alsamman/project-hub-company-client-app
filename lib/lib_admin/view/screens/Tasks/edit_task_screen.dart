@@ -23,11 +23,16 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    Get.put(EditTaskControllerImp(taskId: widget.taskId));
+    if (!Get.isRegistered<EditTaskControllerImp>()) {
+      Get.put(EditTaskControllerImp(taskId: widget.taskId));
+    }
     return Scaffold(
       appBar: const CustomAppBar(title: 'Edit Task', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<EditTaskControllerImp>(
+          init: Get.isRegistered<EditTaskControllerImp>()
+              ? Get.find<EditTaskControllerImp>()
+              : Get.put(EditTaskControllerImp(taskId: widget.taskId)),
           builder: (controller) {
           if (controller.errorMessage != null &&
               controller.errorMessage != _previousErrorMessage) {

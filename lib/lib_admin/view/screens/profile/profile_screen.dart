@@ -11,9 +11,14 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
+    if (!Get.isRegistered<ProfileController>()) {
+      Get.put(ProfileController());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
-    Get.put(ProfileController());
     return Scaffold(
       drawer: CustomDrawer(
         onItemTap: (item) {
@@ -23,6 +28,9 @@ class ProfileScreen extends StatelessWidget {
       appBar: const CustomAppBar(title: 'Profile', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<ProfileController>(
+          init: Get.isRegistered<ProfileController>()
+              ? Get.find<ProfileController>()
+              : Get.put(ProfileController()),
           builder: (controller) {
           if (controller.isLoading) {
             return const Center(

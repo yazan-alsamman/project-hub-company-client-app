@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
+import '../../core/constant/color.dart';
 import '../../core/services/auth_service.dart';
 import '../../data/Models/task_model.dart';
 import '../../data/Models/comment_model.dart';
@@ -97,10 +98,28 @@ class TaskDetailController extends GetxController {
 
       result.fold(
         (error) {
+          String errorMsg = 'Failed to add comment';
+          if (error is Map<String, dynamic> && error['message'] != null) {
+            errorMsg = error['message'].toString();
+          } else if (error is StatusRequest) {
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
+          }
           Get.snackbar(
             'Error',
-            'Failed to add comment',
+            errorMsg,
             snackPosition: SnackPosition.TOP,
+            backgroundColor: AppColor.errorColor,
+            colorText: AppColor.white,
           );
         },
         (comment) {
@@ -149,10 +168,28 @@ class TaskDetailController extends GetxController {
 
       result.fold(
         (error) {
+          String errorMsg = 'Failed to add reply';
+          if (error is Map<String, dynamic> && error['message'] != null) {
+            errorMsg = error['message'].toString();
+          } else if (error is StatusRequest) {
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
+          }
           Get.snackbar(
             'Error',
-            'Failed to add reply',
+            errorMsg,
             snackPosition: SnackPosition.TOP,
+            backgroundColor: AppColor.errorColor,
+            colorText: AppColor.white,
           );
         },
         (reply) {
@@ -198,10 +235,28 @@ class TaskDetailController extends GetxController {
 
       result.fold(
         (error) {
+          String errorMsg = 'Failed to update comment';
+          if (error is Map<String, dynamic> && error['message'] != null) {
+            errorMsg = error['message'].toString();
+          } else if (error is StatusRequest) {
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
+          }
           Get.snackbar(
             'Error',
-            'Failed to update comment',
+            errorMsg,
             snackPosition: SnackPosition.TOP,
+            backgroundColor: AppColor.errorColor,
+            colorText: AppColor.white,
           );
         },
         (updatedComment) {
@@ -247,10 +302,28 @@ class TaskDetailController extends GetxController {
 
       result.fold(
         (error) {
+          String errorMsg = 'Failed to delete comment';
+          if (error is Map<String, dynamic> && error['message'] != null) {
+            errorMsg = error['message'].toString();
+          } else if (error is StatusRequest) {
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
+          }
           Get.snackbar(
             'Error',
-            'Failed to delete comment',
+            errorMsg,
             snackPosition: SnackPosition.TOP,
+            backgroundColor: AppColor.errorColor,
+            colorText: AppColor.white,
           );
         },
         (_) {

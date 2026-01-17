@@ -71,8 +71,7 @@ class ProjectsControllerImp extends ProjectsController {
     if (_selectedFilter != 'All') {
       switch (_selectedFilter.toLowerCase()) {
         case 'active':
-          apiStatus =
-              'in_progress';
+          apiStatus = 'in_progress';
           break;
         case 'completed':
           apiStatus = 'completed';
@@ -129,28 +128,22 @@ class ProjectsControllerImp extends ProjectsController {
             final teamRepository = TeamRepository();
             final employeeResult = await teamRepository.getEmployeeById(userId);
             String? companyIdFromEmployee;
-            employeeResult.fold(
-              (error) {
-              },
-              (employee) {
-                if (employee.companyId != null) {
-                  final companyIdStr = employee.companyId!['_id']?.toString();
-                  if (companyIdStr != null && companyIdStr.isNotEmpty) {
-                    authService.saveCompanyId(companyIdStr);
-                    companyIdFromEmployee = companyIdStr;
-                  }
+            employeeResult.fold((error) {}, (employee) {
+              if (employee.companyId != null) {
+                final companyIdStr = employee.companyId!['_id']?.toString();
+                if (companyIdStr != null && companyIdStr.isNotEmpty) {
+                  authService.saveCompanyId(companyIdStr);
+                  companyIdFromEmployee = companyIdStr;
                 }
-              },
-            );
+              }
+            });
             if (companyIdFromEmployee != null) {
               return companyIdFromEmployee;
             }
-          } catch (e) {
-          }
+          } catch (e) {}
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
     return null;
   }
 

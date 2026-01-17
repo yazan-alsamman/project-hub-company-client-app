@@ -6,6 +6,21 @@ import '../Models/comment_model.dart';
 class CommentRepository {
   final ApiService _apiService = ApiService();
 
+  String _getErrorMessage(StatusRequest error) {
+    switch (error) {
+      case StatusRequest.serverFailure:
+        return 'Server error. Please try again.';
+      case StatusRequest.offlineFailure:
+        return 'No internet connection. Please check your network.';
+      case StatusRequest.timeoutException:
+        return 'Request timed out. Please try again.';
+      case StatusRequest.serverException:
+        return 'An unexpected error occurred.';
+      default:
+        return 'An error occurred. Please try again.';
+    }
+  }
+
   Future<Either<StatusRequest, List<CommentModel>>> getTaskComments(
     String taskId, {
     int page = 1,
@@ -29,6 +44,9 @@ class CommentRepository {
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Right([]);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'];
               List<CommentModel> comments = [];
@@ -82,6 +100,9 @@ class CommentRepository {
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Right([]);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'];
               List<CommentModel> comments = [];
@@ -112,7 +133,7 @@ class CommentRepository {
     }
   }
 
-  Future<Either<StatusRequest, CommentModel>> addComment({
+  Future<Either<dynamic, CommentModel>> addComment({
     required String taskId,
     required String content,
     String? parentId,
@@ -136,30 +157,44 @@ class CommentRepository {
 
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to add comment';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
             if (response['success'] == true && response['data'] != null) {
               final comment = CommentModel.fromJson(
                 response['data'] as Map<String, dynamic>,
               );
               return Right(comment);
             } else {
-              final errorMessage = response['message']?.toString() ?? 'Failed to add comment';
-              return const Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to add comment';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
             }
           } catch (e, stackTrace) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
-  Future<Either<StatusRequest, CommentModel>> addProjectComment({
+  Future<Either<dynamic, CommentModel>> addProjectComment({
     required String projectId,
     required String content,
     String? parentId,
@@ -183,30 +218,44 @@ class CommentRepository {
 
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to add comment';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
             if (response['success'] == true && response['data'] != null) {
               final comment = CommentModel.fromJson(
                 response['data'] as Map<String, dynamic>,
               );
               return Right(comment);
             } else {
-              final errorMessage = response['message']?.toString() ?? 'Failed to add comment';
-              return const Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to add comment';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
             }
           } catch (e, stackTrace) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
-  Future<Either<StatusRequest, CommentModel>> updateComment({
+  Future<Either<dynamic, CommentModel>> updateComment({
     required String commentId,
     required String content,
   }) async {
@@ -223,30 +272,44 @@ class CommentRepository {
 
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to update comment';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
             if (response['success'] == true && response['data'] != null) {
               final comment = CommentModel.fromJson(
                 response['data'] as Map<String, dynamic>,
               );
               return Right(comment);
             } else {
-              final errorMessage = response['message']?.toString() ?? 'Failed to update comment';
-              return const Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to update comment';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
             }
           } catch (e, stackTrace) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
-  Future<Either<StatusRequest, void>> deleteComment(String commentId) async {
+  Future<Either<dynamic, void>> deleteComment(String commentId) async {
     try {
 
       final result = await _apiService.delete(
@@ -256,23 +319,37 @@ class CommentRepository {
 
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to delete comment';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
             if (response['success'] == true) {
               return const Right(null);
             } else {
-              final errorMessage = response['message']?.toString() ?? 'Failed to delete comment';
-              return const Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to delete comment';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
             }
           } catch (e, stackTrace) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 }

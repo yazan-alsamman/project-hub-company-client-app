@@ -130,21 +130,36 @@ class AddTaskControllerImp extends AddTaskController {
     update();
     result.fold(
       (error) {
-        statusRequest = error;
-        String errorMessage = 'Failed to create task';
-        if (error == StatusRequest.serverFailure) {
-          errorMessage = 'Server error. Please try again.';
-        } else if (error == StatusRequest.offlineFailure) {
-          errorMessage =
-              'No internet connection. Please check your connection.';
+        String errorMsg = 'Failed to create task';
+        StatusRequest errorStatus = StatusRequest.serverFailure;
+        if (error is Map<String, dynamic>) {
+          errorStatus =
+              error['error'] as StatusRequest? ?? StatusRequest.serverFailure;
+          errorMsg =
+              error['message']?.toString() ?? 'Failed to create task';
+        } else if (error is StatusRequest) {
+          errorStatus = error;
+          if (error == StatusRequest.serverFailure) {
+            errorMsg = 'Server error. Please try again.';
+          } else if (error == StatusRequest.offlineFailure) {
+            errorMsg = 'No internet connection. Please check your network.';
+          } else if (error == StatusRequest.timeoutException) {
+            errorMsg = 'Request timed out. Please try again.';
+          } else if (error == StatusRequest.serverException) {
+            errorMsg = 'An unexpected server error occurred.';
+          }
+        } else if (error is String) {
+          errorMsg = error;
         }
+        statusRequest = errorStatus;
         Get.snackbar(
           'Error',
-          errorMessage,
-          backgroundColor: AppColor.primaryColor,
+          errorMsg,
+          backgroundColor: AppColor.errorColor,
           colorText: AppColor.white,
           snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 3),
+          icon: const Icon(Icons.error_outline, color: AppColor.white, size: 28),
+          duration: const Duration(seconds: 5),
           borderRadius: 12,
           margin: const EdgeInsets.all(16),
         );

@@ -14,6 +14,12 @@ class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
+    if (!Get.isRegistered<AnalyticsControllerImp>()) {
+      Get.put(AnalyticsControllerImp());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
     return Scaffold(
@@ -30,6 +36,9 @@ class AnalyticsScreen extends StatelessWidget {
             Container(
               color: AppColor.backgroundColor,
               child: GetBuilder<AnalyticsControllerImp>(
+                init: Get.isRegistered<AnalyticsControllerImp>()
+                    ? Get.find<AnalyticsControllerImp>()
+                    : Get.put(AnalyticsControllerImp()),
                 builder: (controller) => Padding(
                   padding: EdgeInsets.all(20),
                   child: Column(

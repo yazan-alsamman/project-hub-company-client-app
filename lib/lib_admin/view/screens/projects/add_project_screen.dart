@@ -22,11 +22,16 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    Get.put(AddProjectControllerImp());
+    if (!Get.isRegistered<AddProjectControllerImp>()) {
+      Get.put(AddProjectControllerImp());
+    }
     return Scaffold(
       appBar: const CustomAppBar(title: 'Add Project', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<AddProjectControllerImp>(
+          init: Get.isRegistered<AddProjectControllerImp>()
+              ? Get.find<AddProjectControllerImp>()
+              : Get.put(AddProjectControllerImp()),
           builder: (controller) {
           if (controller.errorMessage != null &&
               controller.errorMessage != _previousErrorMessage) {

@@ -7,6 +7,21 @@ import '../Models/task_model.dart';
 class TasksRepository {
   final ApiService _apiService = ApiService();
 
+  String _getErrorMessage(StatusRequest error) {
+    switch (error) {
+      case StatusRequest.serverFailure:
+        return 'Server error. Please try again.';
+      case StatusRequest.offlineFailure:
+        return 'No internet connection. Please check your network.';
+      case StatusRequest.timeoutException:
+        return 'Request timed out. Please try again.';
+      case StatusRequest.serverException:
+        return 'An unexpected error occurred.';
+      default:
+        return 'An error occurred. Please try again.';
+    }
+  }
+
   Future<Either<StatusRequest, List<TaskModel>>> getTasks({
     int page = 1,
     int limit = 10,
@@ -25,6 +40,9 @@ class TasksRepository {
         (error) => Left(error),
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'];
               List<dynamic> tasksList;
@@ -58,7 +76,7 @@ class TasksRepository {
     }
   }
 
-  Future<Either<StatusRequest, TaskModel>> createTask({
+  Future<Either<dynamic, TaskModel>> createTask({
     required String projectId,
     required String taskName,
     required String taskDescription,
@@ -88,19 +106,49 @@ class TasksRepository {
         requiresAuth: true,
       );
       return result.fold(
-        (error) => Left(error),
+        (error) {
+          return Left({
+            'error': error,
+            'message': _getErrorMessage(error),
+          });
+        },
         (response) {
-          if (response['success'] == true && response['data'] != null) {
-            final taskData = response['data'] as Map<String, dynamic>;
-            final task = TaskModel.fromJson(taskData);
-            return Right(task);
-          } else {
-            return const Left(StatusRequest.serverFailure);
+          try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to create task';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
+            }
+            if (response['success'] == true && response['data'] != null) {
+              final taskData = response['data'] as Map<String, dynamic>;
+              final task = TaskModel.fromJson(taskData);
+              return Right(task);
+            } else {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to create task';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
+            }
+          } catch (e) {
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
@@ -188,7 +236,7 @@ class TasksRepository {
     }
   }
 
-  Future<Either<StatusRequest, bool>> deleteTask(String taskId) async {
+  Future<Either<dynamic, bool>> deleteTask(String taskId) async {
     try {
       final result = await _apiService.delete(
         ApiConstant.deleteTask,
@@ -196,25 +244,51 @@ class TasksRepository {
         requiresAuth: true,
       );
       return result.fold(
-        (error) => Left(error),
+        (error) {
+          return Left({
+            'error': error,
+            'message': _getErrorMessage(error),
+          });
+        },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to delete task';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
+            }
             if (response['success'] == true) {
               return const Right(true);
             } else {
-              return Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to delete task';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
             }
           } catch (e) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
-  Future<Either<StatusRequest, bool>> requestTaskDelay({
+  Future<Either<dynamic, bool>> requestTaskDelay({
     required String taskId,
     required String newDueDate,
     required String reason,
@@ -231,21 +305,47 @@ class TasksRepository {
         requiresAuth: true,
       );
       return result.fold(
-        (error) => Left(error),
+        (error) {
+          return Left({
+            'error': error,
+            'message': _getErrorMessage(error),
+          });
+        },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to request task delay';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
+            }
             if (response['success'] == true) {
               return const Right(true);
             } else {
-              return Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to request task delay';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
             }
           } catch (e) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
@@ -269,6 +369,9 @@ class TasksRepository {
         (error) => Left(error),
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'];
               List<dynamic> tasksList;
@@ -302,7 +405,56 @@ class TasksRepository {
     }
   }
 
-  Future<Either<StatusRequest, Map<String, dynamic>>> bulkCreateTasks({
+  Future<Either<String, bool>> markTaskAsCompleted(String taskId) async {
+    try {
+      final result = await _apiService.put(
+        ApiConstant.markTaskAsCompleted,
+        pathParams: {'taskId': taskId},
+        requiresAuth: true,
+      );
+      return result.fold(
+        (error) {
+          String errorMsg = 'Failed to mark task as completed';
+          if (error == StatusRequest.serverFailure) {
+            errorMsg = 'Server error. Please try again.';
+          } else if (error == StatusRequest.offlineFailure) {
+            errorMsg = 'No internet connection. Please check your network.';
+          } else if (error == StatusRequest.timeoutException) {
+            errorMsg = 'Request timed out. Please try again.';
+          } else if (error == StatusRequest.serverException) {
+            errorMsg = 'An unexpected server error occurred.';
+          }
+          return Left(errorMsg);
+        },
+        (response) {
+          try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to mark task as completed';
+              return Left(errorMessage);
+            }
+            if (response['success'] == true) {
+              return const Right(true);
+            } else {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to mark task as completed';
+              return Left(errorMessage);
+            }
+          } catch (e) {
+            return const Left(
+              'An unexpected error occurred while marking task as completed.',
+            );
+          }
+        },
+      );
+    } catch (e) {
+      return const Left('An unexpected error occurred while marking task as completed.');
+    }
+  }
+
+  Future<Either<dynamic, Map<String, dynamic>>> bulkCreateTasks({
     required String projectId,
     required List<Map<String, dynamic>> tasks,
   }) async {
@@ -317,17 +469,47 @@ class TasksRepository {
         requiresAuth: true,
       );
       return result.fold(
-        (error) => Left(error),
+        (error) {
+          return Left({
+            'error': error,
+            'message': _getErrorMessage(error),
+          });
+        },
         (response) {
-          if (response['success'] == true) {
-            return Right(response);
-          } else {
-            return const Left(StatusRequest.serverFailure);
+          try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to bulk create tasks';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
+            }
+            if (response['success'] == true) {
+              return Right(response);
+            } else {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to bulk create tasks';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
+            }
+          } catch (e) {
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 }

@@ -248,13 +248,32 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
+          String errorMsg = 'Failed to accept delay request';
+          if (error is Map<String, dynamic> && error['message'] != null) {
+            errorMsg = error['message'].toString();
+          } else if (error is StatusRequest) {
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
+          }
           Get.snackbar(
             'Error',
-            'Failed to accept delay request',
+            errorMsg,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppColor.errorColor,
             colorText: Colors.white,
-            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.error_outline, color: Colors.white, size: 28),
+            duration: const Duration(seconds: 5),
+            borderRadius: 12,
+            margin: const EdgeInsets.all(16),
           );
         },
         (success) {
@@ -296,13 +315,32 @@ class DelaysController extends GetxController {
 
       result.fold(
         (error) {
+          String errorMsg = 'Failed to reject delay request';
+          if (error is Map<String, dynamic> && error['message'] != null) {
+            errorMsg = error['message'].toString();
+          } else if (error is StatusRequest) {
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else if (error is String) {
+            errorMsg = error;
+          }
           Get.snackbar(
             'Error',
-            'Failed to reject delay request',
+            errorMsg,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppColor.errorColor,
             colorText: Colors.white,
-            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.error_outline, color: Colors.white, size: 28),
+            duration: const Duration(seconds: 5),
+            borderRadius: 12,
+            margin: const EdgeInsets.all(16),
           );
         },
         (success) {

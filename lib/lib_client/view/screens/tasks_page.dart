@@ -47,31 +47,36 @@ class TasksPage extends StatelessWidget {
                           horizontal: Responsive.spacing(context, mobile: 16),
                           vertical: Responsive.spacing(context, mobile: 24),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildTasksHeader(context),
-                            SizedBox(
-                              height: Responsive.spacing(context, mobile: 24),
-                            ),
-                            _buildProjectSelector(context, controller),
-                            SizedBox(
-                              height: Responsive.spacing(context, mobile: 16),
-                            ),
-                            _buildStatusFilters(context, controller),
-                            SizedBox(
-                              height: Responsive.spacing(context, mobile: 24),
-                            ),
-                            _buildProgressBar(context, controller),
-                            SizedBox(
-                              height: Responsive.spacing(context, mobile: 24),
-                            ),
-                            _buildDonutChartSection(context, controller),
-                            SizedBox(
-                              height: Responsive.spacing(context, mobile: 32),
-                            ),
-                            _buildTaskList(context, controller),
-                          ],
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: Responsive.maxContentWidth(context),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildTasksHeader(context),
+                              SizedBox(
+                                height: Responsive.spacing(context, mobile: 24),
+                              ),
+                              _buildProjectSelector(context, controller),
+                              SizedBox(
+                                height: Responsive.spacing(context, mobile: 16),
+                              ),
+                              _buildStatusFilters(context, controller),
+                              SizedBox(
+                                height: Responsive.spacing(context, mobile: 24),
+                              ),
+                              _buildProgressBar(context, controller),
+                              SizedBox(
+                                height: Responsive.spacing(context, mobile: 24),
+                              ),
+                              _buildDonutChartSection(context, controller),
+                              SizedBox(
+                                height: Responsive.spacing(context, mobile: 32),
+                              ),
+                              _buildTaskList(context, controller),
+                            ],
+                          ),
                         ),
                       );
                     });
@@ -243,7 +248,8 @@ class TasksPage extends StatelessWidget {
     TasksPageController controller,
   ) {
     return Obx(() {
-      final completionPercent = (controller.projectCompletionPercent.value * 100).round();
+      final completionPercent =
+          (controller.projectCompletionPercent.value * 100).round();
       final incompletePercent = 100 - completionPercent;
 
       return Container(
@@ -326,7 +332,9 @@ class TasksPage extends StatelessWidget {
                       flex: incompletePercent,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppColor.backgroundColor.withValues(alpha: 0.5),
+                          color: AppColor.backgroundColor.withValues(
+                            alpha: 0.5,
+                          ),
                           borderRadius: BorderRadius.only(
                             topRight: Radius.circular(
                               Responsive.borderRadius(context, mobile: 16),
@@ -352,6 +360,7 @@ class TasksPage extends StatelessWidget {
     TasksPageController controller,
   ) {
     return Obx(() {
+      final isMobile = Responsive.isMobile(context);
       return Container(
         padding: EdgeInsets.all(Responsive.spacing(context, mobile: 24)),
         decoration: BoxDecoration(
@@ -368,38 +377,96 @@ class TasksPage extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: Responsive.size(context, mobile: 180),
-              height: Responsive.size(context, mobile: 180),
-              child: CustomPaint(
-                size: Size(
-                  Responsive.size(context, mobile: 180),
-                  Responsive.size(context, mobile: 180),
-                ),
-                painter: DonutChartPainter(
-                  completed: controller.completedPercent.value,
-                  inProgress: controller.inProgressPercent.value,
-                  pending: controller.pendingPercent.value,
-                ),
+        child: isMobile
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: Responsive.size(context, mobile: 180),
+                    height: Responsive.size(context, mobile: 180),
+                    child: CustomPaint(
+                      size: Size(
+                        Responsive.size(context, mobile: 180),
+                        Responsive.size(context, mobile: 180),
+                      ),
+                      painter: DonutChartPainter(
+                        completed: controller.completedPercent.value,
+                        inProgress: controller.inProgressPercent.value,
+                        pending: controller.pendingPercent.value,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: Responsive.spacing(context, mobile: 24)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildLegendItem(
+                        context,
+                        AppColor.completedColor,
+                        'Completed',
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                      _buildLegendItem(
+                        context,
+                        AppColor.inProgressColor,
+                        'In Progress',
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                      _buildLegendItem(
+                        context,
+                        AppColor.pendingColor,
+                        'Pending',
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: Responsive.size(context, mobile: 180),
+                    height: Responsive.size(context, mobile: 180),
+                    child: CustomPaint(
+                      size: Size(
+                        Responsive.size(context, mobile: 180),
+                        Responsive.size(context, mobile: 180),
+                      ),
+                      painter: DonutChartPainter(
+                        completed: controller.completedPercent.value,
+                        inProgress: controller.inProgressPercent.value,
+                        pending: controller.pendingPercent.value,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: Responsive.spacing(context, mobile: 32)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildLegendItem(
+                        context,
+                        AppColor.completedColor,
+                        'Completed',
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                      _buildLegendItem(
+                        context,
+                        AppColor.inProgressColor,
+                        'In Progress',
+                      ),
+                      SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                      _buildLegendItem(
+                        context,
+                        AppColor.pendingColor,
+                        'Pending',
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            SizedBox(width: Responsive.spacing(context, mobile: 32)),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildLegendItem(context, AppColor.completedColor, 'Completed'),
-                SizedBox(height: Responsive.spacing(context, mobile: 12)),
-                _buildLegendItem(context, AppColor.inProgressColor, 'In Progress'),
-                SizedBox(height: Responsive.spacing(context, mobile: 12)),
-                _buildLegendItem(context, AppColor.pendingColor, 'Pending'),
-              ],
-            ),
-          ],
-        ),
       );
     });
   }
@@ -573,103 +640,324 @@ class TasksPage extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: Responsive.spacing(context, mobile: 12)),
-            Row(
-              children: [
-                if (task.tag.isNotEmpty)
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: Responsive.spacing(context, mobile: 12),
-                      vertical: Responsive.spacing(context, mobile: 6),
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColor.tagBackgroundColor,
-                      borderRadius: BorderRadius.circular(
-                        Responsive.borderRadius(context, mobile: 12),
-                      ),
-                    ),
-                    child: Text(
-                      task.tag,
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 12),
-                        color: AppColor.textColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                if (task.tag.isNotEmpty)
-                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: Responsive.spacing(context, mobile: 12),
-                    vertical: Responsive.spacing(context, mobile: 6),
-                  ),
-                  decoration: BoxDecoration(
-                    color: priorityColor,
-                    borderRadius: BorderRadius.circular(
-                      Responsive.borderRadius(context, mobile: 12),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+            Responsive.isMobile(context)
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        _getPriorityIcon(task.priority),
-                        size: 14,
-                        color: Colors.white,
+                      Wrap(
+                        spacing: Responsive.spacing(context, mobile: 8),
+                        runSpacing: Responsive.spacing(context, mobile: 8),
+                        children: [
+                          if (task.tag.isNotEmpty)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: Responsive.spacing(
+                                  context,
+                                  mobile: 12,
+                                ),
+                                vertical: Responsive.spacing(
+                                  context,
+                                  mobile: 6,
+                                ),
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColor.tagBackgroundColor,
+                                borderRadius: BorderRadius.circular(
+                                  Responsive.borderRadius(context, mobile: 12),
+                                ),
+                              ),
+                              child: Text(
+                                task.tag,
+                                style: TextStyle(
+                                  fontSize: Responsive.fontSize(
+                                    context,
+                                    mobile: 12,
+                                  ),
+                                  color: AppColor.textColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: Responsive.spacing(
+                                context,
+                                mobile: 12,
+                              ),
+                              vertical: Responsive.spacing(context, mobile: 6),
+                            ),
+                            decoration: BoxDecoration(
+                              color: priorityColor,
+                              borderRadius: BorderRadius.circular(
+                                Responsive.borderRadius(context, mobile: 12),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getPriorityIcon(task.priority),
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  task.priority,
+                                  style: TextStyle(
+                                    fontSize: Responsive.fontSize(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(width: 4),
-                      Text(
-                        task.priority,
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, mobile: 12),
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                      SizedBox(height: Responsive.spacing(context, mobile: 12)),
+                      Wrap(
+                        spacing: Responsive.spacing(context, mobile: 12),
+                        runSpacing: Responsive.spacing(context, mobile: 8),
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (task.date.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 14,
+                                  color: AppColor.textSecondaryColor,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  task.date,
+                                  style: TextStyle(
+                                    fontSize: Responsive.fontSize(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                    color: AppColor.textSecondaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.person,
+                                size: 14,
+                                color: AppColor.textSecondaryColor,
+                              ),
+                              SizedBox(width: 4),
+                              if (task.assignee.isNotEmpty) ...[
+                                CircleAvatar(
+                                  radius: Responsive.size(context, mobile: 12),
+                                  backgroundColor: Color(
+                                    task.assigneeColor,
+                                  ).withValues(alpha: 0.2),
+                                  child: Text(
+                                    task.assignee.length > 2
+                                        ? task.assignee
+                                              .substring(0, 2)
+                                              .toUpperCase()
+                                        : task.assignee.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: Responsive.fontSize(
+                                        context,
+                                        mobile: 9,
+                                      ),
+                                      color: Color(task.assigneeColor),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: Responsive.spacing(context, mobile: 6),
+                                ),
+                                Text(
+                                  task.assignee,
+                                  style: TextStyle(
+                                    fontSize: Responsive.fontSize(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                    color: AppColor.textColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ] else
+                                Text(
+                                  'Unassigned',
+                                  style: TextStyle(
+                                    fontSize: Responsive.fontSize(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                    color: AppColor.textSecondaryColor,
+                                    fontWeight: FontWeight.w500,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      if (task.tag.isNotEmpty)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: Responsive.spacing(context, mobile: 12),
+                            vertical: Responsive.spacing(context, mobile: 6),
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColor.tagBackgroundColor,
+                            borderRadius: BorderRadius.circular(
+                              Responsive.borderRadius(context, mobile: 12),
+                            ),
+                          ),
+                          child: Text(
+                            task.tag,
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(
+                                context,
+                                mobile: 12,
+                              ),
+                              color: AppColor.textColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
+                      if (task.tag.isNotEmpty)
+                        SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: Responsive.spacing(context, mobile: 12),
+                          vertical: Responsive.spacing(context, mobile: 6),
+                        ),
+                        decoration: BoxDecoration(
+                          color: priorityColor,
+                          borderRadius: BorderRadius.circular(
+                            Responsive.borderRadius(context, mobile: 12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getPriorityIcon(task.priority),
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              task.priority,
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(
+                                  context,
+                                  mobile: 12,
+                                ),
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      if (task.date.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 14,
+                              color: AppColor.textSecondaryColor,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              task.date,
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(
+                                  context,
+                                  mobile: 12,
+                                ),
+                                color: AppColor.textSecondaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (task.date.isNotEmpty)
+                        SizedBox(width: Responsive.spacing(context, mobile: 8)),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.person,
+                            size: 14,
+                            color: AppColor.textSecondaryColor,
+                          ),
+                          SizedBox(width: 4),
+                          if (task.assignee.isNotEmpty) ...[
+                            CircleAvatar(
+                              radius: Responsive.size(context, mobile: 12),
+                              backgroundColor: Color(
+                                task.assigneeColor,
+                              ).withValues(alpha: 0.2),
+                              child: Text(
+                                task.assignee.length > 2
+                                    ? task.assignee
+                                          .substring(0, 2)
+                                          .toUpperCase()
+                                    : task.assignee.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: Responsive.fontSize(
+                                    context,
+                                    mobile: 9,
+                                  ),
+                                  color: Color(task.assigneeColor),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: Responsive.spacing(context, mobile: 6),
+                            ),
+                            Text(
+                              task.assignee,
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(
+                                  context,
+                                  mobile: 12,
+                                ),
+                                color: AppColor.textColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ] else
+                            Text(
+                              'Unassigned',
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(
+                                  context,
+                                  mobile: 12,
+                                ),
+                                color: AppColor.textSecondaryColor,
+                                fontWeight: FontWeight.w500,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-                const Spacer(),
-                if (task.date.isNotEmpty)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: AppColor.textSecondaryColor,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        task.date,
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, mobile: 12),
-                          color: AppColor.textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                if (task.date.isNotEmpty)
-                  SizedBox(width: Responsive.spacing(context, mobile: 8)),
-                if (task.assignee.isNotEmpty)
-                  CircleAvatar(
-                    radius: Responsive.size(context, mobile: 16),
-                    backgroundColor: Color(
-                      task.assigneeColor,
-                    ).withValues(alpha: 0.2),
-                    child: Text(
-                      task.assignee.length > 2
-                          ? task.assignee.substring(0, 2).toUpperCase()
-                          : task.assignee.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: Responsive.fontSize(context, mobile: 10),
-                        color: Color(task.assigneeColor),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
           ],
         ),
       ),
@@ -740,19 +1028,22 @@ class DonutChartPainter extends CustomPainter {
     final strokeWidth = 30.0;
 
     final completedPaint = Paint()
-      ..color = AppColor.completedColor // Green
+      ..color = AppColor
+          .completedColor // Green
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
     final inProgressPaint = Paint()
-      ..color = AppColor.inProgressColor // Blue
+      ..color = AppColor
+          .inProgressColor // Blue
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
     final pendingPaint = Paint()
-      ..color = AppColor.pendingColor // Orange
+      ..color = AppColor
+          .pendingColor // Orange
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -797,4 +1088,3 @@ class DonutChartPainter extends CustomPainter {
             oldDelegate.pending != pending);
   }
 }
-  

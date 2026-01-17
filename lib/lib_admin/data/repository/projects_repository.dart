@@ -8,6 +8,21 @@ import '../Models/client_model.dart';
 class ProjectsRepository {
   final ApiService _apiService = ApiService();
 
+  String _getErrorMessage(StatusRequest error) {
+    switch (error) {
+      case StatusRequest.serverFailure:
+        return 'Server error. Please try again.';
+      case StatusRequest.offlineFailure:
+        return 'No internet connection. Please check your network.';
+      case StatusRequest.timeoutException:
+        return 'Request timed out. Please try again.';
+      case StatusRequest.serverException:
+        return 'An unexpected error occurred.';
+      default:
+        return 'An error occurred. Please try again.';
+    }
+  }
+
   Future<Either<StatusRequest, int>> getProjectsCount({
     required String? companyId,
   }) async {
@@ -28,6 +43,9 @@ class ProjectsRepository {
         (error) => Left(error),
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'];
               Map<String, dynamic>? dataMap;
@@ -85,6 +103,9 @@ class ProjectsRepository {
         (error) => Left(error),
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'];
               List<dynamic> projectsList;
@@ -127,6 +148,9 @@ class ProjectsRepository {
       );
       return result.fold((error) => Left(error), (response) {
         try {
+          if (response['success'] == false || response['success'] == null) {
+            return const Left(StatusRequest.serverFailure);
+          }
           if (response['success'] == true && response['data'] != null) {
             final projectData = response['data'];
             Map<String, dynamic> projectJson;
@@ -169,6 +193,9 @@ class ProjectsRepository {
           try {
             final success = response['success'];
             final data = response['data'];
+            if (success == false || success == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (success == true && data != null) {
               List<dynamic> clientsList;
               if (data is Map<String, dynamic>) {
@@ -243,7 +270,12 @@ class ProjectsRepository {
         requiresAuth: true,
       );
       return result.fold(
-        (error) => Left(error),
+        (error) {
+          return Left({
+            'error': error,
+            'message': _getErrorMessage(error),
+          });
+        },
         (response) {
           try {
             if (response['success'] == false || response['success'] == null) {
@@ -277,11 +309,14 @@ class ProjectsRepository {
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
-  Future<Either<StatusRequest, ProjectModel>> updateProject({
+  Future<Either<dynamic, ProjectModel>> updateProject({
     required String projectId,
     required String status,
     required String code,
@@ -304,21 +339,41 @@ class ProjectsRepository {
         requiresAuth: true,
       );
       return result.fold(
-        (error) => Left(error),
+        (error) {
+          return Left({
+            'error': error,
+            'message': _getErrorMessage(error),
+          });
+        },
         (response) {
           try {
             if (response['success'] == false || response['success'] == null) {
-              return Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to update project';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
             }
             if (response['success'] == true && response['data'] != null) {
               final projectData = response['data'] as Map<String, dynamic>;
               final project = ProjectModel.fromJson(projectData);
               return Right(project);
             } else {
-              return Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to update project';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
             }
           } catch (e) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
@@ -327,7 +382,7 @@ class ProjectsRepository {
     }
   }
 
-  Future<Either<StatusRequest, bool>> deleteProject(String projectId) async {
+  Future<Either<dynamic, bool>> deleteProject(String projectId) async {
     try {
       final result = await _apiService.delete(
         ApiConstant.deleteProject,
@@ -335,21 +390,47 @@ class ProjectsRepository {
         requiresAuth: true,
       );
       return result.fold(
-        (error) => Left(error),
+        (error) {
+          return Left({
+            'error': error,
+            'message': _getErrorMessage(error),
+          });
+        },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to delete project';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
+            }
             if (response['success'] == true) {
               return const Right(true);
             } else {
-              return Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to delete project';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMessage,
+              });
             }
           } catch (e) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 
@@ -370,6 +451,9 @@ class ProjectsRepository {
         (error) => Left(error),
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              return const Left(StatusRequest.serverFailure);
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'];
               if (data is Map<String, dynamic>) {

@@ -3,9 +3,25 @@ import '../../core/class/statusrequest.dart';
 import '../../core/constant/api_constant.dart';
 import '../../core/services/api_service.dart';
 import '../Models/assignment_model.dart';
+
 class AssignmentsRepository {
   final ApiService _apiService = ApiService();
-  Future<Either<StatusRequest, List<AssignmentModel>>>
+
+  String _getErrorMessage(StatusRequest error) {
+    switch (error) {
+      case StatusRequest.serverFailure:
+        return 'Server error. Please try again.';
+      case StatusRequest.offlineFailure:
+        return 'No internet connection. Please check your network.';
+      case StatusRequest.timeoutException:
+        return 'Request timed out. Please try again.';
+      case StatusRequest.serverException:
+        return 'An unexpected error occurred.';
+      default:
+        return 'An error occurred. Please try again.';
+    }
+  }
+  Future<Either<dynamic, List<AssignmentModel>>>
   getAssignmentsByEmployee({
     required String employeeId,
     int page = 1,
@@ -24,10 +40,16 @@ class AssignmentsRepository {
       );
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
           try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to fetch assignments';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
             if (response['success'] == true && response['data'] != null) {
               final data = response['data'];
               List<dynamic> assignmentsList;
@@ -39,10 +61,10 @@ class AssignmentsRepository {
                 } else if (data['data'] is List) {
                   assignmentsList = data['data'] as List<dynamic>;
                 } else {
-                  return const Left(StatusRequest.serverFailure);
+                  return Left({'error': StatusRequest.serverFailure, 'message': 'Invalid assignments data'});
                 }
               } else {
-                return const Left(StatusRequest.serverFailure);
+                return Left({'error': StatusRequest.serverFailure, 'message': 'Invalid assignments data'});
               }
               final assignments = assignmentsList.map((item) {
                 try {
@@ -53,15 +75,24 @@ class AssignmentsRepository {
               }).toList();
               return Right(assignments);
             } else {
-              return const Left(StatusRequest.serverFailure);
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to fetch assignments';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
             }
           } catch (e, stackTrace) {
-            return const Left(StatusRequest.serverException);
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
   Future<Either<dynamic, AssignmentModel>> createAssignment({
@@ -88,26 +119,45 @@ class AssignmentsRepository {
       );
       return result.fold(
         (error) {
-          return Left({'error': error, 'message': null});
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
-          if (response['success'] == true && response['data'] != null) {
-            final assignmentData = response['data'] as Map<String, dynamic>;
-            final assignment = AssignmentModel.fromJson(assignmentData);
-            return Right(assignment);
-          } else {
-            final errorMsg =
-                response['message']?.toString() ??
-                'Failed to create assignment';
+          try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMsg = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to create assignment';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMsg,
+              });
+            }
+            if (response['success'] == true && response['data'] != null) {
+              final assignmentData = response['data'] as Map<String, dynamic>;
+              final assignment = AssignmentModel.fromJson(assignmentData);
+              return Right(assignment);
+            } else {
+              final errorMsg = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to create assignment';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMsg,
+              });
+            }
+          } catch (e) {
             return Left({
-              'error': StatusRequest.serverFailure,
-              'message': errorMsg,
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
             });
           }
         },
       );
     } catch (e, stackTrace) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
   Future<Either<dynamic, Map<String, dynamic>>> createBulkAssignments({
@@ -122,28 +172,47 @@ class AssignmentsRepository {
       );
       return result.fold(
         (error) {
-          return Left({'error': error, 'message': null});
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
-          if (response['success'] == true && response['data'] != null) {
-            final data = response['data'] as Map<String, dynamic>;
-            return Right(data);
-          } else {
-            final errorMsg =
-                response['message']?.toString() ??
-                'Failed to create bulk assignments';
+          try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMsg = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to create bulk assignments';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMsg,
+              });
+            }
+            if (response['success'] == true && response['data'] != null) {
+              final data = response['data'] as Map<String, dynamic>;
+              return Right(data);
+            } else {
+              final errorMsg = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to create bulk assignments';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMsg,
+              });
+            }
+          } catch (e) {
             return Left({
-              'error': StatusRequest.serverFailure,
-              'message': errorMsg,
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
             });
           }
         },
       );
     } catch (e, stackTrace) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
-  Future<Either<StatusRequest, Map<String, dynamic>>> getEmployeeSchedule({
+  Future<Either<dynamic, Map<String, dynamic>>> getEmployeeSchedule({
     required String employeeId,
     required String startDate,
     required String endDate,
@@ -161,21 +230,40 @@ class AssignmentsRepository {
       );
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
-          if (response['success'] == true && response['data'] != null) {
-            return Right(response['data'] as Map<String, dynamic>);
-          } else {
-            return const Left(StatusRequest.serverFailure);
+          try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to fetch employee schedule';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
+            if (response['success'] == true && response['data'] != null) {
+              return Right(response['data'] as Map<String, dynamic>);
+            } else {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to fetch employee schedule';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
+          } catch (e) {
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e, stackTrace) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
-  Future<Either<StatusRequest, Map<String, dynamic>>> getAssignmentsByTask({
+  Future<Either<dynamic, Map<String, dynamic>>> getAssignmentsByTask({
     required String taskId,
     int page = 1,
     int limit = 10,
@@ -193,18 +281,93 @@ class AssignmentsRepository {
       );
       return result.fold(
         (error) {
-          return Left(error);
+          return Left({'error': error, 'message': _getErrorMessage(error)});
         },
         (response) {
-          if (response['success'] == true && response['data'] != null) {
-            return Right(response['data'] as Map<String, dynamic>);
-          } else {
-            return const Left(StatusRequest.serverFailure);
+          try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to fetch assignments by task';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
+            if (response['success'] == true && response['data'] != null) {
+              return Right(response['data'] as Map<String, dynamic>);
+            } else {
+              final errorMessage = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to fetch assignments by task';
+              return Left({'error': StatusRequest.serverFailure, 'message': errorMessage});
+            }
+          } catch (e) {
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
           }
         },
       );
     } catch (e, stackTrace) {
-      return const Left(StatusRequest.serverException);
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
+    }
+  }
+
+  Future<Either<dynamic, AssignmentModel>> reassignAssignment({
+    required String assignmentId,
+    required String newEmployeeId,
+  }) async {
+    try {
+      final body = {'newEmployeeId': newEmployeeId};
+      final result = await _apiService.put(
+        ApiConstant.reassignTaskAssignment,
+        pathParams: {'assignmentId': assignmentId},
+        body: body,
+        requiresAuth: true,
+      );
+      return result.fold(
+        (error) {
+          return Left({'error': error, 'message': _getErrorMessage(error)});
+        },
+        (response) {
+          try {
+            if (response['success'] == false || response['success'] == null) {
+              final errorMsg = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to reassign assignment';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMsg,
+              });
+            }
+            if (response['success'] == true && response['data'] != null) {
+              final assignmentData = response['data'] as Map<String, dynamic>;
+              final assignment = AssignmentModel.fromJson(assignmentData);
+              return Right(assignment);
+            } else {
+              final errorMsg = response['message']?.toString() ??
+                  response['error']?.toString() ??
+                  'Failed to reassign assignment';
+              return Left({
+                'error': StatusRequest.serverFailure,
+                'message': errorMsg,
+              });
+            }
+          } catch (e) {
+            return Left({
+              'error': StatusRequest.serverException,
+              'message': 'An error occurred while processing the response: $e',
+            });
+          }
+        },
+      );
+    } catch (e, stackTrace) {
+      return Left({
+        'error': StatusRequest.serverException,
+        'message': 'An unexpected error occurred.',
+      });
     }
   }
 }

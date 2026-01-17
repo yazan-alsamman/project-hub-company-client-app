@@ -35,6 +35,9 @@ class TaskDetailScreen extends StatelessWidget {
       Get.put(TaskDetailController(taskId: task.id, task: task));
     }
 
+    if (!Get.isRegistered<CustomDrawerControllerImp>()) {
+      Get.put(CustomDrawerControllerImp());
+    }
     final CustomDrawerControllerImp customDrawerController =
         Get.find<CustomDrawerControllerImp>();
 
@@ -47,6 +50,9 @@ class TaskDetailScreen extends StatelessWidget {
       appBar: const CustomAppBar(title: 'Task Detail', showBackButton: true),
       body: SafeArea(
         child: GetBuilder<TaskDetailController>(
+          init: Get.isRegistered<TaskDetailController>()
+              ? Get.find<TaskDetailController>()
+              : Get.put(TaskDetailController(taskId: task.id, task: task)),
           builder: (controller) {
             if (controller.statusRequest == StatusRequest.loading &&
                 controller.comments.isEmpty) {

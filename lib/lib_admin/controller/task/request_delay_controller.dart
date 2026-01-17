@@ -115,19 +115,40 @@ class RequestDelayController extends GetxController {
       result.fold(
         (error) {
           _isLoading = false;
-          _statusRequest = error;
-          _errorMessage = 'Failed to request task delay';
-          update();
+          
+          // Extract error message from the error object
           String errorMsg = 'Failed to request task delay';
-          if (error == StatusRequest.serverFailure) {
-            errorMsg = 'Server error. Please try again.';
-          } else if (error == StatusRequest.offlineFailure) {
-            errorMsg = 'No internet connection. Please check your network.';
-          } else if (error == StatusRequest.timeoutException) {
-            errorMsg = 'Request timed out. Please try again.';
-          } else if (error == StatusRequest.serverException) {
-            errorMsg = 'An unexpected server error occurred.';
+          StatusRequest errorStatus = StatusRequest.serverFailure;
+          
+          if (error is Map<String, dynamic>) {
+            // If error is a Map, extract the message and status
+            errorMsg = error['message']?.toString() ?? 
+                      error['error']?.toString() ?? 
+                      'Failed to request task delay';
+            errorStatus = error['error'] is StatusRequest 
+                ? error['error'] as StatusRequest 
+                : StatusRequest.serverFailure;
+          } else if (error is StatusRequest) {
+            // If error is directly a StatusRequest, use default messages
+            errorStatus = error;
+            if (error == StatusRequest.serverFailure) {
+              errorMsg = 'Server error. Please try again.';
+            } else if (error == StatusRequest.offlineFailure) {
+              errorMsg = 'No internet connection. Please check your network.';
+            } else if (error == StatusRequest.timeoutException) {
+              errorMsg = 'Request timed out. Please try again.';
+            } else if (error == StatusRequest.serverException) {
+              errorMsg = 'An unexpected server error occurred.';
+            }
+          } else {
+            // Fallback for other error types
+            errorMsg = error.toString();
           }
+          
+          _statusRequest = errorStatus;
+          _errorMessage = errorMsg;
+          update();
+          
           Get.snackbar(
             'Error',
             errorMsg,

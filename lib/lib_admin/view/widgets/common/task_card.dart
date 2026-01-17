@@ -14,10 +14,12 @@ class TaskCard extends StatelessWidget {
   final Color avatarColor;
   final bool isCompleted;
   final bool isPending;
+  final bool showAssignee;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onRequestDelay;
+  final VoidCallback? onMarkCompleted;
   final List<Map<String, dynamic>>? delayRequests;
   
   const TaskCard({
@@ -33,10 +35,12 @@ class TaskCard extends StatelessWidget {
     this.avatarColor = AppColor.primaryColor,
     this.isCompleted = false,
     this.isPending = false,
+    this.showAssignee = true,
     this.onTap,
     this.onEdit,
     this.onDelete,
     this.onRequestDelay,
+    this.onMarkCompleted,
     this.delayRequests,
   });
   List<Map<String, dynamic>> _parseDelayRequests() {
@@ -259,7 +263,10 @@ class TaskCard extends StatelessWidget {
           
           const SizedBox(height: 16),
           
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -279,8 +286,7 @@ class TaskCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (onRequestDelay != null) ...[
-                const Spacer(),
+              if (onRequestDelay != null)
                 OutlinedButton.icon(
                   onPressed: onRequestDelay,
                   icon: const Icon(Icons.schedule, size: 14),
@@ -301,7 +307,29 @@ class TaskCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
+              if (onMarkCompleted != null)
+                ElevatedButton.icon(
+                  onPressed: isCompleted ? null : onMarkCompleted,
+                  icon: const Icon(Icons.check_circle, size: 14),
+                  label: const Text(
+                    'Mark as Completed',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    minimumSize: const Size(0, 32),
+                    backgroundColor: isCompleted
+                        ? AppColor.textSecondaryColor
+                        : AppColor.successColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
             ],
           ),
           
@@ -358,59 +386,61 @@ class TaskCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: avatarColor,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: avatarColor.withOpacity(0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        assigneeInitials,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+              if (showAssignee) ...[
+                const SizedBox(width: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: avatarColor,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: avatarColor.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        assigneeName.split(' ').first,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColor.textColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (assigneeName.split(' ').length > 1)
-                        Text(
-                          assigneeName.split(' ').last,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColor.textSecondaryColor,
+                      child: Center(
+                        child: Text(
+                          assigneeInitials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                    ],
-                  ),
-                ],
-              ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          assigneeName.split(' ').first,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColor.textColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (assigneeName.split(' ').length > 1)
+                          Text(
+                            assigneeName.split(' ').last,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColor.textSecondaryColor,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ],
