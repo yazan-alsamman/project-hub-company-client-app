@@ -317,85 +317,199 @@ class ProjectDetailsScreen extends StatelessWidget {
                         final isPM = role == 'pm' || role == 'project manager';
                         final isAdmin = role == 'admin';
 
-                        return Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            if (!isDeveloper)
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    Get.toNamed(
-                                      AppRoute.editProject,
-                                      arguments: project.id,
-                                    );
-                                  },
-                                  icon: const Icon(Icons.edit_outlined),
-                                  label: const Text('Edit Project'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF4285F4),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isNarrow = constraints.maxWidth < 400;
+                            if (isNarrow) {
+                              return Column(
+                                children: [
+                                  if (!isDeveloper)
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          Get.toNamed(
+                                            AppRoute.editProject,
+                                            arguments: project.id,
+                                          );
+                                        },
+                                        icon: const Icon(Icons.edit_outlined),
+                                        label: const Text('Edit Project'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF4285F4,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                  if (!isDeveloper && (isPM || isAdmin))
+                                    const SizedBox(height: 12),
+                                  if ((isPM || isAdmin))
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          // Note: This requires an AssignmentModel.
+                                          // You need to pass the assignment ID or model as argument.
+                                          // For now, showing a message that assignment is needed.
+                                          Get.snackbar(
+                                            'Info',
+                                            'Please select a task assignment first to edit assign.',
+                                            snackPosition: SnackPosition.BOTTOM,
+                                            duration: const Duration(
+                                              seconds: 3,
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(
+                                          Icons.person_add_alt_1_outlined,
+                                        ),
+                                        label: const Text('Edit Assign'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF34A853,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () {
+                                        _showShareDialog(context);
+                                      },
+                                      icon: const Icon(Icons.share_outlined),
+                                      label: const Text('Share'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(
+                                          0xFF4285F4,
+                                        ),
+                                        side: const BorderSide(
+                                          color: Color(0xFF4285F4),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                            return Row(
+                              children: [
+                                if (!isDeveloper)
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        Get.toNamed(
+                                          AppRoute.editProject,
+                                          arguments: project.id,
+                                        );
+                                      },
+                                      icon: const Icon(Icons.edit_outlined),
+                                      label: const Text('Edit Project'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(
+                                          0xFF4285F4,
+                                        ),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                if (!isDeveloper) const SizedBox(width: 12),
+                                if ((isPM || isAdmin))
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        // Note: This requires an AssignmentModel.
+                                        // You need to pass the assignment ID or model as argument.
+                                        // For now, showing a message that assignment is needed.
+                                        Get.snackbar(
+                                          'Info',
+                                          'Please select a task assignment first to edit assign.',
+                                          snackPosition: SnackPosition.BOTTOM,
+                                          duration: const Duration(seconds: 3),
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.person_add_alt_1_outlined,
+                                      ),
+                                      label: const Text('Edit Assign'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(
+                                          0xFF34A853,
+                                        ),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                if ((isPM || isAdmin))
+                                  const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      _showShareDialog(context);
+                                    },
+                                    icon: const Icon(Icons.share_outlined),
+                                    label: const Text('Share'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF4285F4),
+                                      side: const BorderSide(
+                                        color: Color(0xFF4285F4),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            if ((isPM || isAdmin))
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    // Note: This requires an AssignmentModel.
-                                    // You need to pass the assignment ID or model as argument.
-                                    // For now, showing a message that assignment is needed.
-                                    Get.snackbar(
-                                      'Info',
-                                      'Please select a task assignment first to edit assign.',
-                                      snackPosition: SnackPosition.BOTTOM,
-                                      duration: const Duration(seconds: 3),
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.person_add_alt_1_outlined,
-                                  ),
-                                  label: const Text('Edit Assign'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF34A853),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () {
-                                  _showShareDialog(context);
-                                },
-                                icon: const Icon(Icons.share_outlined),
-                                label: const Text('Share'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF4285F4),
-                                  side: const BorderSide(
-                                    color: Color(0xFF4285F4),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                              ],
+                            );
+                          },
                         );
                       },
                     ),

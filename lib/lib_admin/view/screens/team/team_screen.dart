@@ -301,34 +301,44 @@ class _TeamScreenState extends State<TeamScreen> {
                           return Padding(
                             key: ValueKey(member.id ?? '${member.name}_$index'),
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: MemberCard(
-                              name: member.name,
-                              position: member.position,
-                              subRole: member.subRole,
-                              status: member.status,
-                              statusColor: member.statusColor,
-                              icon: member.icon,
-                              email: member.email,
-                              phone: member.phone,
-                              location: member.location,
-                              activeProjects: member.activeProjects,
-                              onTap: () {
-                                Get.toNamed(
-                                  AppRoute.memberDetail,
-                                  arguments: member,
-                                );
-                              },
-                              onViewProjects: () {
-                                debugPrint('View projects for ${member.name}');
-                              },
-                              onEdit: () {
-                                _handleEditMember(context, member, controller);
-                              },
-                              onDelete: () {
-                                _handleDeleteMember(
-                                  context,
-                                  member,
-                                  controller,
+                            child: FutureBuilder<String?>(
+                              future: AuthService().getUserRole(),
+                              builder: (context, snapshot) {
+                                final role = snapshot.data?.toLowerCase() ?? '';
+                                final isPM = role == 'pm' || role == 'project manager';
+                                final isAdmin = role == 'admin';
+                                return MemberCard(
+                                  name: member.name,
+                                  position: member.position,
+                                  subRole: member.subRole,
+                                  status: member.status,
+                                  statusColor: member.statusColor,
+                                  icon: member.icon,
+                                  email: member.email,
+                                  phone: member.phone,
+                                  location: member.location,
+                                  activeProjects: member.activeProjects,
+                                  onTap: () {
+                                    Get.toNamed(
+                                      AppRoute.memberDetail,
+                                      arguments: member,
+                                    );
+                                  },
+                                  onViewProjects: () {
+                                    debugPrint('View projects for ${member.name}');
+                                  },
+                                  onEdit: () {
+                                    _handleEditMember(context, member, controller);
+                                  },
+                                  onDelete: (isPM && !isAdmin)
+                                      ? null
+                                      : () {
+                                          _handleDeleteMember(
+                                            context,
+                                            member,
+                                            controller,
+                                          );
+                                        },
                                 );
                               },
                             ),
